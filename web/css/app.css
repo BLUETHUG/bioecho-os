@@ -237,3 +237,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .id-name{padding:8px 12px;font-size:14px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border)}
 .id-section{padding:8px 12px;border-bottom:1px solid var(--border)}
 .id-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+
+/* Knowledge Graph Tab */
+.kg-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.kg-title{font-size:12px;font-weight:600;color:var(--text)}
+.kg-stats{grid-template-columns:repeat(2,1fr)}
+.kg-section{padding:8px 12px;border-bottom:1px solid var(--border)}
+.kg-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}

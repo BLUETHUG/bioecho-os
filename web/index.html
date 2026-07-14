@@ -106,6 +106,7 @@
         <button class="tab" data-tab="explain">Explain</button>
         <button class="tab" data-tab="identity">Identity</button>
         <button class="tab" data-tab="stats">Stats</button>
+        <button class="tab" data-tab="knowledge">Graph</button>
         <button class="tab" data-tab="environment">Env</button>
         <button class="tab" data-tab="relationships">Care</button>
         <button class="tab" data-tab="evidence">Evidence</button>
@@ -184,6 +185,30 @@
           <div class="stats-row"><span>Bandpass</span><span>0.1–100 Hz</span></div>
           <div class="stats-row"><span>Notch</span><span id="s-notch-status">50/60 Hz active</span></div>
           <div class="stats-row"><span>Threshold</span><span id="s-threshold">3.5× MAD</span></div>
+        </div>
+      </div>
+
+      <!-- Knowledge Graph -->
+      <div class="tab-pane" id="pane-knowledge">
+        <div class="kg-header">
+          <span class="kg-title">Knowledge Graph</span>
+          <button id="btn-refresh-graph" class="btn-small">Refresh</button>
+        </div>
+        <div class="stats-grid kg-stats">
+          <div class="stat-card"><div class="stat-label">Nodes</div><div class="stat-value" id="kg-nodes">--</div></div>
+          <div class="stat-card"><div class="stat-label">Edges</div><div class="stat-value" id="kg-edges">--</div></div>
+        </div>
+        <div class="kg-section">
+          <div class="kg-section-title">Entity Counts</div>
+          <div id="kg-entity-counts"></div>
+        </div>
+        <div class="kg-section">
+          <div class="kg-section-title">Relationship Types</div>
+          <div id="kg-edge-counts"></div>
+        </div>
+        <div class="kg-section">
+          <div class="kg-section-title">Subgraph (Active Organism)</div>
+          <div id="kg-subgraph"></div>
         </div>
       </div>
 
@@ -286,6 +311,7 @@
 <script src="js/local-db.js"></script>
 <script src="js/environment.js"></script>
 <script src="js/relationship.js"></script>
+<script src="js/knowledge-graph.js"></script>
 <script src="js/dsp.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/chat.js"></script>

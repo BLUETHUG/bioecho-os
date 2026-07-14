@@ -15,6 +15,7 @@ const experimentLog = new ExperimentLog();
 const evidenceValidator = new EvidenceValidator();
 const environmentEngine = new EnvironmentEngine();
 const relationshipEngine = new RelationshipEngine();
+const knowledgeGraph = new KnowledgeGraph();
 
 // ============================================================
 // APP STATE
@@ -43,6 +44,9 @@ function init() {
     await identityLayer.init();
     log('Local database + identity layer initialized');
     updateDBStats();
+    // Populate knowledge graph from engines
+    knowledgeGraph.populateFromEngines(twinEngine, speciesDB, environmentEngine, experimentLog, relationshipEngine, localDB);
+    updateKnowledgeGraphUI();
   }).catch(() => log('LocalDB init failed'));
 
   // Create default organism if none exist
@@ -647,6 +651,19 @@ function setupNewTabs() {
 
   // Update identity UI periodically
   setInterval(updateIdentityUI, 5000);
+
+  // Refresh knowledge graph button
+  document.getElementById('btn-refresh-graph')?.addEventListener('click', () => {
+    knowledgeGraph.populateFromEngines(twinEngine, speciesDB, environmentEngine, experimentLog, relationshipEngine, localDB);
+    updateKnowledgeGraphUI();
+    log('Knowledge graph refreshed');
+  });
+
+  // Update knowledge graph periodically
+  setInterval(() => {
+    knowledgeGraph.populateFromEngines(twinEngine, speciesDB, environmentEngine, experimentLog, relationshipEngine, localDB);
+    updateKnowledgeGraphUI();
+  }, 15000);
 }
 
 // ============================================================
@@ -848,6 +865,42 @@ function updateIdentityUI() {
     <div class="stats-row" style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px"><span>Events Recorded</span><span>${identity.eventsCount || 0}</span></div>
     <div class="stats-row"><span>Life Events</span><span>${identity.lifeEventsCount || 0}</span></div>
   `;
+}
+
+// ============================================================
+// KNOWLEDGE GRAPH UI
+// ============================================================
+function updateKnowledgeGraphUI() {
+  const stats = knowledgeGraph.getStats();
+  document.getElementById('kg-nodes').textContent = stats.totalNodes;
+  document.getElementById('kg-edges').textContent = stats.totalEdges;
+
+  // Entity counts
+  const countsEl = document.getElementById('kg-entity-counts');
+  countsEl.innerHTML = Object.entries(stats.nodeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, count]) => `<div class="stats-row"><span>${type}</span><span>${count}</span></div>`)
+    .join('') || '<div style="font-size:11px;color:var(--text3)">No entities</div>';
+
+  // Edge counts
+  const edgeCountsEl = document.getElementById('kg-edge-counts');
+  edgeCountsEl.innerHTML = Object.entries(stats.edgeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, count]) => `<div class="stats-row"><span>${type}</span><span>${count}</span></div>`)
+    .join('') || '<div style="font-size:11px;color:var(--text3)">No relationships</div>';
+
+  // Subgraph of active organism
+  const subgraphEl = document.getElementById('kg-subgraph');
+  if (activeOrganismId) {
+    const subgraph = knowledgeGraph.getSubgraph(activeOrganismId, 2);
+    const neighbors = knowledgeGraph.getNeighbors(activeOrganismId);
+    subgraphEl.innerHTML = neighbors.slice(0, 10).map(n => {
+      const label = n.node?.data?.name || n.node?.data?.scientificName || n.node?.id || 'unknown';
+      return `<div class="stats-row"><span>${n.edge.type}</span><span style="color:var(--accent)">${label}</span></div>`;
+    }).join('') || '<div style="font-size:11px;color:var(--text3)">No connections</div>';
+  } else {
+    subgraphEl.innerHTML = '<div style="font-size:11px;color:var(--text3)">No organism selected</div>';
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
