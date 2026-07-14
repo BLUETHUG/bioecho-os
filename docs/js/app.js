@@ -54,28 +54,46 @@ function initLanding() {
 
   let seedPulse = 0;
   const drawSeed = () => {
-    seedPulse += 0.02;
+    seedPulse += 0.015;
     seedCtx.clearRect(0, 0, 200, 200);
-    const cx = 100, cy = 100;
-    const pulse = Math.sin(seedPulse) * 0.12 + 1;
+    const cx = 100, cy = 105;
+    const pulse = Math.sin(seedPulse) * 0.15 + 1;
 
-    const grad = seedCtx.createRadialGradient(cx, cy, 0, cx, cy, 45 * pulse);
-    grad.addColorStop(0, 'rgba(111,163,111,0.12)');
-    grad.addColorStop(1, 'transparent');
-    seedCtx.fillStyle = grad;
-    seedCtx.fillRect(0, 0, 200, 200);
-
-    seedCtx.fillStyle = '#6E5843';
+    // Outer glow ring
+    const glowGrad = seedCtx.createRadialGradient(cx, cy, 0, cx, cy, 70 * pulse);
+    glowGrad.addColorStop(0, 'rgba(111,163,111,0.08)');
+    glowGrad.addColorStop(0.5, 'rgba(111,163,111,0.03)');
+    glowGrad.addColorStop(1, 'transparent');
+    seedCtx.fillStyle = glowGrad;
     seedCtx.beginPath();
-    seedCtx.ellipse(cx, cy, 7 * pulse, 11 * pulse, 0, 0, Math.PI * 2);
+    seedCtx.arc(cx, cy, 70 * pulse, 0, Math.PI * 2);
     seedCtx.fill();
 
-    seedCtx.strokeStyle = 'rgba(111,163,111,0.4)';
-    seedCtx.lineWidth = 1;
+    // Seed body - larger, brighter
+    seedCtx.fillStyle = '#8A6A4A';
     seedCtx.beginPath();
-    seedCtx.moveTo(cx, cy - 11 * pulse);
-    seedCtx.quadraticCurveTo(cx + 2.5, cy - 18 * pulse, cx, cy - 24 * pulse);
+    seedCtx.ellipse(cx, cy, 12 * pulse, 18 * pulse, 0, 0, Math.PI * 2);
+    seedCtx.fill();
+
+    // Seed highlight
+    seedCtx.fillStyle = 'rgba(245,240,232,0.15)';
+    seedCtx.beginPath();
+    seedCtx.ellipse(cx - 2, cy - 3, 5 * pulse, 8 * pulse, -0.2, 0, Math.PI * 2);
+    seedCtx.fill();
+
+    // Sprout - brighter
+    seedCtx.strokeStyle = 'rgba(111,163,111,0.7)';
+    seedCtx.lineWidth = 1.5;
+    seedCtx.beginPath();
+    seedCtx.moveTo(cx, cy - 18 * pulse);
+    seedCtx.quadraticCurveTo(cx + 4, cy - 28 * pulse, cx, cy - 38 * pulse);
     seedCtx.stroke();
+
+    // Tiny leaf
+    seedCtx.fillStyle = 'rgba(111,163,111,0.4)';
+    seedCtx.beginPath();
+    seedCtx.ellipse(cx + 4, cy - 30 * pulse, 4 * pulse, 2 * pulse, 0.3, 0, Math.PI * 2);
+    seedCtx.fill();
 
     if (!landing.classList.contains('hidden')) requestAnimationFrame(drawSeed);
   };
