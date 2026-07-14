@@ -2,38 +2,47 @@
 // The world IS the interface. No text. No panels. Just the living forest.
 
 // ============================================================
-// ENGINE INSTANCES
+// ENGINE INSTANCES (wrapped for safety)
 // ============================================================
-const hal = new HardwareAbstractionLayer();
-const calibration = new CalibrationEngine();
-const speciesDB = new SpeciesDB();
-const localDB = new LocalDB();
-const identityLayer = new LivingIdentityLayer(localDB);
-const twinEngine = new DigitalTwinEngine(localDB, identityLayer);
-const contextEngine = new ContextEngine(twinEngine, speciesDB);
-const meaningEngine = new MeaningEngine(speciesDB);
-const experimentLog = new ExperimentLog();
-const evidenceValidator = new EvidenceValidator();
-const environmentEngine = new EnvironmentEngine();
-const relationshipEngine = new RelationshipEngine();
-const knowledgeGraph = new KnowledgeGraph();
-const lens = new BioEchoLens(knowledgeGraph, twinEngine, speciesDB, contextEngine, meaningEngine);
-const verificationChain = new VerificationChain(localDB, identityLayer);
-const citizenScience = new CitizenScienceEngine(localDB, verificationChain, knowledgeGraph);
-const predictiveEngine = new PredictiveEngine(twinEngine, speciesDB, contextEngine, localDB);
-const researchAssistant = new ResearchAssistant(twinEngine, speciesDB, knowledgeGraph, localDB, meaningEngine);
-const bioSearch = new BioSearchEngine(twinEngine, speciesDB, knowledgeGraph, localDB, contextEngine);
-const earth = new BioEchoEarth(knowledgeGraph, twinEngine, citizenScience);
-const timeMachine = new TimeMachine(twinEngine, localDB, identityLayer);
-const sdk = new BioEchoSDK();
-const emergency = new EmergencyEngine(twinEngine, speciesDB, localDB);
-const marketplace = new Marketplace(twinEngine, speciesDB);
+let hal, calibration, speciesDB, localDB, identityLayer, twinEngine;
+let contextEngine, meaningEngine, experimentLog, evidenceValidator;
+let environmentEngine, relationshipEngine, knowledgeGraph, lens;
+let verificationChain, citizenScience, predictiveEngine;
+let researchAssistant, bioSearch, earth, timeMachine, sdk, emergency, marketplace;
+let world, ambientEngine, soundEngine, lifeEngine;
+
+try {
+  hal = new HardwareAbstractionLayer();
+  calibration = new CalibrationEngine();
+  speciesDB = new SpeciesDB();
+  localDB = new LocalDB();
+  identityLayer = new LivingIdentityLayer(localDB);
+  twinEngine = new DigitalTwinEngine(localDB, identityLayer);
+  contextEngine = new ContextEngine(twinEngine, speciesDB);
+  meaningEngine = new MeaningEngine(speciesDB);
+  experimentLog = new ExperimentLog();
+  evidenceValidator = new EvidenceValidator();
+  environmentEngine = new EnvironmentEngine();
+  relationshipEngine = new RelationshipEngine();
+  knowledgeGraph = new KnowledgeGraph();
+  lens = new BioEchoLens(knowledgeGraph, twinEngine, speciesDB, contextEngine, meaningEngine);
+  verificationChain = new VerificationChain(localDB, identityLayer);
+  citizenScience = new CitizenScienceEngine(localDB, verificationChain, knowledgeGraph);
+  predictiveEngine = new PredictiveEngine(twinEngine, speciesDB, contextEngine, localDB);
+  researchAssistant = new ResearchAssistant(twinEngine, speciesDB, knowledgeGraph, localDB, meaningEngine);
+  bioSearch = new BioSearchEngine(twinEngine, speciesDB, knowledgeGraph, localDB, contextEngine);
+  earth = new BioEchoEarth(knowledgeGraph, twinEngine, citizenScience);
+  timeMachine = new TimeMachine(twinEngine, localDB, identityLayer);
+  sdk = new BioEchoSDK();
+  emergency = new EmergencyEngine(twinEngine, speciesDB, localDB);
+  marketplace = new Marketplace(twinEngine, speciesDB);
+} catch(e) { console.warn('Engine init error:', e); }
 
 // Experience
-const world = new WorldV3(document.getElementById('world-canvas'));
-const ambientEngine = new AmbientEngine();
-const soundEngine = new SoundEngine();
-const lifeEngine = new LifeEngine(world);
+world = new WorldV3(document.getElementById('world-canvas'));
+ambientEngine = new AmbientEngine();
+soundEngine = new SoundEngine();
+lifeEngine = new LifeEngine(world);
 let firefly = null;
 let tree = null;
 let vineTransition = null;
@@ -331,25 +340,18 @@ function setupNavIcons() {
 // ============================================================
 function loadOrganisms() {
   const list = document.getElementById('organism-list');
-  const twins = twinEngine.getAll();
-
-  if (twins.length === 0) {
-    list.innerHTML = `<div style="font-size:11px;color:rgba(245,240,232,0.2);padding:8px;font-weight:300;text-align:center">
-      Connect a device
-    </div>`;
-    return;
-  }
-
-  list.innerHTML = twins.map(t => {
-    const health = t.state?.healthScore;
-    const icon = t.species === 'pothos' ? '🌿' : t.species === 'monstera-deliciosa' ? '🪴' : '🌱';
-    return `<div class="organism-card ${t.id === activeOrganismId ? 'active' : ''}" data-id="${t.id}">
-      <div class="organism-avatar">${icon}</div>
-      <div class="organism-name">${t.name || t.id}</div>
-    </div>`;
-  }).join('');
-
-  if (!activeOrganismId && twins.length > 0) selectOrganism(twins[0].id);
+  if (!list || !twinEngine) return;
+  try {
+    const twins = twinEngine.getAll();
+    if (twins.length === 0) { list.innerHTML = ''; return; }
+    list.innerHTML = twins.map(t => {
+      const icon = t.species === 'pothos' ? '🌿' : t.species === 'monstera-deliciosa' ? '🪴' : '🌱';
+      return `<div class="organism-card ${t.id === activeOrganismId ? 'active' : ''}" data-id="${t.id}">
+        <div class="organism-avatar">${icon}</div>
+      </div>`;
+    }).join('');
+    if (!activeOrganismId && twins.length > 0) selectOrganism(twins[0].id);
+  } catch(e) {}
 }
 
 let activeOrganismId = null;
@@ -363,33 +365,35 @@ function selectOrganism(id) {
 }
 
 function updateIdentityPanel() {
-  if (!activeOrganismId) return;
-  const section = document.getElementById('identity-section');
-  section.style.display = '';
-  const identity = twinEngine.getOrganismIdentity(activeOrganismId);
-  if (!identity) return;
-  document.getElementById('identity-name').textContent = identity.name || activeOrganismId;
-  document.getElementById('id-species').textContent = identity.species || '--';
-  document.getElementById('id-age').textContent = identity.createdAt ? Math.floor((Date.now() - identity.createdAt) / 86400000) + 'd' : '--';
+  if (!activeOrganismId || !twinEngine) return;
+  try {
+    const identity = twinEngine.getOrganismIdentity(activeOrganismId);
+    if (!identity) return;
+  } catch(e) {}
 }
 
 function updateStatsPanel() {
-  if (!activeOrganismId) return;
-  const twin = twinEngine.getTwin(activeOrganismId);
-  if (!twin) return;
-  const state = twin.state || {};
-  document.getElementById('stat-health').textContent = state.healthScore !== undefined ? state.healthScore.toFixed(2) : '--';
-  document.getElementById('stat-stress').textContent = state.stressIndex !== undefined ? state.stressIndex.toFixed(2) : '--';
-  document.getElementById('stat-spikes').textContent = state.spikeRate !== undefined ? state.spikeRate.toFixed(1) : '--';
-  document.getElementById('stat-growth').textContent = state.growthRate !== undefined ? state.growthRate.toFixed(3) : '--';
-  document.getElementById('health-bar').style.width = ((state.healthScore || 0) * 100) + '%';
+  if (!activeOrganismId || !twinEngine) return;
+  try {
+    const twin = twinEngine.getTwin(activeOrganismId);
+    if (!twin) return;
+    const state = twin.state || {};
+    document.getElementById('stat-health').textContent = state.healthScore !== undefined ? state.healthScore.toFixed(2) : '--';
+    document.getElementById('stat-stress').textContent = state.stressIndex !== undefined ? state.stressIndex.toFixed(2) : '--';
+    document.getElementById('stat-spikes').textContent = state.spikeRate !== undefined ? state.spikeRate.toFixed(1) : '--';
+    document.getElementById('stat-growth').textContent = state.growthRate !== undefined ? state.growthRate.toFixed(3) : '--';
+    document.getElementById('health-bar').style.width = ((state.healthScore || 0) * 100) + '%';
+  } catch(e) {}
 }
 
 function updateEnvironmentPanel() {
-  const ctx = environmentEngine.getContext();
-  document.getElementById('env-light').textContent = ctx.lightPhase || '--';
-  document.getElementById('env-soil').textContent = ctx.current?.soilMoisture !== undefined ? ctx.current.soilMoisture.toFixed(0) + '%' : '--';
-  document.getElementById('env-season').textContent = ctx.season || LDL.currentSeason || '--';
+  if (!environmentEngine) return;
+  try {
+    const ctx = environmentEngine.getContext();
+    document.getElementById('env-light').textContent = ctx.lightPhase || '--';
+    document.getElementById('env-soil').textContent = ctx.current?.soilMoisture !== undefined ? ctx.current.soilMoisture.toFixed(0) + '%' : '--';
+    document.getElementById('env-season').textContent = ctx.season || LDL.currentSeason || '--';
+  } catch(e) {}
 }
 
 function updateUI() {
@@ -397,3 +401,5 @@ function updateUI() {
   updateStatsPanel();
   updateEnvironmentPanel();
 }
+
+try { initLanding(); } catch(e) { console.error('Landing error:', e); }
