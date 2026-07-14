@@ -3,130 +3,157 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0a1a0f">
+<meta name="theme-color" content="#0F3D2E">
 <meta name="description" content="BioEcho — The living intelligence platform for every organism on Earth">
 <title>BioEcho</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/ldl.css">
-<link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
-<!-- Living World Canvas -->
+<!-- Living World Canvas — Full bleed, behind everything -->
 <canvas id="world-canvas"></canvas>
 
-<!-- Cinematic Landing -->
+<!-- Cinematic Landing — Seed click to begin -->
 <div id="landing">
-  <div class="landing-seed" id="landing-seed"></div>
-  <div class="landing-text">touch to begin</div>
+  <canvas id="seed-canvas" width="200" height="200"></canvas>
+  <div id="landing-hint">touch to begin</div>
 </div>
 
-<!-- App (revealed after landing) -->
-<div id="app">
+<!-- Experience — Revealed after seed animation -->
+<div id="experience">
 
-  <!-- Floating Top Bar -->
-  <div class="ldl-card ldl-topbar">
-    <div class="ldl-logo">
-      <span class="ldl-logo-dot"></span>
-      BioEcho
-    </div>
-    <nav class="ldl-nav">
-      <button class="ldl-nav-btn active" data-view="home">Home</button>
-      <button class="ldl-nav-btn" data-view="lens">Lens</button>
-      <button class="ldl-nav-btn" data-view="graph">Graph</button>
-      <button class="ldl-nav-btn" data-view="predict">Predict</button>
-      <button class="ldl-nav-btn" data-view="search">Search</button>
-      <button class="ldl-nav-btn" data-view="earth">Earth</button>
-      <button class="ldl-nav-btn" data-view="shop">Shop</button>
-    </nav>
-    <div class="ldl-status">
-      <span class="ldl-status-dot offline" id="status-dot"></span>
-      <span id="status-text">Disconnected</span>
-    </div>
-  </div>
+  <!-- Root Navigation — Grows from ground -->
+  <nav id="root-nav">
+    <button class="root-btn active" data-view="home">
+      <span class="bioecho-icon" style="width:18px;height:18px"></span>
+      <span>home</span>
+    </button>
+    <button class="root-btn" data-view="lens">
+      <span class="bioecho-icon" style="width:18px;height:18px"></span>
+      <span>lens</span>
+    </button>
+    <button class="root-btn" data-view="graph">
+      <span class="bioecho-icon" style="width:18px;height:18px"></span>
+      <span>graph</span>
+    </button>
+    <button class="root-btn" data-view="predict">
+      <span class="bioecho-icon" style="width:18px;height:18px"></span>
+      <span>predict</span>
+    </button>
+    <button class="root-btn" data-view="search">
+      <span class="bioecho-icon" style="width:18px;height:18px"></span>
+      <span>search</span>
+    </button>
+    <button class="root-btn" data-view="earth">
+      <span class="bioecho-icon" style="width:18px;height:18px"></span>
+      <span>earth</span>
+    </button>
+    <button class="root-btn" data-view="shop">
+      <span class="bioecho-icon" style="width:18px;height:18px"></span>
+      <span>shop</span>
+    </button>
+  </nav>
 
   <!-- Left Panel — Organisms & Identity -->
-  <div class="ldl-card ldl-side-left" id="panel-left">
-    <div class="ldl-section">
-      <div class="ldl-section-title">Organisms</div>
+  <div class="living-panel left" id="panel-left">
+    <div class="panel-section">
+      <div class="panel-label">organisms</div>
       <div id="organism-list"></div>
-      <button class="ldl-btn" id="btn-add-organism" style="margin-top:10px;width:100%">+ Add Organism</button>
     </div>
-    <div class="ldl-section" id="identity-section" style="display:none">
-      <div class="ldl-section-title">Identity</div>
-      <div id="identity-name" style="font-size:16px;font-weight:400;color:var(--ldl-fern);letter-spacing:-0.3px"></div>
-      <div id="identity-stage" style="margin-top:6px"></div>
-      <div style="margin-top:10px">
-        <div class="ldl-row"><span class="ldl-row-key">Species</span><span class="ldl-row-value" id="id-species">--</span></div>
-        <div class="ldl-row"><span class="ldl-row-key">Age</span><span class="ldl-row-value" id="id-age">--</span></div>
-        <div class="ldl-row"><span class="ldl-row-key">Events</span><span class="ldl-row-value" id="id-events">0</span></div>
-        <div class="ldl-row"><span class="ldl-row-key">Provenance</span><span class="ldl-row-value" id="id-provenance">0 chains</span></div>
+    <div class="panel-section" id="identity-section" style="display:none">
+      <div class="panel-label">identity</div>
+      <div id="identity-name" class="panel-value growth"></div>
+      <div id="identity-stage" style="margin-top:4px"></div>
+      <div style="margin-top:8px">
+        <div class="panel-row"><span class="panel-label">species</span><span class="panel-value" id="id-species">--</span></div>
+        <div class="panel-row"><span class="panel-label">age</span><span class="panel-value" id="id-age">--</span></div>
+        <div class="panel-row"><span class="panel-label">events</span><span class="panel-value" id="id-events">0</span></div>
       </div>
-    </div>
-    <div class="ldl-section" id="lifecycle-section" style="display:none">
-      <div class="ldl-section-title">Lifecycle</div>
-      <div id="lifecycle-transitions"></div>
     </div>
   </div>
 
   <!-- Right Panel — Data & Intelligence -->
-  <div class="ldl-card ldl-side-right" id="panel-right">
-    <div class="ldl-section">
-      <div class="ldl-section-title">Signal</div>
-      <div class="ldl-stats">
-        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-health">--</div><div class="ldl-stat-label">Health</div></div>
-        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-stress">--</div><div class="ldl-stat-label">Stress</div></div>
-        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-spikes">--</div><div class="ldl-stat-label">Spikes</div></div>
-        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-growth">--</div><div class="ldl-stat-label">Growth</div></div>
+  <div class="living-panel right" id="panel-right">
+    <div class="panel-section">
+      <div class="panel-label">signal</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><span class="panel-value highlight" id="stat-health">--</span><br><span class="panel-label">health</span></div>
+        <div><span class="panel-value" id="stat-stress">--</span><br><span class="panel-label">stress</span></div>
+        <div><span class="panel-value" id="stat-spikes">--</span><br><span class="panel-label">spikes</span></div>
+        <div><span class="panel-value growth" id="stat-growth">--</span><br><span class="panel-label">growth</span></div>
       </div>
-      <div class="ldl-health-bar"><div class="ldl-health-fill" id="health-bar" style="width:0%"></div></div>
+      <div class="health-vine"><div class="health-vine-fill" id="health-bar" style="width:0%"></div></div>
     </div>
-    <div class="ldl-section">
-      <div class="ldl-section-title">Environment</div>
-      <div class="ldl-row"><span class="ldl-row-key">Light</span><span class="ldl-row-value" id="env-light">--</span></div>
-      <div class="ldl-row"><span class="ldl-row-key">Soil</span><span class="ldl-row-value" id="env-soil">--</span></div>
-      <div class="ldl-row"><span class="ldl-row-key">Season</span><span class="ldl-row-value" id="env-season">--</span></div>
-      <div class="ldl-row"><span class="ldl-row-key">Greeting</span><span class="ldl-row-value" id="env-greeting" style="font-style:italic;font-weight:300"></span></div>
+    <div class="panel-section">
+      <div class="panel-label">environment</div>
+      <div class="panel-row"><span class="panel-label">light</span><span class="panel-value" id="env-light">--</span></div>
+      <div class="panel-row"><span class="panel-label">soil</span><span class="panel-value" id="env-soil">--</span></div>
+      <div class="panel-row"><span class="panel-label">season</span><span class="panel-value" id="env-season">--</span></div>
+      <div class="panel-row"><span class="panel-label">greeting</span><span class="panel-value" id="env-greeting" style="font-style:italic"></span></div>
     </div>
-    <div class="ldl-section">
-      <div class="ldl-section-title">Prediction</div>
-      <div id="prediction-content" style="font-size:13px;color:var(--ldl-text2);font-weight:300">Select an organism</div>
+    <div class="panel-section">
+      <div class="panel-label">prediction</div>
+      <div class="panel-value" id="prediction-content">Select an organism</div>
     </div>
-    <div class="ldl-section">
-      <div class="ldl-section-title">Recent Activity</div>
-      <div id="activity-feed" style="max-height:140px;overflow-y:auto"></div>
-    </div>
-    <div class="ldl-section">
-      <div class="ldl-section-title">Citizen Science</div>
-      <div class="ldl-stats">
-        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-reputation">0</div><div class="ldl-stat-label">Reputation</div></div>
-        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-contributions">0</div><div class="ldl-stat-label">Contributions</div></div>
+    <div class="panel-section">
+      <div class="panel-label">citizen science</div>
+      <div style="display:flex;gap:16px">
+        <div><span class="panel-value" id="stat-reputation">0</span><br><span class="panel-label">reputation</span></div>
+        <div><span class="panel-value" id="stat-contributions">0</span><br><span class="panel-label">contributions</span></div>
       </div>
-      <div id="badges-container" style="margin-top:8px"></div>
     </div>
-    <div class="ldl-section">
-      <div class="ldl-section-title">Verification</div>
-      <div class="ldl-row"><span class="ldl-row-key">Chains</span><span class="ldl-row-value" id="stat-chains">0</span></div>
-      <div class="ldl-row"><span class="ldl-row-key">Confidence</span><span class="ldl-row-value" id="stat-confidence">0%</span></div>
+    <div class="panel-section">
+      <div class="panel-label">verification</div>
+      <div class="panel-row"><span class="panel-label">chains</span><span class="panel-value" id="stat-chains">0</span></div>
+      <div class="panel-row"><span class="panel-label">confidence</span><span class="panel-value" id="stat-confidence">0%</span></div>
     </div>
   </div>
 
-  <!-- Bottom Controls -->
-  <div class="ldl-card ldl-bottom">
-    <button class="ldl-btn" id="btn-connect">Connect Device</button>
-    <button class="ldl-btn" id="btn-start">Start Monitoring</button>
-    <button class="ldl-btn ldl-btn-cool" id="btn-scan">Scan with Lens</button>
-    <button class="ldl-btn ldl-btn-warm" id="btn-submit-obs">Submit Observation</button>
-    <button class="ldl-btn" id="btn-export">Export Data</button>
-    <button class="ldl-btn ldl-btn-danger" id="btn-emergency">Emergency</button>
+  <!-- Action Bar — Organic buttons -->
+  <div class="action-bar visible" id="action-bar">
+    <button class="organic-btn" id="btn-connect">
+      <span class="bioecho-icon" style="width:14px;height:14px"></span>
+      Connect Device
+    </button>
+    <button class="organic-btn" id="btn-start">
+      <span class="bioecho-icon" style="width:14px;height:14px"></span>
+      Start Monitoring
+    </button>
+    <button class="organic-btn" id="btn-scan">
+      <span class="bioecho-icon" style="width:14px;height:14px"></span>
+      Scan with Lens
+    </button>
+    <button class="organic-btn" id="btn-submit-obs">
+      <span class="bioecho-icon" style="width:14px;height:14px"></span>
+      Submit Observation
+    </button>
+    <button class="organic-btn" id="btn-emergency">
+      <span class="bioecho-icon" style="width:14px;height:14px"></span>
+      Emergency
+    </button>
+  </div>
+
+  <!-- Content Overlay — For feature views -->
+  <div class="content-overlay" id="content-overlay">
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title" id="overlay-title"></div>
+        <button class="content-card-close" id="overlay-close">
+          <span class="bioecho-icon" style="width:16px;height:16px"></span>
+        </button>
+      </div>
+      <div id="overlay-body"></div>
+    </div>
   </div>
 
 </div>
 
-<!-- Scripts (order matters) -->
+<!-- Scripts -->
 <script src="js/ldl.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/hal.js"></script>
 <script src="js/calibration.js"></script>
 <script src="js/species.js"></script>
@@ -158,6 +185,9 @@
 <script src="js/sound.js"></script>
 <script src="js/world.js"></script>
 <script src="js/firefly.js"></script>
+<script src="js/tree.js"></script>
+<script src="js/life.js"></script>
+<script src="js/transitions.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/chat.js"></script>
 <script src="js/app.js"></script>

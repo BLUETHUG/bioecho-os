@@ -1,374 +1,491 @@
-/* Living Design Language (LDL) — BioEcho
-   Apple minimalism + Ghibli warmth + NatGeo authenticity + Monument Valley elegance */
+/* BioEcho LDL v3 — Living Design Language CSS */
+/* Nature IS the interface. Technology disappears. */
 
-/* ═══════════════════════════════════════════ */
-/* FOUNDATIONS                                */
-/* ═══════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 :root {
-  /* LDL Color Palette — Earth tones */
-  --ldl-forest: #0F3D2E;
-  --ldl-moss: #3E6B48;
-  --ldl-fern: #6FA36F;
-  --ldl-bark: #6E5843;
-  --ldl-soil: #8A6A4A;
-  --ldl-river: #5FA8D3;
-  --ldl-sky: #BFDFF6;
-  --ldl-sunset: #E7A95A;
-  --ldl-moon: #D9E3EC;
-  --ldl-cream: #F5F0E8;
-  --ldl-shadow: #0A0A0A;
-
-  /* Functional */
-  --ldl-bg: var(--ldl-forest);
-  --ldl-text: var(--ldl-cream);
-  --ldl-text2: rgba(245,240,232,0.6);
-  --ldl-text3: rgba(245,240,232,0.35);
-  --ldl-border: rgba(111,163,111,0.12);
-  --ldl-glass: rgba(15,61,46,0.75);
-  --ldl-glass-border: rgba(111,163,111,0.15);
-
-  /* Typography — Big, calm, confident */
-  --ldl-font: 'Inter', system-ui, -apple-system, sans-serif;
-  --ldl-radius: 16px;
-  --ldl-transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  --forest: #0F3D2E;
+  --moss: #3E6B48;
+  --fern: #6FA36F;
+  --bark: #6E5843;
+  --soil: #8A6A4A;
+  --river: #5FA8D3;
+  --sky: #BFDFF6;
+  --sunset: #E7A95A;
+  --moon: #D9E3EC;
+  --cream: #F5F0E8;
 }
-
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
-  width: 100%; height: 100%; overflow: hidden;
-  font-family: var(--ldl-font); background: var(--ldl-bg);
-  color: var(--ldl-text); -webkit-font-smoothing: antialiased;
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--forest);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 300;
+  color: var(--cream);
+  -webkit-font-smoothing: antialiased;
+  cursor: default;
 }
 
-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+/* World Canvas — Full bleed */
+#world-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
 
-/* ═══════════════════════════════════════════ */
-/* LANDING — Cinematic seed reveal            */
-/* ═══════════════════════════════════════════ */
+/* Cinematic Landing */
 #landing {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  z-index: 1000; display: flex; align-items: center; justify-content: center;
-  flex-direction: column; background: var(--ldl-bg);
-  transition: opacity 2s cubic-bezier(0.16, 1, 0.3, 1), visibility 2s;
-}
-#landing.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-.landing-seed {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--ldl-fern);
-  cursor: pointer; transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 0 20px rgba(111,163,111,0.3);
-}
-.landing-seed:hover { transform: scale(3); box-shadow: 0 0 40px rgba(111,163,111,0.5); }
-.landing-text {
-  position: absolute; bottom: 18%; font-size: 11px; color: var(--ldl-text3);
-  letter-spacing: 4px; text-transform: uppercase; font-weight: 300;
-  animation: ldl-fade-in 2s ease 1.5s both;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--forest);
+  cursor: pointer;
+  transition: opacity 1.5s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* ═══════════════════════════════════════════ */
-/* APP CONTAINER                              */
-/* ═══════════════════════════════════════════ */
-#app {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  z-index: 10; opacity: 0; transition: opacity 1.5s ease; pointer-events: none;
+#landing.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
-#app.active { opacity: 1; pointer-events: all; }
 
-/* ═══════════════════════════════════════════ */
-/* LIVING CARDS — Stone, glass, wood, moss    */
-/* ═══════════════════════════════════════════ */
-.ldl-card {
-  background: var(--ldl-glass);
+#seed-canvas {
+  width: 200px;
+  height: 200px;
+}
+
+#landing-hint {
+  position: absolute;
+  bottom: 15%;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  text-transform: lowercase;
+  color: rgba(245,240,232,0.3);
+  animation: breathe 4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.5; }
+}
+
+/* Experience Container */
+#experience {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 2s ease;
+  pointer-events: none;
+}
+
+#experience.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Root Navigation — grows from ground */
+#root-nav {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 24px;
+  background: rgba(15,61,46,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(111,163,111,0.06);
+}
+
+.root-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: rgba(245,240,232,0.4);
+  cursor: pointer;
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.root-btn .bioecho-icon {
+  opacity: 0.4;
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.root-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 0;
+  height: 1.5px;
+  background: var(--sunset);
+  border-radius: 1px;
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  transform: translateX(-50%);
+}
+
+.root-btn:hover {
+  color: rgba(245,240,232,0.7);
+}
+
+.root-btn:hover .bioecho-icon {
+  opacity: 0.7;
+  transform: scale(1.1);
+}
+
+.root-btn:hover::after {
+  width: 60%;
+  opacity: 0.5;
+}
+
+.root-btn.active {
+  color: var(--cream);
+}
+
+.root-btn.active .bioecho-icon {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.root-btn.active::after {
+  width: 80%;
+  opacity: 1;
+  background: var(--sunset);
+}
+
+/* Living Panel — Organic glass, near-invisible */
+.living-panel {
+  position: fixed;
+  z-index: 50;
+  padding: 16px 20px;
+  border-radius: 24px;
+  background: rgba(15,61,46,0.06);
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
-  border: 1px solid var(--ldl-glass-border);
-  border-radius: var(--ldl-radius);
-  padding: 20px;
-  transition: transform var(--ldl-transition), border-color 0.4s ease, box-shadow 0.4s ease;
-}
-.ldl-card:hover {
-  border-color: rgba(111,163,111,0.25);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-}
-/* Stone texture variant */
-.ldl-card-stone {
-  background: linear-gradient(135deg, rgba(15,61,46,0.8) 0%, rgba(10,26,15,0.9) 100%);
-  border-color: rgba(110,88,67,0.2);
-}
-/* Wood fiber variant */
-.ldl-card-wood {
-  background: linear-gradient(180deg, rgba(110,88,67,0.15) 0%, rgba(15,61,46,0.8) 100%);
-  border-color: rgba(110,88,67,0.2);
+  border: 1px solid rgba(111,163,111,0.04);
+  box-shadow:
+    0 8px 32px rgba(15,30,20,0.08),
+    0 1px 0 rgba(245,240,232,0.03) inset;
+  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  opacity: 0;
+  transform: translateY(20px);
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(245,240,232,0.6);
 }
 
-/* ═══════════════════════════════════════════ */
-/* TOP BAR                                    */
-/* ═══════════════════════════════════════════ */
-.ldl-topbar {
-  position: fixed; top: 20px; left: 24px; right: 24px;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 24px; z-index: 30;
-}
-.ldl-logo {
-  font-size: 15px; font-weight: 300; color: var(--ldl-fern);
-  letter-spacing: 2px; text-transform: uppercase;
-  display: flex; align-items: center; gap: 10px;
-}
-.ldl-logo-dot {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--ldl-fern);
-  box-shadow: 0 0 8px rgba(111,163,111,0.4);
-  animation: ldl-breathe 4s ease-in-out infinite;
+.living-panel.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-/* ═══════════════════════════════════════════ */
-/* ROOT NAVIGATION — Not tabs. Roots.         */
-/* ═══════════════════════════════════════════ */
-.ldl-nav {
-  display: flex; gap: 2px; align-items: center;
-}
-.ldl-nav-btn {
-  background: none; border: none; color: var(--ldl-text2);
-  font-family: var(--ldl-font); font-size: 12px; font-weight: 400;
-  padding: 8px 16px; border-radius: 24px; cursor: pointer;
-  transition: all 0.4s ease; letter-spacing: 0.5px;
-  position: relative;
-}
-.ldl-nav-btn::after {
-  content: ''; position: absolute; bottom: 4px; left: 50%; width: 0; height: 1px;
-  background: var(--ldl-fern); transition: all 0.4s ease; transform: translateX(-50%);
-}
-.ldl-nav-btn:hover { color: var(--ldl-text); }
-.ldl-nav-btn:hover::after { width: 16px; }
-.ldl-nav-btn.active { color: var(--ldl-fern); }
-.ldl-nav-btn.active::after { width: 20px; background: var(--ldl-fern); }
-
-.ldl-status {
-  font-size: 11px; color: var(--ldl-text3); display: flex;
-  align-items: center; gap: 8px; font-weight: 300;
-}
-.ldl-status-dot {
-  width: 5px; height: 5px; border-radius: 50%; background: var(--ldl-fern);
-  box-shadow: 0 0 6px rgba(111,163,111,0.4);
-  animation: ldl-breathe 3s ease-in-out infinite;
-}
-.ldl-status-dot.offline { background: var(--ldl-text3); animation: none; box-shadow: none; }
-
-/* ═══════════════════════════════════════════ */
-/* SIDE PANELS                                */
-/* ═══════════════════════════════════════════ */
-.ldl-side-left {
-  position: fixed; top: 90px; left: 24px;
-  width: 260px; max-height: calc(100vh - 130px); overflow-y: auto; z-index: 20;
-}
-.ldl-side-right {
-  position: fixed; top: 90px; right: 24px;
-  width: 300px; max-height: calc(100vh - 130px); overflow-y: auto; z-index: 20;
-}
-.ldl-side-left::-webkit-scrollbar, .ldl-side-right::-webkit-scrollbar { width: 3px; }
-.ldl-side-left::-webkit-scrollbar-thumb, .ldl-side-right::-webkit-scrollbar-thumb {
-  background: rgba(111,163,111,0.15); border-radius: 2px;
+.living-panel.left {
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%) translateY(20px);
+  min-width: 160px;
 }
 
-/* ═══════════════════════════════════════════ */
-/* SECTIONS                                   */
-/* ═══════════════════════════════════════════ */
-.ldl-section {
-  padding: 16px 0; border-bottom: 1px solid var(--ldl-border);
-}
-.ldl-section:last-child { border-bottom: none; }
-.ldl-section-title {
-  font-size: 10px; color: var(--ldl-text3); text-transform: uppercase;
-  letter-spacing: 1.5px; margin-bottom: 12px; font-weight: 500;
+.living-panel.left.visible {
+  transform: translateY(-50%) translateY(0);
 }
 
-/* ═══════════════════════════════════════════ */
-/* STATS — River flow, vine growth             */
-/* ═══════════════════════════════════════════ */
-.ldl-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.ldl-stat {
-  text-align: center; padding: 14px 10px;
-  background: rgba(111,163,111,0.04); border-radius: 12px;
-  border: 1px solid rgba(111,163,111,0.08);
-  transition: border-color 0.3s ease;
-}
-.ldl-stat:hover { border-color: rgba(111,163,111,0.2); }
-.ldl-stat-value {
-  font-size: 22px; font-weight: 300; color: var(--ldl-fern);
-  font-variant-numeric: tabular-nums; letter-spacing: -0.5px;
-}
-.ldl-stat-label {
-  font-size: 9px; color: var(--ldl-text3); text-transform: uppercase;
-  letter-spacing: 1px; margin-top: 4px; font-weight: 500;
+.living-panel.right {
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%) translateY(20px);
+  min-width: 180px;
 }
 
-/* ═══════════════════════════════════════════ */
-/* DATA ROWS                                  */
-/* ═══════════════════════════════════════════ */
-.ldl-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 6px 0; font-size: 13px;
+.living-panel.right.visible {
+  transform: translateY(-50%) translateY(0);
 }
-.ldl-row-key { color: var(--ldl-text3); font-weight: 300; }
-.ldl-row-value { color: var(--ldl-text); font-variant-numeric: tabular-nums; font-weight: 400; }
 
-/* ═══════════════════════════════════════════ */
-/* BUTTONS — Organic, not industrial           */
-/* ═══════════════════════════════════════════ */
-.ldl-btn {
-  background: rgba(111,163,111,0.08); border: 1px solid rgba(111,163,111,0.15);
-  color: var(--ldl-fern); padding: 8px 18px; border-radius: 24px;
-  font-family: var(--ldl-font); font-size: 12px; font-weight: 400;
-  cursor: pointer; transition: all 0.4s ease; letter-spacing: 0.5px;
+.living-panel.center-top {
+  left: 50%;
+  top: 20px;
+  transform: translateX(-50%) translateY(20px);
 }
-.ldl-btn:hover {
-  background: rgba(111,163,111,0.15); border-color: rgba(111,163,111,0.3);
-  transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.ldl-btn:active { transform: translateY(0); }
-.ldl-btn-warm { color: var(--ldl-sunset); border-color: rgba(231,169,90,0.2); }
-.ldl-btn-warm:hover { background: rgba(231,169,90,0.1); border-color: rgba(231,169,90,0.3); }
-.ldl-btn-cool { color: var(--ldl-river); border-color: rgba(95,168,211,0.2); }
-.ldl-btn-cool:hover { background: rgba(95,168,211,0.1); border-color: rgba(95,168,211,0.3); }
-.ldl-btn-danger { color: #c0392b; border-color: rgba(192,57,43,0.2); }
-.ldl-btn-danger:hover { background: rgba(192,57,43,0.1); border-color: rgba(192,57,43,0.3); }
 
-/* ═══════════════════════════════════════════ */
-/* ORGANISM CARD                              */
-/* ═══════════════════════════════════════════ */
-.ldl-organism {
-  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
-  border-radius: 12px; cursor: pointer; transition: all 0.4s ease;
+.living-panel.center-top.visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Panel Sections — minimal separation */
+.panel-section {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(111,163,111,0.04);
+}
+
+.panel-section:last-child {
+  border-bottom: none;
+}
+
+.panel-label {
+  font-size: 9px;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+  color: rgba(245,240,232,0.25);
+  margin-bottom: 6px;
+}
+
+.panel-value {
+  font-size: 14px;
+  font-weight: 300;
+  color: rgba(245,240,232,0.7);
+  letter-spacing: 0.02em;
+}
+
+.panel-value.highlight {
+  color: var(--sunset);
+}
+
+.panel-value.growth {
+  color: var(--fern);
+}
+
+/* Living Organism Card */
+.organism-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
   border: 1px solid transparent;
 }
-.ldl-organism:hover { background: rgba(111,163,111,0.06); border-color: var(--ldl-glass-border); }
-.ldl-organism.active { background: rgba(111,163,111,0.1); border-color: var(--ldl-fern); }
-.ldl-organism-icon {
-  width: 40px; height: 40px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; flex-shrink: 0;
+
+.organism-card:hover {
+  background: rgba(111,163,111,0.06);
+  border-color: rgba(111,163,111,0.08);
+}
+
+.organism-card.active {
+  background: rgba(231,169,90,0.06);
+  border-color: rgba(231,169,90,0.1);
+}
+
+.organism-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(111,163,111,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.organism-name {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,240,232,0.7);
+}
+
+/* Health Vine — grows horizontally */
+.health-vine {
+  height: 3px;
   background: rgba(111,163,111,0.08);
-}
-.ldl-organism-info { flex: 1; min-width: 0; }
-.ldl-organism-name {
-  font-size: 13px; font-weight: 500; color: var(--ldl-text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.ldl-organism-species { font-size: 11px; color: var(--ldl-text3); font-style: italic; font-weight: 300; }
-.ldl-organism-health { font-size: 11px; font-weight: 400; }
-
-/* ═══════════════════════════════════════════ */
-/* LIFECYCLE STAGES                           */
-/* ═══════════════════════════════════════════ */
-.ldl-stage {
-  display: inline-block; font-size: 9px; padding: 3px 10px;
-  border-radius: 12px; text-transform: capitalize; font-weight: 500;
-  letter-spacing: 0.5px;
-}
-.ldl-stage-germination { background: rgba(111,163,111,0.1); color: var(--ldl-fern); }
-.ldl-stage-seedling { background: rgba(111,163,111,0.15); color: var(--ldl-fern); }
-.ldl-stage-vegetative { background: rgba(62,107,72,0.15); color: var(--ldl-moss); }
-.ldl-stage-mature { background: rgba(95,168,211,0.1); color: var(--ldl-river); }
-.ldl-stage-flowering { background: rgba(231,169,90,0.1); color: var(--ldl-sunset); }
-.ldl-stage-fruiting { background: rgba(138,106,74,0.15); color: var(--ldl-soil); }
-.ldl-stage-dormant { background: rgba(245,240,232,0.08); color: var(--ldl-text3); }
-.ldl-stage-deceased { background: rgba(192,57,43,0.1); color: #c0392b; }
-
-/* ═══════════════════════════════════════════ */
-/* HEALTH BAR — Vine growth                   */
-/* ═══════════════════════════════════════════ */
-.ldl-health-bar {
-  width: 100%; height: 3px; background: rgba(245,240,232,0.06);
-  border-radius: 2px; overflow: hidden; margin-top: 8px;
-}
-.ldl-health-fill {
-  height: 100%; border-radius: 2px;
-  transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
-  background: var(--ldl-fern);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 6px;
 }
 
-/* ═══════════════════════════════════════════ */
-/* BADGES                                    */
-/* ═══════════════════════════════════════════ */
-.ldl-badge {
-  display: inline-block; font-size: 9px; padding: 4px 10px; margin: 3px;
-  border: 1px solid var(--ldl-border); border-radius: 14px;
-  color: var(--ldl-text3); font-weight: 400; letter-spacing: 0.3px;
+.health-vine-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--moss), var(--fern));
+  border-radius: 2px;
+  transition: width 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Bottom Action Buttons — organic */
+.action-bar {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+.action-bar.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.organic-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid rgba(111,163,111,0.08);
+  border-radius: 20px;
+  background: rgba(15,61,46,0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: rgba(245,240,232,0.5);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.organic-btn:hover {
+  background: rgba(111,163,111,0.1);
+  border-color: rgba(111,163,111,0.15);
+  color: rgba(245,240,232,0.8);
+  transform: translateY(-1px);
+}
+
+.organic-btn:active {
+  transform: translateY(0);
+}
+
+.organic-btn .bioecho-icon {
+  opacity: 0.5;
+}
+
+.organic-btn:hover .bioecho-icon {
+  opacity: 0.8;
+}
+
+/* Floating Content Panel — overlays for feature views */
+.content-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15,30,20,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.content-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.content-card {
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  padding: 32px;
+  border-radius: 32px;
+  background: rgba(15,61,46,0.1);
+  backdrop-filter: blur(40px) saturate(1.3);
+  -webkit-backdrop-filter: blur(40px) saturate(1.3);
+  border: 1px solid rgba(111,163,111,0.06);
+  box-shadow:
+    0 24px 80px rgba(15,30,20,0.2),
+    0 1px 0 rgba(245,240,232,0.04) inset;
+  overflow-y: auto;
+  transform: scale(0.95) translateY(20px);
+  transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.content-overlay.visible .content-card {
+  transform: scale(1) translateY(0);
+}
+
+.content-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.content-card-title {
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+}
+
+.content-card-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(111,163,111,0.08);
+  border-radius: 50%;
+  color: rgba(245,240,232,0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s ease;
 }
-.ldl-badge.earned {
-  border-color: var(--ldl-fern); color: var(--ldl-fern);
-  background: rgba(111,163,111,0.08);
+
+.content-card-close:hover {
+  background: rgba(111,163,111,0.15);
+  color: rgba(245,240,232,0.7);
 }
 
-/* ═══════════════════════════════════════════ */
-/* BOTTOM CONTROLS                            */
-/* ═══════════════════════════════════════════ */
-.ldl-bottom {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  padding: 12px 28px; z-index: 20; display: flex; gap: 10px; align-items: center;
+/* Micro Animations */
+@keyframes ripple-grow {
+  0% { transform: scale(0); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 0; }
 }
 
-/* ═══════════════════════════════════════════ */
-/* MICRO-ANIMATIONS                           */
-/* ═══════════════════════════════════════════ */
-.ldl-ripple {
-  position: absolute; width: 16px; height: 16px;
-  border: 1.5px solid var(--ldl-fern); border-radius: 50%;
-  pointer-events: none; animation: ldl-ripple-expand 1.2s ease-out forwards;
-  transform: translate(-50%, -50%);
-}
-.ldl-leaf-grow {
-  position: absolute; width: 12px; height: 6px;
-  background: var(--ldl-fern); border-radius: 0 50% 50% 0;
-  pointer-events: none; animation: ldl-leaf-appear 1s ease-out forwards;
-  transform-origin: left center;
-}
-.ldl-flower-bloom {
-  position: absolute; width: 16px; height: 16px;
-  pointer-events: none; animation: ldl-flower-appear 1.5s ease-out forwards;
-}
-.ldl-flower-bloom::before {
-  content: '🌸'; font-size: 16px; display: block;
-  animation: ldl-bloom 1.5s ease-out forwards;
-}
-.ldl-butterfly {
-  position: absolute; font-size: 14px; pointer-events: none;
-  animation: ldl-butterfly-fly 3s ease-in-out forwards;
-}
-
-@keyframes ldl-ripple-expand {
-  0% { width: 16px; height: 16px; opacity: 0.8; }
-  100% { width: 120px; height: 120px; opacity: 0; }
-}
-@keyframes ldl-leaf-appear {
-  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
-  50% { transform: scale(1.2) rotate(0deg); opacity: 1; }
-  100% { transform: scale(1) rotate(5deg); opacity: 0.7; }
-}
-@keyframes ldl-bloom {
+@keyframes leaf-appear {
   0% { transform: scale(0) rotate(-30deg); opacity: 0; }
-  50% { transform: scale(1.3) rotate(10deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
-}
-@keyframes ldl-butterfly-fly {
-  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
-  25% { transform: translate(40px, -30px) rotate(5deg); }
-  50% { transform: translate(80px, -10px) rotate(-3deg); }
-  75% { transform: translate(120px, -40px) rotate(4deg); }
-  100% { transform: translate(160px, -60px) rotate(0deg); opacity: 0; }
+  60% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
-/* ═══════════════════════════════════════════ */
-/* BASE ANIMATIONS                            */
-/* ═══════════════════════════════════════════ */
-@keyframes ldl-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes ldl-breathe { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
-@keyframes ldl-sway { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
-@keyframes ldl-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes vine-grow {
+  0% { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
 
-/* ═══════════════════════════════════════════ */
-/* ACCESSIBILITY                              */
-/* ═══════════════════════════════════════════ */
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(111,163,111,0.15);
+  border-radius: 2px;
+}
+
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -376,30 +493,60 @@ canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0
     transition-duration: 0.01ms !important;
   }
 }
+
 @media (prefers-contrast: high) {
-  :root {
-    --ldl-glass: rgba(0,0,0,0.9);
-    --ldl-glass-border: rgba(255,255,255,0.3);
-    --ldl-text2: rgba(245,240,232,0.85);
-    --ldl-text3: rgba(245,240,232,0.6);
+  .living-panel {
+    background: rgba(15,61,46,0.3);
+    border-color: rgba(111,163,111,0.2);
+  }
+  .root-btn { color: rgba(245,240,232,0.7); }
+  .panel-value { color: var(--cream); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .living-panel {
+    display: none;
+  }
+  .living-panel.mobile-show {
+    display: block;
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: 90px;
+    transform: none;
+    min-width: auto;
+    width: auto;
+  }
+  #root-nav {
+    bottom: 12px;
+    gap: 2px;
+    padding: 6px 10px;
+  }
+  .root-btn {
+    padding: 6px 10px;
+    font-size: 9px;
+  }
+  .action-bar {
+    bottom: 60px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 90%;
+  }
+  .organic-btn {
+    font-size: 10px;
+    padding: 6px 12px;
+  }
+  .content-card {
+    width: 95%;
+    padding: 20px;
+    border-radius: 24px;
   }
 }
 
-/* ═══════════════════════════════════════════ */
-/* RESPONSIVE                                 */
-/* ═══════════════════════════════════════════ */
-@media (max-width: 768px) {
-  .ldl-side-left, .ldl-side-right { display: none; }
-  .ldl-topbar { left: 12px; right: 12px; top: 12px; padding: 10px 16px; }
-  .ldl-bottom { left: 12px; right: 12px; transform: none; flex-wrap: wrap; justify-content: center; padding: 10px 16px; }
-  .ldl-nav-btn { padding: 6px 10px; font-size: 10px; }
-  .ldl-logo { font-size: 12px; letter-spacing: 1px; }
+/* BioEcho Icon Wrapper */
+.bioecho-icon svg {
+  width: 100%;
+  height: 100%;
 }
-
-/* ═══════════════════════════════════════════ */
-/* SCROLLBAR                                  */
-/* ═══════════════════════════════════════════ */
-::-webkit-scrollbar { width: 3px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(111,163,111,0.15); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(111,163,111,0.3); }
