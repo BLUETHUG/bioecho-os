@@ -114,6 +114,9 @@
         <button class="tab" data-tab="evidence">Evidence</button>
         <button class="tab" data-tab="verification">Verify</button>
         <button class="tab" data-tab="citizen">Science</button>
+        <button class="tab" data-tab="predict">Predict</button>
+        <button class="tab" data-tab="research">Research</button>
+        <button class="tab" data-tab="search">Search</button>
         <button class="tab" data-tab="experiment">Experiment</button>
       </div>
 
@@ -349,6 +352,77 @@
         </div>
       </div>
 
+      <!-- Predictive Intelligence -->
+      <div class="tab-pane" id="pane-predict">
+        <div class="pred-header">
+          <span class="pred-title">Predictive Intelligence</span>
+          <button id="btn-run-prediction" class="btn-small">Run</button>
+        </div>
+        <div class="stats-grid pred-stats">
+          <div class="stat-card"><div class="stat-label">Anomalies</div><div class="stat-value" id="pred-anomalies">0</div></div>
+          <div class="stat-card"><div class="stat-label">Tracked</div><div class="stat-value" id="pred-tracked">0</div></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Next Prediction</div>
+          <div id="pred-next"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Needs Forecast</div>
+          <div id="pred-needs"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Health Trajectory</div>
+          <div id="pred-health"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Anomalies</div>
+          <div id="pred-anomaly-list"></div>
+        </div>
+      </div>
+
+      <!-- Research Assistant -->
+      <div class="tab-pane" id="pane-research">
+        <div class="res-header">
+          <span class="res-title">Research Assistant</span>
+        </div>
+        <div class="res-search-bar">
+          <input id="res-query" type="text" placeholder="Search research..." class="res-input">
+          <button id="btn-res-search" class="btn-small">Search</button>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Local History</div>
+          <div id="res-local-results"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Research Papers</div>
+          <div id="res-papers"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Hypotheses</div>
+          <button id="btn-gen-hypotheses" class="btn-small" style="margin-bottom:6px">Generate</button>
+          <div id="res-hypotheses"></div>
+        </div>
+      </div>
+
+      <!-- Biological Search -->
+      <div class="tab-pane" id="pane-search">
+        <div class="srch-header">
+          <span class="srch-title">Biological Search</span>
+        </div>
+        <div class="res-search-bar">
+          <input id="srch-query" type="text" placeholder="Search all data..." class="res-input">
+          <button id="btn-srch-search" class="btn-small">Search</button>
+        </div>
+        <div class="stats-grid pred-stats">
+          <div class="stat-card"><div class="stat-label">Indexed</div><div class="stat-value" id="srch-indexed">0</div></div>
+          <div class="stat-card"><div class="stat-label">Results</div><div class="stat-value" id="srch-results-count">0</div></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Results</div>
+          <div id="srch-results"></div>
+        </div>
+      </div>
+
       <!-- Experiment Log -->
       <div class="tab-pane" id="pane-experiment">
         <div id="experiment-header">
@@ -383,6 +457,9 @@
 <script src="js/lens.js"></script>
 <script src="js/verification.js"></script>
 <script src="js/citizen-science.js"></script>
+<script src="js/predictive.js"></script>
+<script src="js/research-assistant.js"></script>
+<script src="js/bio-search.js"></script>
 <script src="js/dsp.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/chat.js"></script>

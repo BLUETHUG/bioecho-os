@@ -295,3 +295,38 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .cs-level-peer_reviewed{background:rgba(34,197,94,0.2);color:#22c55e}
 .cs-level-published{background:rgba(168,85,247,0.2);color:#a855f7}
 .cs-level-raw,.cs-level-validated,.cs-level-peer_reviewed,.cs-level-published{display:inline-block}
+
+/* Predictive Intelligence Tab */
+.pred-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.pred-title{font-size:12px;font-weight:600;color:var(--text)}
+.pred-stats{grid-template-columns:repeat(2,1fr)}
+.pred-section{padding:8px 12px;border-bottom:1px solid var(--border)}
+.pred-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+.pred-item{display:flex;justify-content:space-between;padding:4px 0;font-size:11px}
+.pred-type{color:var(--accent);text-transform:capitalize}
+.pred-conf{color:var(--green);font-size:10px}
+.pred-reason{font-size:10px;color:var(--text3);margin:2px 0}
+.pred-action{font-size:10px;color:var(--orange)}
+.pred-warn{color:var(--red)}
+.pred-trend-improving{color:var(--green)}
+.pred-trend-declining{color:var(--red)}
+.pred-trend-stable{color:var(--text2)}
+.pred-risk-low{color:var(--green)}
+.pred-risk-medium{color:var(--orange)}
+.pred-risk-high{color:var(--red)}
+.pred-anomaly-item{display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--border)}
+.pred-anomaly-item:last-child{border-bottom:none}
+.pred-sev-high{border-left:3px solid var(--red);padding-left:6px}
+.pred-sev-medium{border-left:3px solid var(--orange);padding-left:6px}
+.pred-sev-low{border-left:3px solid var(--accent);padding-left:6px}
+
+/* Research Assistant Tab */
+.res-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.res-title{font-size:12px;font-weight:600;color:var(--text)}
+.res-search-bar{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border)}
+.res-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:11px;outline:none}
+.res-input:focus{border-color:var(--accent)}
+
+/* Biological Search Tab */
+.srch-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.srch-title{font-size:12px;font-weight:600;color:var(--text)}

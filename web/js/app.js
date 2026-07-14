@@ -19,6 +19,9 @@ const knowledgeGraph = new KnowledgeGraph();
 const lens = new BioEchoLens(knowledgeGraph, twinEngine, speciesDB, contextEngine, meaningEngine);
 const verificationChain = new VerificationChain(localDB, identityLayer);
 const citizenScience = new CitizenScienceEngine(localDB, verificationChain, knowledgeGraph);
+const predictiveEngine = new PredictiveEngine(twinEngine, speciesDB, contextEngine, localDB);
+const researchAssistant = new ResearchAssistant(twinEngine, speciesDB, knowledgeGraph, localDB, meaningEngine);
+const bioSearch = new BioSearchEngine(twinEngine, speciesDB, knowledgeGraph, localDB, contextEngine);
 
 // ============================================================
 // APP STATE
@@ -640,6 +643,9 @@ function setupNewTabs() {
   updateIdentityUI();
   updateVerificationUI();
   updateCitizenScienceUI();
+  updatePredictiveUI();
+  updateResearchUI();
+  updateSearchUI();
 
   // Export identity button
   document.getElementById('btn-export-identity')?.addEventListener('click', async () => {
@@ -1077,4 +1083,120 @@ document.getElementById('btn-submit-obs')?.addEventListener('click', async () =>
 setInterval(updateVerificationUI, 10000);
 setInterval(updateCitizenScienceUI, 10000);
 
-document.addEventListener('DOMContentLoaded', init);
+// ============================================================
+// PREDICTIVE UI
+// ============================================================
+function updatePredictiveUI() {
+  const stats = predictiveEngine.getStats();
+  document.getElementById('pred-anomalies').textContent = stats.totalAnomalies;
+  document.getElementById('pred-tracked').textContent = stats.organismsTracked;
+
+  if (activeOrganismId) {
+    predictiveEngine.predictNextEvent(activeOrganismId).then(pred => {
+      const el = document.getElementById('pred-next');
+      if (pred && pred.type !== 'no_prediction') {
+        el.innerHTML = `<div class="pred-item"><span class="pred-type">${pred.type.replace(/_/g, ' ')}</span><span class="pred-conf">${(pred.confidence * 100).toFixed(0)}%</span></div><div class="pred-reason">${pred.reasoning?.join('; ') || ''}</div><div class="pred-action">${pred.recommendedAction || ''}</div>`;
+      } else {
+        el.innerHTML = '<div style="font-size:11px;color:var(--text3)">No predictions available</div>';
+      }
+    }).catch(() => {});
+
+    predictiveEngine.forecastNeeds(activeOrganismId).then(forecast => {
+      const el = document.getElementById('pred-needs');
+      if (!forecast) { el.innerHTML = '<div style="font-size:11px;color:var(--text3)">No data</div>'; return; }
+      el.innerHTML = `
+        <div class="stats-row"><span>Water</span><span class="${forecast.watering.needed ? 'pred-warn' : ''}">${forecast.watering.needed ? 'Needed (' + forecast.watering.urgency + ')' : 'Adequate'}</span></div>
+        <div class="stats-row"><span>Light</span><span>${(forecast.light.currentVsOptimal * 100).toFixed(0)}% optimal</span></div>
+        <div class="stats-row"><span>Temperature</span><span class="${forecast.temperature.risk ? 'pred-warn' : ''}">${forecast.temperature.risk ? 'Risk' : 'Normal'}</span></div>
+      `;
+    }).catch(() => {});
+
+    predictiveEngine.predictHealth(activeOrganismId, 30).then(health => {
+      const el = document.getElementById('pred-health');
+      if (!health) { el.innerHTML = '<div style="font-size:11px;color:var(--text3)">No data</div>'; return; }
+      const s = health.summary;
+      el.innerHTML = `
+        <div class="stats-row"><span>Current</span><span>${s.currentHealth.toFixed(2)}</span></div>
+        <div class="stats-row"><span>Predicted</span><span>${s.predictedHealth.toFixed(2)}</span></div>
+        <div class="stats-row"><span>Trend</span><span class="pred-trend-${s.trend}">${s.trend}</span></div>
+        <div class="stats-row"><span>Risk</span><span class="pred-risk-${s.riskLevel}">${s.riskLevel}</span></div>
+      `;
+    }).catch(() => {});
+
+    predictiveEngine.detectAnomalies(activeOrganismId).then(anomalies => {
+      const el = document.getElementById('pred-anomaly-list');
+      if (anomalies.length === 0) { el.innerHTML = '<div style="font-size:11px;color:var(--text3)">No anomalies detected</div>'; return; }
+      el.innerHTML = anomalies.map(a => `<div class="pred-anomaly-item pred-sev-${a.severity}"><span>${a.type.replace(/_/g, ' ')}</span><span>${a.description}</span></div>`).join('');
+    }).catch(() => {});
+  }
+}
+
+// ============================================================
+// RESEARCH UI
+// ============================================================
+function updateResearchUI() {
+  const stats = researchAssistant.getStats();
+  if (activeOrganismId) {
+    researchAssistant.generateHypotheses(activeOrganismId).then(hyps => {
+      const el = document.getElementById('res-hypotheses');
+      if (hyps.length === 0) { el.innerHTML = '<div style="font-size:11px;color:var(--text3)">No hypotheses generated</div>'; return; }
+      el.innerHTML = hyps.map(h => `<div class="pred-anomaly-item"><span class="pred-type">${h.statement.substring(0, 80)}</span><span class="pred-conf">${(h.confidence * 100).toFixed(0)}%</span></div><div class="pred-action">${h.suggestedExperiment}</div>`).join('');
+    }).catch(() => {});
+  }
+}
+
+// ============================================================
+// SEARCH UI
+// ============================================================
+function updateSearchUI() {
+  const stats = bioSearch.getStats();
+  document.getElementById('srch-indexed').textContent = stats.totalIndexed;
+}
+
+// Button: Run Prediction
+document.getElementById('btn-run-prediction')?.addEventListener('click', async () => {
+  if (!activeOrganismId) { log('Select an organism first'); return; }
+  updatePredictiveUI();
+  log('Predictions updated');
+});
+
+// Button: Research Search
+document.getElementById('btn-res-search')?.addEventListener('click', async () => {
+  const q = document.getElementById('res-query').value.trim();
+  if (!q) return;
+  const localResults = await researchAssistant.searchLocalHistory(q, { organismId: activeOrganismId, limit: 10 });
+  const localEl = document.getElementById('res-local-results');
+  localEl.innerHTML = localResults.map(r => `<div class="pred-anomaly-item"><span>${r.event?.type || 'event'}</span><span style="color:var(--text3);font-size:10px">${new Date(r.timestamp).toLocaleDateString()} · ${(r.similarity * 100).toFixed(0)}% match</span></div>`).join('') || '<div style="font-size:11px;color:var(--text3)">No local matches</div>';
+
+  const papers = await researchAssistant.searchResearch(q);
+  const papersEl = document.getElementById('res-papers');
+  papersEl.innerHTML = papers.map(p => `<div class="pred-anomaly-item"><span class="pred-type">${p.title.substring(0, 60)}</span><span style="color:var(--text3);font-size:10px">${p.year} · ${(p.relevance * 100).toFixed(0)}%</span></div>`).join('') || '<div style="font-size:11px;color:var(--text3)">No papers found</div>';
+  log(`Research search: ${localResults.length} local, ${papers.length} papers`);
+});
+
+// Button: Generate Hypotheses
+document.getElementById('btn-gen-hypotheses')?.addEventListener('click', async () => {
+  if (!activeOrganismId) { log('Select an organism first'); return; }
+  const hyps = await researchAssistant.generateHypotheses(activeOrganismId);
+  const el = document.getElementById('res-hypotheses');
+  if (hyps.length === 0) { el.innerHTML = '<div style="font-size:11px;color:var(--text3)">No hypotheses — need more data</div>'; return; }
+  el.innerHTML = hyps.map(h => `<div class="pred-anomaly-item"><span class="pred-type">${h.statement.substring(0, 80)}</span><span class="pred-conf">${(h.confidence * 100).toFixed(0)}%</span></div><div class="pred-action">${h.suggestedExperiment}</div>`).join('');
+  log(`Generated ${hyps.length} hypotheses`);
+});
+
+// Button: Bio Search
+document.getElementById('btn-srch-search')?.addEventListener('click', async () => {
+  const q = document.getElementById('srch-query').value.trim();
+  if (!q) return;
+  bioSearch.rebuildIndex();
+  const results = await bioSearch.search(q, { limit: 20 });
+  document.getElementById('srch-results-count').textContent = results.length;
+  const el = document.getElementById('srch-results');
+  el.innerHTML = results.map(r => `<div class="pred-anomaly-item"><span class="pred-type">${r.type}: ${(r.data?.name || r.data?.commonName || r.id || '').substring(0, 40)}</span><span style="color:var(--text3);font-size:10px">${(r.score * 100).toFixed(0)}%</span></div>`).join('') || '<div style="font-size:11px;color:var(--text3)">No results</div>';
+  log(`Search: ${results.length} results for "${q}"`);
+});
+
+// Periodic UI updates for new engines
+setInterval(updatePredictiveUI, 15000);
+setInterval(updateResearchUI, 15000);
+setInterval(updateSearchUI, 15000);
