@@ -7,190 +7,211 @@
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-<div id="app">
-  <div id="sidebar">
-    <div class="sidebar-header">
-      <h1>BioEcho</h1>
-      <span class="subtitle">Biological Intelligence Platform</span>
-    </div>
+<!-- Connection Screen (shown before device is connected) -->
+<div id="connect-screen">
+  <div class="connect-card">
+    <div class="connect-logo">BioEcho</div>
+    <div class="connect-subtitle">Biological Intelligence Platform</div>
+    <div class="connect-desc">Connect a sensor device to begin monitoring plant electrophysiology signals.</div>
 
-    <div class="sidebar-section">
-      <div class="section-title">Organisms</div>
-      <div id="organism-list"></div>
-      <button id="btn-add-organism" class="btn-small">+ Add Organism</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="section-title">Device</div>
-      <div id="device-panel">
-        <select id="source-select">
-          <option value="simulated">Simulated Plant</option>
-          <option value="serial">USB Serial (SpikerBox / ESP32)</option>
-          <option value="audio">Microphone (Audio)</option>
-        </select>
-        <button id="btn-connect" class="btn-primary">Connect</button>
-        <div id="connection-status" class="status-disconnected">Disconnected</div>
+    <div class="connect-options">
+      <div class="connect-option" data-source="serial">
+        <div class="option-icon">USB</div>
+        <div class="option-title">USB Serial Device</div>
+        <div class="option-desc">Backyard Brains SpikerBox or ESP32 + ADS1115 node</div>
+      </div>
+      <div class="connect-option" data-source="audio">
+        <div class="option-icon">MIC</div>
+        <div class="option-title">Microphone</div>
+        <div class="option-desc">Live audio capture for bioacoustic analysis</div>
       </div>
     </div>
 
-    <div class="sidebar-section">
-      <div class="section-title">Signal Controls</div>
-      <div class="control-group">
-        <label>Gain</label>
-        <input type="range" id="gain-slider" min="0.1" max="10" step="0.1" value="1.0">
-        <span id="gain-value">1.0x</span>
-      </div>
-      <div class="control-group">
-        <label>Sensitivity</label>
-        <input type="range" id="sensitivity-slider" min="1" max="10" step="0.5" value="3.5">
-        <span id="sensitivity-value">3.5</span>
-      </div>
-      <div class="control-group">
-        <label>Filters</label>
-        <label class="toggle"><input type="checkbox" id="filter-toggle" checked> Enabled</label>
-        <label class="toggle"><input type="checkbox" id="notch-toggle" checked> 50/60Hz Notch</label>
-      </div>
-      <div class="control-group">
-        <label>Recording</label>
-        <button id="btn-record" class="btn-small">Start Recording</button>
-      </div>
-    </div>
+    <div id="connect-status-msg" class="connect-status"></div>
 
-    <div class="sidebar-section">
-      <div class="section-title">Stimulus Log</div>
-      <div class="stimulus-buttons">
-        <button class="btn-stimulus" data-stimulus="water">💧 Water</button>
-        <button class="btn-stimulus" data-stimulus="touch">👆 Touch</button>
-        <button class="btn-stimulus" data-stimulus="light">☀️ Light</button>
-        <button class="btn-stimulus" data-stimulus="observe">📝 Observe</button>
-      </div>
+    <div class="connect-footer">
+      Requires Chrome 89+ or Edge 89+ for Web Serial API support.
     </div>
+  </div>
+</div>
 
-    <div class="sidebar-footer">
-      <div id="stats">
-        <div class="stat"><span class="stat-label">Samples:</span> <span id="stat-samples">0</span></div>
-        <div class="stat"><span class="stat-label">Spikes:</span> <span id="stat-spikes">0</span></div>
-        <div class="stat"><span class="stat-label">Rate:</span> <span id="stat-rate">0</span> Hz</div>
-      </div>
+<!-- Main Application (hidden until device connected) -->
+<div id="app" class="hidden">
+  <div id="topbar">
+    <div class="topbar-left">
+      <span class="topbar-brand">BioEcho</span>
+      <span id="device-label" class="topbar-device">USB Serial</span>
+      <span id="sample-rate-label" class="topbar-meta"></span>
+    </div>
+    <div class="topbar-center">
+      <div id="live-indicator" class="live-on"><span class="live-dot"></span>LIVE</div>
+    </div>
+    <div class="topbar-right">
+      <span id="clock"></span>
+      <button id="btn-disconnect" class="btn-topbar">Disconnect</button>
     </div>
   </div>
 
-  <div id="main">
-    <div id="tabs">
-      <button class="tab active" data-tab="monitor"><span>Monitor</span></button>
-      <button class="tab" data-tab="chat"><span>Chat</span></button>
-      <button class="tab" data-tab="history"><span>History</span></button>
-      <button class="tab" data-tab="dashboard"><span>Dashboard</span></button>
-    </div>
-
-    <div id="tab-content">
-      <!-- Monitor Tab -->
-      <div class="tab-pane active" id="pane-monitor">
-        <div class="pane-row">
-          <div class="pane-card">
-            <div class="card-title">Live Signal <span id="signal-source-label">Simulated Plant</span></div>
-            <canvas id="waveform-canvas"></canvas>
+  <div id="workspace">
+    <!-- Left Panel: Waveform + Controls -->
+    <div id="left-panel">
+      <!-- Waveform -->
+      <div class="panel" id="waveform-panel">
+        <div class="panel-header">
+          <span class="panel-title">Waveform</span>
+          <div class="panel-controls">
+            <button class="btn-mini active" id="btn-scale-auto">Auto</button>
+            <button class="btn-mini" id="btn-scale-fixed">Fixed</button>
+            <label class="toggle-sm"><input type="checkbox" id="filter-toggle" checked> Filter</label>
+            <label class="toggle-sm"><input type="checkbox" id="notch-toggle" checked> Notch</label>
           </div>
         </div>
-        <div class="pane-row-half">
-          <div class="pane-card">
-            <div class="card-title">Spectrogram</div>
-            <canvas id="spectrogram-canvas"></canvas>
-          </div>
-          <div class="pane-card">
-            <div class="card-title">Spike Detail</div>
-            <canvas id="spike-canvas"></canvas>
-            <div id="spike-detail-info" class="info-text">No spike selected</div>
-          </div>
+        <div class="panel-body">
+          <canvas id="waveform-canvas"></canvas>
+          <div class="axis-label-y">Voltage (µV)</div>
+          <div class="axis-label-x">Time (s)</div>
         </div>
       </div>
 
-      <!-- Chat Tab -->
-      <div class="tab-pane" id="pane-chat">
-        <div id="chat-organisms">
-          <select id="chat-organism-select"></select>
-          <span id="chat-status" class="status-ok">Online</span>
+      <!-- Spectrogram -->
+      <div class="panel" id="spectrogram-panel">
+        <div class="panel-header">
+          <span class="panel-title">Spectrogram</span>
+          <span id="spectrogram-info" class="panel-meta"></span>
         </div>
+        <div class="panel-body">
+          <canvas id="spectrogram-canvas"></canvas>
+          <div class="axis-label-y">Freq (Hz)</div>
+        </div>
+      </div>
+
+      <!-- Spike Detail -->
+      <div class="panel" id="spike-panel">
+        <div class="panel-header">
+          <span class="panel-title">Spike Detail</span>
+          <span id="spike-info" class="panel-meta">No spike detected</span>
+        </div>
+        <div class="panel-body">
+          <canvas id="spike-canvas"></canvas>
+          <div id="spike-features" class="feature-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Chat + Stats -->
+    <div id="right-panel">
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button class="tab active" data-tab="chat">Chat</button>
+        <button class="tab" data-tab="stats">Stats</button>
+        <button class="tab" data-tab="history">History</button>
+      </div>
+
+      <!-- Chat Tab -->
+      <div class="tab-pane active" id="pane-chat">
         <div id="chat-messages"></div>
-        <div id="chat-input">
-          <input type="text" id="chat-text-input" placeholder="Ask about your organism..." disabled>
-          <button id="chat-send-btn" disabled>Send</button>
+      </div>
+
+      <!-- Stats Tab -->
+      <div class="tab-pane" id="pane-stats">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Health</div>
+            <div class="stat-value" id="stat-health">--</div>
+            <div class="stat-unit">score</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Stress</div>
+            <div class="stat-value" id="stat-stress">--</div>
+            <div class="stat-unit">index</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Spike Rate</div>
+            <div class="stat-value" id="stat-spike-rate">--</div>
+            <div class="stat-unit">per min</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Baseline</div>
+            <div class="stat-value" id="stat-baseline">--</div>
+            <div class="stat-unit">µV RMS</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">SNR</div>
+            <div class="stat-value" id="stat-snr">--</div>
+            <div class="stat-unit">dB</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Samples</div>
+            <div class="stat-value" id="stat-samples">0</div>
+            <div class="stat-unit">total</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Spikes</div>
+            <div class="stat-value" id="stat-spikes">0</div>
+            <div class="stat-unit">detected</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Uptime</div>
+            <div class="stat-value" id="stat-uptime">0:00</div>
+            <div class="stat-unit">h:mm</div>
+          </div>
+        </div>
+
+        <div class="stats-section">
+          <div class="stats-section-title">Environment</div>
+          <div class="stats-row">
+            <span>Temperature</span><span id="stat-temp">--</span>
+          </div>
+          <div class="stats-row">
+            <span>Humidity</span><span id="stat-humidity">--</span>
+          </div>
+          <div class="stats-row">
+            <span>Soil Moisture</span><span id="stat-soil">--</span>
+          </div>
+          <div class="stats-row">
+            <span>Light Level</span><span id="stat-light">--</span>
+          </div>
+        </div>
+
+        <div class="stats-section">
+          <div class="stats-section-title">DSP Pipeline</div>
+          <div class="stats-row">
+            <span>High-pass</span><span id="stat-hp">0.01 Hz</span>
+          </div>
+          <div class="stats-row">
+            <span>Bandpass</span><span id="stat-bp">0.1–100 Hz</span>
+          </div>
+          <div class="stats-row">
+            <span>Notch</span><span id="stat-notch">50 Hz</span>
+          </div>
+          <div class="stats-row">
+            <span>Threshold</span><span id="stat-threshold">3.5× MAD</span>
+          </div>
         </div>
       </div>
 
       <!-- History Tab -->
       <div class="tab-pane" id="pane-history">
-        <div class="history-controls">
-          <select id="history-organism"></select>
-          <input type="date" id="history-date">
+        <div class="history-header">
           <button id="btn-export-csv" class="btn-small">Export CSV</button>
         </div>
-        <div id="history-table">
-          <table>
-            <thead>
-              <tr><th>Time</th><th>Type</th><th>Classification</th><th>Confidence</th><th>Amplitude</th><th>Duration</th><th>Context</th></tr>
-            </thead>
-            <tbody id="history-body"></tbody>
-          </table>
-        </div>
+        <div id="history-table"></div>
       </div>
 
-      <!-- Dashboard Tab -->
-      <div class="tab-pane" id="pane-dashboard">
-        <div class="pane-row">
-          <div class="pane-card">
-            <div class="card-title">Health Trend</div>
-            <canvas id="health-canvas"></canvas>
-          </div>
-          <div class="pane-card">
-            <div class="card-title">Daily Events</div>
-            <canvas id="daily-canvas"></canvas>
-          </div>
-        </div>
-        <div class="pane-row">
-          <div class="pane-card" id="prediction-card">
-            <div class="card-title">Predictions</div>
-            <div id="predictions">
-              <div class="prediction-item">
-                <span class="prediction-label">Next watering:</span>
-                <span class="prediction-value" id="pred-watering">--</span>
-              </div>
-              <div class="prediction-item">
-                <span class="prediction-label">Stress risk:</span>
-                <span class="prediction-value" id="pred-stress">--</span>
-              </div>
-              <div class="prediction-item">
-                <span class="prediction-label">Growth rate:</span>
-                <span class="prediction-value" id="pred-growth">--</span>
-              </div>
-            </div>
-          </div>
-          <div class="pane-card" id="twin-card">
-            <div class="card-title">Digital Twin</div>
-            <div id="twin-stats">
-              <div class="twin-row"><span>Health Score</span><span id="twin-health">0.95</span></div>
-              <div class="twin-row"><span>Stress Index</span><span id="twin-stress">0.12</span></div>
-              <div class="twin-row"><span>Spike Rate</span><span id="twin-spike-rate">2.3 /min</span></div>
-              <div class="twin-row"><span>Baseline Noise</span><span id="twin-noise">4.2 µV</span></div>
-              <div class="twin-row"><span>Total Events</span><span id="twin-events">0</span></div>
-              <div class="twin-row"><span>Recording Time</span><span id="twin-recording">0h 0m</span></div>
-            </div>
-          </div>
-        </div>
+      <!-- Log Footer -->
+      <div id="log-footer">
+        <span id="log-line">Ready</span>
+        <span id="log-time"></span>
       </div>
     </div>
   </div>
 </div>
 
 <script src="js/dsp.js"></script>
-<script src="js/signal-sim.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/serial.js"></script>
 <script src="js/audio-capture.js"></script>
 <script src="js/chat.js"></script>
-<script src="js/twin.js"></script>
-<script src="js/organism.js"></script>
-<script src="js/ui.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

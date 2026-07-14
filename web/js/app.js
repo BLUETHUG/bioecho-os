@@ -1,492 +1,437 @@
-// BioEcho OS — Main Application Controller
+// BioEcho OS — Main Application Controller (Real Data Only)
+
+// ============================================================
+// STATE
+// ============================================================
+let pipeline, waveformChart, spectrogramChart, spikeChart, chat, twin;
+let serial, audioCapture;
+let isConnected = false;
+let sampleCount = 0;
+let spikeCount = 0;
+let connectTime = 0;
+let recentWindow = [];
+let lastUIUpdate = 0;
+const SAMPLE_RATE = 250;
+const UI_FPS = 30;
 
 // ============================================================
 // INIT
 // ============================================================
-let manager, orgUI, pipeline, sim, chart, spectrogram, spikeChart, chat, serial, audioCapture;
-let classifier, healthChart, dailyChart;
-let isRunning = false;
-let sampleCount = 0;
-let spikeCount = 0;
-let lastSpikeTime = 0;
-let spikeDetailData = [];
-let eventHistory = [];
-let recording = false;
-let recordingData = [];
-
-const SAMPLE_RATE = 250;
-const UI_UPDATE_INTERVAL = 33; // ~30fps
-
 function init() {
-  // Manager
-  manager = new PlantManager();
-  manager.addPlant('plant-01', 'Plant #42', 'Epipremnum aureum');
-  manager.addPlant('plant-02', 'Plant #43', 'Chlorophytum comosum');
-
-  // Organism UI
-  orgUI = new OrganismUI('organism-list', manager);
+  // Charts
+  waveformChart = new WaveformChart('waveform-canvas');
+  spectrogramChart = new SpectrogramChart('spectrogram-canvas');
+  spikeChart = new SpikeChart('spike-canvas');
 
   // DSP
-  pipeline = new DspPipeline(SAMPLE_RATE, 'plant');
-  classifier = new PlantClassifier();
+  pipeline = new DspPipeline(SAMPLE_RATE);
 
-  // Signal source
-  sim = new SignalSimulator(SAMPLE_RATE);
-
-  // Charts
-  chart = new ChartEngine('waveform-canvas', {
-    waveColor: '#00d4aa', maxPoints: 500, showSpikes: true
-  });
-  spectrogram = new SpectrogramEngine('spectrogram-canvas');
-  spikeChart = new ChartEngine('spike-canvas', {
-    waveColor: '#ff8800', maxPoints: 200, autoScale: true, showSpikes: false
-  });
-  healthChart = new MiniChart('health-canvas', '#00d4aa', 100);
-  dailyChart = new MiniChart('daily-canvas', '#0088cc', 100);
+  // Digital twin
+  twin = {
+    healthScore: 1.0,
+    stressIndex: 0,
+    spikeRate: 0,
+    baselineNoise: 0,
+    totalEvents: 0,
+    events: [],
+    baseline: { amplitude: 5, freq: 0.5, noise: 2 }
+  };
 
   // Chat
-  chat = new ChatEngine('chat-messages', 'chat-organism-select', 'chat-text-input', 'chat-send-btn', 'chat-status');
-  chat.updateOrganisms(manager.getAll(), manager.activePlantId);
-  chat.enableInput(true);
-  chat.setStatus('Online', 'status-ok');
+  chat = new ChatEngine('chat-messages');
 
-  // Serial
-  serial = new SerialDevice();
-  serial.onSample = (sample) => {
-    processSample(sample.value, sample.timestamp);
-  };
-  serial.onDisconnect = () => setStatus('disconnected');
+  // Connection screen
+  setupConnectionScreen();
 
-  // Audio
-  audioCapture = new AudioCapture();
-  audioCapture.onSample = (value) => processSample(value, Date.now());
-  audioCapture.onAudioData = (buffer, sampleRate) => {
-    handleAudioBuffer(buffer, sampleRate);
-  };
+  // Main app controls
+  setupAppControls();
 
-  // UI
-  initTabs();
-  setupControls();
-  setupHistoryTab();
-
-  // Start the main loop
-  isRunning = true;
-  mainLoop();
-
-  // Welcome message
-  chat.addSystemMessage(
-    'BioEcho OS initialized. Starting monitoring on simulated plant signal. '
-    + 'Connect a SpikerBox or ESP32 via USB to stream real plant data.',
-    [{ label: 'Mode', value: 'Simulated (Plant)', trend: 'stable' },
-     { label: 'Sample rate', value: `${SAMPLE_RATE} Hz`, trend: 'stable' },
-     { label: 'Pipeline', value: 'Filters + Spike Detection + Classifier', trend: 'ready' }],
-    1.0
-  );
+  // Clock
+  updateClock();
+  setInterval(updateClock, 1000);
 }
 
 // ============================================================
-// MAIN LOOP
+// CONNECTION SCREEN
 // ============================================================
-let lastUIUpdate = 0;
+function setupConnectionScreen() {
+  document.querySelectorAll('.connect-option').forEach(opt => {
+    opt.addEventListener('click', async () => {
+      const source = opt.dataset.source;
+      const statusMsg = document.getElementById('connect-status-msg');
+      statusMsg.className = 'connect-status';
+      statusMsg.textContent = 'Requesting access...';
 
-function mainLoop() {
-  if (!isRunning) return;
+      try {
+        if (source === 'serial') {
+          if (!('serial' in navigator)) {
+            statusMsg.className = 'connect-status error';
+            statusMsg.textContent = 'Web Serial API not available. Use Chrome or Edge 89+.';
+            return;
+          }
+          serial = new SerialDevice();
+          serial.onSample = handleSample;
+          serial.onDisconnect = handleDisconnect;
+          await serial.connect();
+          showApp('USB Serial Device');
 
-  // Read samples
-  const samplesPerFrame = Math.round(SAMPLE_RATE / (1000 / UI_UPDATE_INTERVAL));
+        } else if (source === 'audio') {
+          audioCapture = new AudioCapture();
+          audioCapture.onSample = handleSample;
+          await audioCapture.start();
+          showApp('Microphone');
+        }
+      } catch (err) {
+        statusMsg.className = 'connect-status error';
+        statusMsg.textContent = err.name === 'NotFoundError'
+          ? 'No device selected.'
+          : `Error: ${err.message}`;
+      }
+    });
+  });
+}
 
-  for (let i = 0; i < samplesPerFrame; i++) {
-    const simData = sim.read();
-    processSample(simData.signal, sim.t);
-  }
+function showApp(deviceLabel) {
+  isConnected = true;
+  connectTime = Date.now();
+  sampleCount = 0;
+  spikeCount = 0;
+  recentWindow = [];
+  pipeline.reset();
 
-  // Update UI at ~30fps
-  const now = performance.now();
-  if (now - lastUIUpdate > UI_UPDATE_INTERVAL) {
-    lastUIUpdate = now;
-    updateUI();
-  }
+  document.getElementById('connect-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('device-label').textContent = deviceLabel;
+  document.getElementById('live-indicator').className = 'live-on';
+  document.getElementById('log-line').textContent = `Connected to ${deviceLabel}`;
+  document.getElementById('sample-rate-label').textContent = `${SAMPLE_RATE} Hz`;
 
-  // Stats
-  document.getElementById('stat-samples').textContent = sampleCount;
-  document.getElementById('stat-spikes').textContent = spikeCount;
-  const elapsed = sampleCount / SAMPLE_RATE;
-  document.getElementById('stat-rate').textContent = elapsed > 0
-    ? (spikeCount / (elapsed / 60)).toFixed(1) : '0';
+  waveformChart.resize();
+  spectrogramChart.resize();
+  spikeChart.resize();
+
+  // Send connection message to chat
+  chat.addMessage({
+    type: 'event',
+    text: `Connected to ${deviceLabel}. Monitoring at ${SAMPLE_RATE} Hz. Signal processing pipeline active.`,
+    time: Date.now()
+  });
 
   requestAnimationFrame(mainLoop);
 }
 
-function processSample(value, timestamp) {
-  // Run DSP pipeline
+function handleDisconnect() {
+  isConnected = false;
+  document.getElementById('live-indicator').className = 'live-off';
+  document.getElementById('log-line').textContent = 'Device disconnected';
+  chat.addMessage({ type: 'error', text: 'Device disconnected.', time: Date.now() });
+}
+
+// ============================================================
+// DATA HANDLER — Every sample passes through here
+// ============================================================
+function handleSample(value, timestamp) {
+  if (!isConnected) return;
+
   const result = pipeline.process(value);
 
-  // Update chart data
-  chart.push(value);
+  // Push to charts
+  waveformChart.push(result.raw, result.filtered);
+  waveformChart.setThreshold(pipeline.detector.threshold * pipeline.gain);
 
-  // Spike detected
+  // Store recent for spike window extraction
+  recentWindow.push(result.filtered);
+  if (recentWindow.length > 500) recentWindow.shift();
+
+  // Spike detection
   if (result.spike) {
     spikeCount++;
-    lastSpikeTime = timestamp;
+    twin.totalEvents++;
 
-    // Extract waveform around spike
-    spikeDetailData = [];
-    // We need to look back; store recent values
-    if (window.recentSamples) {
-      const spikeIdx = window.recentSamples.length;
-      const preSamples = Math.min(50, spikeIdx);
-      const postSamples = Math.min(50, 200 - preSamples);
-      for (let j = spikeIdx - preSamples; j < spikeIdx + postSamples && j < window.recentSamples.length; j++) {
-        spikeDetailData.push(window.recentSamples[j] || 0);
-      }
-    }
-
-    const spikeInfo = { ...result.spike, sampleIndex: chart.data.length, index: spikeCount };
-    chart.addSpike(spikeInfo);
+    // Extract spike window
+    const spikeIdx = recentWindow.length;
+    const pre = Math.min(60, spikeIdx);
+    const post = Math.min(140, 200);
+    const window = recentWindow.slice(spikeIdx - pre, spikeIdx + post);
+    spikeChart.setData(window);
 
     // Extract features
-    const features = extractSpikeFeatures(spikeDetailData, SAMPLE_RATE);
+    const features = extractSpikeFeatures(window, SAMPLE_RATE);
     if (features) {
-      const context = sim.getContext();
-      const active = manager.getActive();
-      const baseline = active ? active.baseline : { restingAmplitude: 5, restingFrequency: 0.5 };
-
       // Classify
-      const result_cls = classifier.classify(features, context, baseline);
+      const cls = classify(features);
 
-      // Create event
+      // Record event
       const event = {
-        timestamp: Date.now(),
+        time: Date.now(),
         type: 'spike',
-        classification: result_cls.classification,
-        confidence: result_cls.confidence,
-        featureVector: features,
-        context: context,
-        spikeTimestamp: result.spike.timestamp
+        classification: cls.classification,
+        confidence: cls.confidence,
+        features: features,
+        amplitude: result.spike.amplitude,
+        snr: result.spike.snr,
+        noiseFloor: result.spike.noiseFloor
       };
+      twin.events.push(event);
+      if (twin.events.length > 5000) twin.events.shift();
 
-      eventHistory.push(event);
+      // Update twin
+      updateTwin(event);
 
-      // Update digital twin
-      if (active) {
-        manager.recordEvent(active.id, event);
-        manager.updateBaseline(active.id, features.amplitude, features.dominantFreq, result.spike.noiseFloor);
-      }
+      // Waveform spike marker
+      waveformChart.addSpike(spikeCount, result.spike.amplitude);
 
-      // Generate chat message for significant events
-      if (result_cls.confidence > 0.7 && result_cls.classification !== 'resting') {
-        const eventWithOrg = { ...event, featureVector: features };
-        chat.generateStatement(eventWithOrg, active);
-      }
-
-      // Spike detail chart
-      if (spikeDetailData.length > 0) {
-        spikeChart.data = spikeDetailData;
-        spikeChart.render();
-      }
-
-      // Update spike detail info
-      document.getElementById('spike-detail-info').textContent =
-        `${result_cls.classification} · ${features.amplitude.toFixed(1)}µV · `
-        + `${features.dominantFreq.toFixed(2)}Hz · confidence ${(result_cls.confidence * 100).toFixed(0)}%`;
+      // Log
+      logSpike(event);
     }
   }
 
   sampleCount++;
 
-  // Track recent samples for spike waveform extraction
-  if (!window.recentSamples) window.recentSamples = [];
-  window.recentSamples.push(result.filtered);
-  if (window.recentSamples.length > 500) window.recentSamples.shift();
-}
-
-function handleAudioBuffer(buffer, sampleRate) {
-  // For BirdNET integration: buffer is Float32Array of 3 seconds at 48kHz
-  // In production: POST to Python ML service for BirdNET inference
-  // For now, log the audio event
-  const peak = Math.max(...buffer.map(v => Math.abs(v)));
-  const rms = Math.sqrt(buffer.reduce((s, v) => s + v*v, 0) / buffer.length);
-  const active = manager.getActive();
-  if (active) {
-    const event = {
-      timestamp: Date.now(),
-      type: 'audio',
-      classification: 'audio_event',
-      confidence: 0.5,
-      featureVector: { amplitude: peak * 1000, dominantFreq: 0, duration: 3000 },
-      context: sim.getContext()
-    };
-    manager.recordEvent(active.id, event);
-  }
-  // Update waveform display
-  for (let i = 0; i < buffer.length; i += 480) { // downsample for display
-    processSample(buffer[i] * 1000, Date.now());
+  // Update spectrogram every 8 samples
+  if (sampleCount % 8 === 0) {
+    updateSpectrogram();
   }
 }
 
 // ============================================================
-// UI UPDATE
+// CLASSIFIER — Threshold-based, grounded in literature
 // ============================================================
-function updateUI() {
-  // Waveform chart
-  chart.render();
+function classify(features) {
+  const { amplitude, duration, riseTime, dominantFreq, spectralEntropy } = features;
+  const baseline = twin.baseline;
+  const scores = {};
 
-  // Spectrogram (compute FFT on window of data)
-  if (chart.data.length >= 128) {
-    const windowLen = 128;
-    const windowData = chart.data.slice(-windowLen);
-    const fftSize = Math.pow(2, Math.ceil(Math.log2(windowLen)));
-    const fft = new FFT(fftSize);
-    const complex = fft.createComplexArray();
-    fft.toComplexArray(windowData, complex);
-    fft.transform(complex, complex);
-    const half = fftSize / 2;
-    const freqs = [];
-    for (let i = 0; i < half; i++) {
-      freqs.push(Math.sqrt(complex[2*i]**2 + complex[2*i+1]**2) / windowLen);
-    }
-    spectrogram.pushFrame(freqs);
-    spectrogram.render();
+  // Resting
+  if (amplitude < baseline.amplitude * 1.5 && dominantFreq > 0.1 && dominantFreq < 2) {
+    scores.resting = 0.7 + (1 - amplitude / (baseline.amplitude * 1.5)) * 0.3;
   }
 
-  // Health trend
-  const active = manager.getActive();
-  if (active) {
-    healthChart.push(active.state.healthScore);
-    healthChart.render();
-    dailyChart.push(active.state.spikeRate);
-    dailyChart.render();
-
-    // Update digital twin panel
-    document.getElementById('twin-health').textContent = active.state.healthScore.toFixed(2);
-    document.getElementById('twin-stress').textContent = active.state.stressIndex.toFixed(2);
-    document.getElementById('twin-spike-rate').textContent = active.state.spikeRate.toFixed(1) + ' /min';
-    document.getElementById('twin-noise').textContent = active.baseline.noiseFloor.toFixed(1) + ' µV';
-    document.getElementById('twin-events').textContent = active.events.length;
-    const elapsed = sampleCount / SAMPLE_RATE;
-    document.getElementById('twin-recording').textContent = formatDuration(elapsed);
-
-    // Predictions
-    if (active.predictions.expectedStressTime) {
-      const remaining = Math.max(0, active.predictions.expectedStressTime - Date.now());
-      document.getElementById('pred-stress').textContent = `~${formatDuration(remaining / 1000)}`;
-    } else {
-      document.getElementById('pred-stress').textContent = 'None';
-    }
-    if (active.state.stressIndex > 0.3) {
-      document.getElementById('pred-watering').textContent = 'Check moisture';
-    } else {
-      document.getElementById('pred-watering').textContent = 'Not needed';
-    }
-    document.getElementById('pred-growth').textContent = active.state.growthRate.toFixed(1) + ' cm/day';
-
-    // Update history table
-    updateHistoryTable();
+  // Water stress
+  if (amplitude > baseline.amplitude * 2 && dominantFreq < baseline.freq * 0.6) {
+    scores.water_stress = Math.min(0.92, 0.4 + amplitude / (baseline.amplitude * 6) * 0.3 + (1 - dominantFreq / baseline.freq) * 0.2);
   }
 
-  // Threshold line
-  const sensitivity = parseFloat(document.getElementById('sensitivity-slider').value);
-  pipeline.detector.thresholdMult = sensitivity;
+  // Touch response
+  if (amplitude > baseline.amplitude * 3 && riseTime < 80 && duration < 300) {
+    scores.touch_response = Math.min(0.90, 0.35 + amplitude / (baseline.amplitude * 5) * 0.3 + (1 - riseTime / 80) * 0.25);
+  }
+
+  // Wounding
+  if (amplitude > baseline.amplitude * 5 && duration > 400) {
+    scores.wounding = Math.min(0.95, 0.5 + amplitude / (baseline.amplitude * 8) * 0.25 + duration / 800 * 0.2);
+  }
+
+  // Unknown
+  const best = Object.entries(scores).sort((a,b) => b[1] - a[1])[0];
+  if (!best || best[1] < 0.5) {
+    return { classification: 'unknown', confidence: 0.3 };
+  }
+  return { classification: best[0], confidence: Math.round(best[1] * 1000) / 1000 };
 }
 
 // ============================================================
-// CONTROLS
+// DIGITAL TWIN UPDATE
 // ============================================================
-function setupControls() {
-  // Gain slider
-  const gainSlider = document.getElementById('gain-slider');
-  gainSlider.addEventListener('input', () => {
-    document.getElementById('gain-value').textContent = parseFloat(gainSlider.value).toFixed(1) + 'x';
+function updateTwin(event) {
+  const recent = twin.events.slice(-100);
+  const stressEvents = recent.filter(e => ['water_stress','wounding','temperature_shock'].includes(e.classification));
+  const fiveMin = twin.events.filter(e => e.time > Date.now() - 300000).length;
+
+  twin.spikeRate = fiveMin / 5;
+  twin.stressIndex = Math.min(1, stressEvents.length / 20);
+  twin.healthScore = Math.max(0, 1 - twin.stressIndex * 0.8);
+
+  // Baseline adaptation (slow)
+  if (event.features) {
+    twin.baseline.amplitude += 0.0005 * (event.features.amplitude - twin.baseline.amplitude);
+    twin.baseline.freq += 0.0005 * (event.features.dominantFreq - twin.baseline.freq);
+    twin.baseline.noise += 0.0005 * (event.noiseFloor - twin.baseline.noise);
+  }
+}
+
+// ============================================================
+// SPECTROGRAM UPDATE
+// ============================================================
+function updateSpectrogram() {
+  const data = waveformChart.filteredData;
+  if (data.length < 128) return;
+  const win = data.slice(-128);
+  const fftSize = 128;
+  const fft = new FFT(fftSize);
+  const complex = fft.createComplexArray();
+  fft.toComplexArray(win, complex);
+  fft.transform(complex, complex);
+  const half = fftSize / 2;
+  const freqs = [];
+  for (let i = 0; i < half; i++) {
+    freqs.push(Math.sqrt(complex[2*i]**2 + complex[2*i+1]**2) / fftSize);
+  }
+  spectrogramChart.pushFrame(freqs);
+}
+
+// ============================================================
+// MAIN LOOP — UI update at 30fps
+// ============================================================
+function mainLoop() {
+  if (!isConnected) return;
+
+  const now = performance.now();
+  if (now - lastUIUpdate > 1000 / UI_FPS) {
+    lastUIUpdate = now;
+    waveformChart.render();
+    spectrogramChart.render();
+    spikeChart.render();
+    updateStats();
+  }
+
+  requestAnimationFrame(mainLoop);
+}
+
+// ============================================================
+// STATS UPDATE
+// ============================================================
+function updateStats() {
+  const elapsed = (Date.now() - connectTime) / 1000;
+  const minutes = Math.floor(elapsed / 60);
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  const secs = Math.floor(elapsed % 60);
+
+  document.getElementById('stat-health').textContent = twin.healthScore.toFixed(2);
+  document.getElementById('stat-stress').textContent = twin.stressIndex.toFixed(2);
+  document.getElementById('stat-spike-rate').textContent = twin.spikeRate.toFixed(1);
+  document.getElementById('stat-baseline').textContent = twin.baseline.noise.toFixed(1);
+  document.getElementById('stat-snr').textContent = twin.baseline.noise > 0
+    ? (20 * Math.log10(twin.baseline.amplitude / twin.baseline.noise)).toFixed(1) : '--';
+  document.getElementById('stat-samples').textContent = sampleCount.toLocaleString();
+  document.getElementById('stat-spikes').textContent = spikeCount;
+  document.getElementById('stat-uptime').textContent = `${hours}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  document.getElementById('stat-threshold').textContent = `${pipeline.detector.thresholdMult}× MAD`;
+}
+
+// ============================================================
+// SPIKE LOG (to chat)
+// ============================================================
+function logSpike(event) {
+  const f = event.features;
+  if (!f) return;
+
+  // Only log significant events
+  if (event.classification === 'unknown' && event.confidence < 0.5) return;
+
+  const confClass = event.confidence > 0.85 ? 'high' : event.confidence > 0.7 ? 'med' : 'low';
+
+  const evidenceRows = [
+    `<tr><td>Amplitude</td><td>${f.amplitude.toFixed(1)} µV</td><td class="${f.amplitude > twin.baseline.amplitude*2 ? 'ev-up' : 'ev-stable'}">${f.amplitude > twin.baseline.amplitude*2 ? '↑ above baseline' : 'baseline'}</td></tr>`,
+    `<tr><td>Frequency</td><td>${f.dominantFreq.toFixed(2)} Hz</td><td class="${f.dominantFreq < twin.baseline.freq*0.6 ? 'ev-down' : 'ev-stable'}">${f.dominantFreq < twin.baseline.freq*0.6 ? '↓' : '→'} ${f.dominantFreq < twin.baseline.freq*0.6 ? 'reduced' : 'normal'}</td></tr>`,
+    `<tr><td>Duration</td><td>${f.duration.toFixed(0)} ms</td><td class="ev-stable">${f.duration > 400 ? 'long' : 'normal'}</td></tr>`,
+    `<tr><td>Rise time</td><td>${f.riseTime.toFixed(0)} ms</td><td class="${f.riseTime < 50 ? 'ev-up' : 'ev-stable'}">${f.riseTime < 50 ? 'fast' : 'normal'}</td></tr>`,
+    `<tr><td>Spectral entropy</td><td>${f.spectralEntropy.toFixed(2)}</td><td class="ev-stable">${f.spectralEntropy > 0.6 ? 'complex' : 'simple'}</td></tr>`
+  ].join('');
+
+  const confTag = `<span class="confidence-tag ${confClass}">${(event.confidence*100).toFixed(0)}%</span>`;
+
+  const labels = {
+    water_stress: 'Water Stress Detected',
+    touch_response: 'Touch Response',
+    wounding: 'Wounding Signal',
+    resting: 'Resting State',
+    unknown: 'Unknown Pattern'
+  };
+
+  const type = event.classification === 'wounding' ? 'warning' : 'event';
+
+  chat.addMessage({
+    type,
+    text: `${labels[event.classification] || event.classification} ${confTag}`,
+    evidence: `<table>${evidenceRows}</table>`,
+    time: event.time
+  });
+}
+
+// ============================================================
+// APP CONTROLS
+// ============================================================
+function setupAppControls() {
+  // Filter toggles
+  document.getElementById('filter-toggle').addEventListener('change', e => {
+    pipeline.filtersOn = e.target.checked;
+    log(`Filters ${e.target.checked ? 'enabled' : 'disabled'}`);
+  });
+  document.getElementById('notch-toggle').addEventListener('change', e => {
+    pipeline.notchOn = e.target.checked;
+    log(`Notch filter ${e.target.checked ? 'enabled' : 'disabled'}`);
   });
 
-  // Sensitivity
-  const sensSlider = document.getElementById('sensitivity-slider');
-  sensSlider.addEventListener('input', () => {
-    document.getElementById('sensitivity-value').textContent = parseFloat(sensSlider.value).toFixed(1);
+  // Scale buttons
+  document.getElementById('btn-scale-auto').addEventListener('click', () => {
+    waveformChart.autoScale = true;
+    document.getElementById('btn-scale-auto').classList.add('active');
+    document.getElementById('btn-scale-fixed').classList.remove('active');
+  });
+  document.getElementById('btn-scale-fixed').addEventListener('click', () => {
+    waveformChart.autoScale = false;
+    waveformChart.yMin = -20;
+    waveformChart.yMax = 20;
+    document.getElementById('btn-scale-fixed').classList.add('active');
+    document.getElementById('btn-scale-auto').classList.remove('active');
   });
 
-  // Filter toggle
-  document.getElementById('filter-toggle').addEventListener('change', (e) => {
-    pipeline.filtersEnabled = e.target.checked;
-  });
-  document.getElementById('notch-toggle').addEventListener('change', (e) => {
-    pipeline.notchEnabled = e.target.checked;
+  // Disconnect
+  document.getElementById('btn-disconnect').addEventListener('click', async () => {
+    if (serial && serial.isConnected) await serial.disconnect();
+    if (audioCapture && audioCapture.isCapturing) audioCapture.stop();
+    isConnected = false;
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('connect-screen').classList.remove('hidden');
+    document.getElementById('connect-status-msg').textContent = '';
+    waveformChart.clear();
+    spectrogramChart.spectrum = [];
+    spikeChart.setData([]);
+    sampleCount = 0;
+    spikeCount = 0;
+    twin.events = [];
   });
 
-  // Source select + connect
-  document.getElementById('btn-connect').addEventListener('click', async () => {
-    const source = document.getElementById('source-select').value;
-    const btn = document.getElementById('btn-connect');
-    btn.disabled = true;
-    try {
-      if (source === 'serial') {
-        await serial.connect();
-        setStatus('connected');
-        chat.addSystemMessage('Connected to USB serial device (SpikerBox/ESP32). Streaming real plant signal.');
-        sim.reset(); // Stop sim when real device connected
-      } else if (source === 'audio') {
-        await audioCapture.start();
-        setStatus('connected');
-        document.getElementById('signal-source-label').textContent = 'Microphone (Audio)';
-        pipeline = new DspPipeline(48000, 'audio'); // Audio sample rate
-        chat.addSystemMessage('Microphone connected. Audio capture active. Send 3-second segments for BirdNET analysis.', null, 1.0);
-      } else {
-        // Simulated
-        if (serial.isConnected) await serial.disconnect();
-        if (audioCapture.isCapturing) audioCapture.stop();
-        setStatus('simulated');
-        document.getElementById('signal-source-label').textContent = 'Simulated Plant';
-        sim.reset();
-        pipeline = new DspPipeline(SAMPLE_RATE, 'plant');
-        chat.addSystemMessage('Switched to simulated plant signal.');
-      }
-    } catch (err) {
-      setStatus('error', err.message);
-      chat.addSystemMessage(`Error: ${err.message}`);
+  // Export CSV
+  document.getElementById('btn-export-csv').addEventListener('click', () => {
+    if (twin.events.length === 0) return;
+    let csv = 'Timestamp,Classification,Confidence,Amplitude_uV,Duration_ms,RiseTime_ms,Freq_Hz,Entropy,SNR\n';
+    for (const e of twin.events) {
+      if (!e.features) continue;
+      csv += `${new Date(e.time).toISOString()},${e.classification},${e.confidence},`
+           + `${e.features.amplitude.toFixed(2)},${e.features.duration.toFixed(1)},`
+           + `${e.features.riseTime.toFixed(1)},${e.features.dominantFreq.toFixed(3)},`
+           + `${e.features.spectralEntropy.toFixed(3)},${e.snr.toFixed(1)}\n`;
     }
-    btn.disabled = false;
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `bioecho-export-${Date.now()}.csv`;
+    a.click();
+    log(`Exported ${twin.events.length} events to CSV`);
   });
 
-  // Stimulus buttons
-  document.querySelectorAll('.btn-stimulus').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const type = btn.dataset.stimulus;
-      sim.setStimulus(type);
-
-      const active = manager.getActive();
-      if (active) {
-        const event = {
-          timestamp: Date.now(),
-          type: 'stimulus',
-          classification: type,
-          confidence: 1.0,
-          featureVector: { amplitude: 0, dominantFreq: 0, duration: 0 },
-          context: sim.getContext()
-        };
-        manager.recordEvent(active.id, event);
-
-        chat.addSystemMessage(
-          `Stimulus logged: ${type}. ${type === 'water' ? 'Soil moisture increased.' : type === 'light' ? 'Light level toggled.' : type === 'touch' ? 'Monitoring electrical response...' : 'Observation noted.'}`,
-          [{ label: 'Stimulus', value: type, trend: 'changed' },
-           { label: 'Temperature', value: `${sim.temperature.toFixed(1)}°C`, trend: 'monitoring' },
-           { label: 'Soil moisture', value: `${sim.soilMoisture.toFixed(0)}%`, trend: 'monitoring' }],
-          1.0
-        );
-      }
+  // Tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('pane-' + tab.dataset.tab).classList.add('active');
     });
   });
-
-  // Record button
-  document.getElementById('btn-record').addEventListener('click', () => {
-    recording = !recording;
-    document.getElementById('btn-record').textContent = recording ? 'Stop Recording' : 'Start Recording';
-    document.getElementById('btn-record').style.borderColor = recording ? '#ff4444' : '';
-    if (recording) {
-      recordingData = [];
-    } else {
-      // Save recording
-      if (recordingData.length > 0) {
-        const blob = new Blob([recordingData.join('\n')], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `bioecho-recording-${Date.now()}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-        chat.addSystemMessage(`Recording saved: ${recordingData.length} samples.`);
-      }
-    }
-  });
-
-  // Add organism
-  document.getElementById('btn-add-organism').addEventListener('click', () => {
-    const count = manager.count + 1;
-    const name = `Plant #${39 + count}`;
-    const specieses = ['Epipremnum aureum', 'Chlorophytum comosum', 'Spathiphyllum wallisii',
-                       'Ficus benjamina', 'Monstera deliciosa'];
-    const species = specieses[count % specieses.length];
-    manager.addPlant(`plant-0${count + 1}`, name, species);
-    chat.updateOrganisms(manager.getAll(), manager.activePlantId);
-  });
 }
 
-// ============================================================
-// STATUS
-// ============================================================
-function setStatus(state, message) {
-  const el = document.getElementById('connection-status');
-  switch (state) {
-    case 'connected':
-      el.textContent = 'Connected ✓';
-      el.className = 'status-connected';
-      break;
-    case 'disconnected':
-      el.textContent = 'Disconnected';
-      el.className = 'status-disconnected';
-      break;
-    case 'simulated':
-      el.textContent = 'Simulated Signal';
-      el.className = 'status-connected';
-      break;
-    case 'error':
-      el.textContent = `Error: ${message || 'Unknown error'}`;
-      el.className = 'status-error';
-      break;
-    default:
-      el.textContent = 'Disconnected';
-      el.className = 'status-disconnected';
-  }
+function log(msg) {
+  document.getElementById('log-line').textContent = msg;
+  document.getElementById('log-time').textContent = new Date().toLocaleTimeString();
 }
 
-// ============================================================
-// HISTORY TAB
-// ============================================================
-function setupHistoryTab() {
-  // Populate organism select
-  const sel = document.getElementById('history-organism');
-  document.getElementById('history-date').valueAsDate = new Date();
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString();
 }
-
-function updateHistoryTable() {
-  const active = manager.getActive();
-  if (!active) return;
-  const tbody = document.getElementById('history-body');
-  const recentEvents = active.events.slice(-100).reverse();
-  tbody.innerHTML = '';
-  for (const ev of recentEvents) {
-    const tr = document.createElement('tr');
-    const time = formatTime(ev.timestamp);
-    const type = ev.type === 'spike' ? '⚡ Spike' : ev.type === 'stimulus' ? '📝 ' + ev.classification : ev.type;
-    const cls = ev.classification || '--';
-    const conf = ev.confidence ? (ev.confidence * 100).toFixed(0) + '%' : '--';
-    const amp = ev.featureVector?.amplitude?.toFixed(1) || '--';
-    const dur = ev.featureVector?.duration?.toFixed(0) || '--';
-    const ctx = ev.context ? `${ev.context.temperature.toFixed(0)}°C` : '--';
-    tr.innerHTML = `<td>${time}</td><td>${type}</td><td>${cls}</td><td>${conf}</td><td>${amp}µV</td><td>${dur}ms</td><td>${ctx}</td>`;
-    tbody.appendChild(tr);
-  }
-}
-
-// Export CSV
-document.getElementById('btn-export-csv').addEventListener('click', () => {
-  const active = manager.getActive();
-  if (!active || active.events.length === 0) return;
-  let csv = 'Timestamp,Type,Classification,Confidence,Amplitude(µV),Duration(ms),DominantFreq(Hz),Temperature(°C),Humidity(%),Light(lux),SoilMoisture(%)\n';
-  for (const ev of active.events) {
-    const fv = ev.featureVector || {};
-    const ctx = ev.context || {};
-    csv += `${ev.timestamp},${ev.type},${ev.classification||''},${ev.confidence||0},`
-         + `${fv.amplitude||0},${fv.duration||0},${fv.dominantFreq||0},`
-         + `${ctx.temperature||0},${ctx.humidity||0},${ctx.lightLevel||0},${ctx.soilMoisture||0}\n`;
-  }
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `bioecho-${active.name}-${Date.now()}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-});
 
 // ============================================================
 // START
