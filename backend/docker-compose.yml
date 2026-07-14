@@ -1,0 +1,127 @@
+version: "3.8"
+
+services:
+  # ============================================================
+  # RUST API — data ingestion, orchestration
+  # ============================================================
+  bioecho-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=bioecho-token
+      - INFLUXDB_ORG=bioecho
+      - INFLUXDB_BUCKET=signals
+      - DATABASE_URL=postgres://bioecho:bioecho@postgres:5432/bioecho
+      - NATS_URL=nats://nats:4222
+      - RUST_LOG=info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      influxdb:
+        condition: service_started
+      nats:
+        condition: service_started
+
+  # ============================================================
+  # PYTHON ML SERVICE — classification, BirdNET
+  # ============================================================
+  bioecho-ml:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - MODEL_PATH=/models/plant_classifier.pkl
+    volumes:
+      - ml_models:/models
+    depends_on:
+      - bioecho-api
+
+  # ============================================================
+  # PYTHON CHAT SERVICE — evidence-backed conversation
+  # ============================================================
+  bioecho-chat:
+    build:
+      context: ./chat-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    depends_on:
+      - bioecho-api
+
+  # ============================================================
+  # INFRASTRUCTURE
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=bioecho
+      - POSTGRES_PASSWORD=bioecho
+      - POSTGRES_DB=bioecho
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bioecho"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  influxdb:
+    image: influxdb:3-core
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=bioecho-password
+      - DOCKER_INFLUXDB_INIT_ORG=bioecho
+      - DOCKER_INFLUXDB_INIT_BUCKET=signals
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=bioecho-token
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=bioecho
+      - MINIO_ROOT_PASSWORD=bioecho-password
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: -js  # JetStream enabled for persistence
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - influxdb
+
+volumes:
+  postgres_data:
+  influxdb_data:
+  minio_data:
+  grafana_data:
+  ml_models:

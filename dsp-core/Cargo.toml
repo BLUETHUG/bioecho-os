@@ -1,0 +1,22 @@
+[package]
+name = "bioecho-dsp"
+version = "0.1.0"
+edition = "2021"
+description = "Shared DSP core for BioEcho OS - filters, spike detection, feature extraction"
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[dependencies]
+rustfft = "6.2"
+num-complex = "0.4"
+wasm-bindgen = { version = "0.2", optional = true }
+
+[features]
+default = []
+wasm = ["wasm-bindgen"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3

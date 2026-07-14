@@ -1,0 +1,21 @@
+[package]
+name = "bioecho-api"
+version = "0.1.0"
+edition = "2021"
+description = "BioEcho OS Rust API — data ingestion, event store, digital twin orchestration"
+
+[dependencies]
+actix-web = "4"
+actix-cors = "0.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.21"
+async-nats = "0.35"
+influxdb2 = "0.5"
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "json", "chrono"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+env_logger = "0.11"
+log = "0.4"
+dotenv = "0.15"

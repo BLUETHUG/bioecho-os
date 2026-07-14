@@ -1,0 +1,41 @@
+# Rust
+target/
+Cargo.lock
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# Node
+node_modules/
+package-lock.json
+
+# WASM
+*.wasm
+pkg/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker volumes
+postgres_data/
+influxdb_data/
+minio_data/
+grafana_data/
+ml_models/
+
+# Models (large files)
+*.pkl
+*.onnx
+*.tflite
