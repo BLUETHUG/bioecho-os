@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/lil.css">
+<link rel="stylesheet" href="css/ldl.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
@@ -27,106 +27,106 @@
 <div id="app">
 
   <!-- Floating Top Bar -->
-  <div class="lil-panel lil-topbar">
-    <div class="lil-logo">
-      <span class="lil-logo-dot"></span>
+  <div class="ldl-card ldl-topbar">
+    <div class="ldl-logo">
+      <span class="ldl-logo-dot"></span>
       BioEcho
     </div>
-    <nav class="lil-nav">
-      <button class="lil-nav-btn active" data-view="home">Home</button>
-      <button class="lil-nav-btn" data-view="lens">Lens</button>
-      <button class="lil-nav-btn" data-view="graph">Graph</button>
-      <button class="lil-nav-btn" data-view="predict">Predict</button>
-      <button class="lil-nav-btn" data-view="search">Search</button>
-      <button class="lil-nav-btn" data-view="earth">Earth</button>
-      <button class="lil-nav-btn" data-view="shop">Shop</button>
+    <nav class="ldl-nav">
+      <button class="ldl-nav-btn active" data-view="home">Home</button>
+      <button class="ldl-nav-btn" data-view="lens">Lens</button>
+      <button class="ldl-nav-btn" data-view="graph">Graph</button>
+      <button class="ldl-nav-btn" data-view="predict">Predict</button>
+      <button class="ldl-nav-btn" data-view="search">Search</button>
+      <button class="ldl-nav-btn" data-view="earth">Earth</button>
+      <button class="ldl-nav-btn" data-view="shop">Shop</button>
     </nav>
-    <div class="lil-status">
-      <span class="lil-status-dot offline" id="status-dot"></span>
+    <div class="ldl-status">
+      <span class="ldl-status-dot offline" id="status-dot"></span>
       <span id="status-text">Disconnected</span>
     </div>
   </div>
 
   <!-- Left Panel — Organisms & Identity -->
-  <div class="lil-panel lil-side-left" id="panel-left">
-    <div class="lil-section">
-      <div class="lil-section-title">Organisms</div>
+  <div class="ldl-card ldl-side-left" id="panel-left">
+    <div class="ldl-section">
+      <div class="ldl-section-title">Organisms</div>
       <div id="organism-list"></div>
-      <button class="lil-btn" id="btn-add-organism" style="margin-top:8px;width:100%">+ Add Organism</button>
+      <button class="ldl-btn" id="btn-add-organism" style="margin-top:10px;width:100%">+ Add Organism</button>
     </div>
-    <div class="lil-section" id="identity-section" style="display:none">
-      <div class="lil-section-title">Identity</div>
-      <div id="identity-name" style="font-size:14px;font-weight:700;color:var(--lil-primary)"></div>
-      <div id="identity-stage" style="margin-top:4px"></div>
-      <div style="margin-top:8px">
-        <div class="lil-row"><span class="lil-row-key">Species</span><span class="lil-row-value" id="id-species">--</span></div>
-        <div class="lil-row"><span class="lil-row-key">Age</span><span class="lil-row-value" id="id-age">--</span></div>
-        <div class="lil-row"><span class="lil-row-key">Events</span><span class="lil-row-value" id="id-events">0</span></div>
-        <div class="lil-row"><span class="lil-row-key">Provenance</span><span class="lil-row-value" id="id-provenance">0 chains</span></div>
+    <div class="ldl-section" id="identity-section" style="display:none">
+      <div class="ldl-section-title">Identity</div>
+      <div id="identity-name" style="font-size:16px;font-weight:400;color:var(--ldl-fern);letter-spacing:-0.3px"></div>
+      <div id="identity-stage" style="margin-top:6px"></div>
+      <div style="margin-top:10px">
+        <div class="ldl-row"><span class="ldl-row-key">Species</span><span class="ldl-row-value" id="id-species">--</span></div>
+        <div class="ldl-row"><span class="ldl-row-key">Age</span><span class="ldl-row-value" id="id-age">--</span></div>
+        <div class="ldl-row"><span class="ldl-row-key">Events</span><span class="ldl-row-value" id="id-events">0</span></div>
+        <div class="ldl-row"><span class="ldl-row-key">Provenance</span><span class="ldl-row-value" id="id-provenance">0 chains</span></div>
       </div>
     </div>
-    <div class="lil-section" id="lifecycle-section" style="display:none">
-      <div class="lil-section-title">Lifecycle</div>
+    <div class="ldl-section" id="lifecycle-section" style="display:none">
+      <div class="ldl-section-title">Lifecycle</div>
       <div id="lifecycle-transitions"></div>
     </div>
   </div>
 
   <!-- Right Panel — Data & Intelligence -->
-  <div class="lil-panel lil-side-right" id="panel-right">
-    <div class="lil-section">
-      <div class="lil-section-title">Signal</div>
-      <div class="lil-stats">
-        <div class="lil-stat"><div class="lil-stat-value" id="stat-health">--</div><div class="lil-stat-label">Health</div></div>
-        <div class="lil-stat"><div class="lil-stat-value" id="stat-stress">--</div><div class="lil-stat-label">Stress</div></div>
-        <div class="lil-stat"><div class="lil-stat-value" id="stat-spikes">--</div><div class="lil-stat-label">Spikes</div></div>
-        <div class="lil-stat"><div class="lil-stat-value" id="stat-growth">--</div><div class="lil-stat-label">Growth</div></div>
+  <div class="ldl-card ldl-side-right" id="panel-right">
+    <div class="ldl-section">
+      <div class="ldl-section-title">Signal</div>
+      <div class="ldl-stats">
+        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-health">--</div><div class="ldl-stat-label">Health</div></div>
+        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-stress">--</div><div class="ldl-stat-label">Stress</div></div>
+        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-spikes">--</div><div class="ldl-stat-label">Spikes</div></div>
+        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-growth">--</div><div class="ldl-stat-label">Growth</div></div>
       </div>
-      <div class="lil-health-bar"><div class="lil-health-fill" id="health-bar" style="width:0%;background:var(--lil-primary)"></div></div>
+      <div class="ldl-health-bar"><div class="ldl-health-fill" id="health-bar" style="width:0%"></div></div>
     </div>
-    <div class="lil-section">
-      <div class="lil-section-title">Environment</div>
-      <div class="lil-row"><span class="lil-row-key">Light</span><span class="lil-row-value" id="env-light">--</span></div>
-      <div class="lil-row"><span class="lil-row-key">Soil</span><span class="lil-row-value" id="env-soil">--</span></div>
-      <div class="lil-row"><span class="lil-row-key">Season</span><span class="lil-row-value" id="env-season">--</span></div>
-      <div class="lil-row"><span class="lil-row-key">Greeting</span><span class="lil-row-value" id="env-greeting" style="font-style:italic"></span></div>
+    <div class="ldl-section">
+      <div class="ldl-section-title">Environment</div>
+      <div class="ldl-row"><span class="ldl-row-key">Light</span><span class="ldl-row-value" id="env-light">--</span></div>
+      <div class="ldl-row"><span class="ldl-row-key">Soil</span><span class="ldl-row-value" id="env-soil">--</span></div>
+      <div class="ldl-row"><span class="ldl-row-key">Season</span><span class="ldl-row-value" id="env-season">--</span></div>
+      <div class="ldl-row"><span class="ldl-row-key">Greeting</span><span class="ldl-row-value" id="env-greeting" style="font-style:italic;font-weight:300"></span></div>
     </div>
-    <div class="lil-section">
-      <div class="lil-section-title">Prediction</div>
-      <div id="prediction-content" style="font-size:11px;color:var(--lil-text2)">Select an organism</div>
+    <div class="ldl-section">
+      <div class="ldl-section-title">Prediction</div>
+      <div id="prediction-content" style="font-size:13px;color:var(--ldl-text2);font-weight:300">Select an organism</div>
     </div>
-    <div class="lil-section">
-      <div class="lil-section-title">Recent Activity</div>
-      <div id="activity-feed" style="max-height:120px;overflow-y:auto"></div>
+    <div class="ldl-section">
+      <div class="ldl-section-title">Recent Activity</div>
+      <div id="activity-feed" style="max-height:140px;overflow-y:auto"></div>
     </div>
-    <div class="lil-section">
-      <div class="lil-section-title">Citizen Science</div>
-      <div class="lil-stats">
-        <div class="lil-stat"><div class="lil-stat-value" id="stat-reputation">0</div><div class="lil-stat-label">Reputation</div></div>
-        <div class="lil-stat"><div class="lil-stat-value" id="stat-contributions">0</div><div class="lil-stat-label">Contributions</div></div>
+    <div class="ldl-section">
+      <div class="ldl-section-title">Citizen Science</div>
+      <div class="ldl-stats">
+        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-reputation">0</div><div class="ldl-stat-label">Reputation</div></div>
+        <div class="ldl-stat"><div class="ldl-stat-value" id="stat-contributions">0</div><div class="ldl-stat-label">Contributions</div></div>
       </div>
-      <div id="badges-container" style="margin-top:6px"></div>
+      <div id="badges-container" style="margin-top:8px"></div>
     </div>
-    <div class="lil-section">
-      <div class="lil-section-title">Verification</div>
-      <div class="lil-row"><span class="lil-row-key">Chains</span><span class="lil-row-value" id="stat-chains">0</span></div>
-      <div class="lil-row"><span class="lil-row-key">Confidence</span><span class="lil-row-value" id="stat-confidence">0%</span></div>
+    <div class="ldl-section">
+      <div class="ldl-section-title">Verification</div>
+      <div class="ldl-row"><span class="ldl-row-key">Chains</span><span class="ldl-row-value" id="stat-chains">0</span></div>
+      <div class="ldl-row"><span class="ldl-row-key">Confidence</span><span class="ldl-row-value" id="stat-confidence">0%</span></div>
     </div>
   </div>
 
   <!-- Bottom Controls -->
-  <div class="lil-panel lil-bottom">
-    <button class="lil-btn" id="btn-connect">Connect Device</button>
-    <button class="lil-btn" id="btn-start">Start Monitoring</button>
-    <button class="lil-btn" id="btn-scan">Scan with Lens</button>
-    <button class="lil-btn" id="btn-submit-obs">Submit Observation</button>
-    <button class="lil-btn" id="btn-export">Export Data</button>
-    <button class="lil-btn lil-btn-danger" id="btn-emergency">Emergency</button>
+  <div class="ldl-card ldl-bottom">
+    <button class="ldl-btn" id="btn-connect">Connect Device</button>
+    <button class="ldl-btn" id="btn-start">Start Monitoring</button>
+    <button class="ldl-btn ldl-btn-cool" id="btn-scan">Scan with Lens</button>
+    <button class="ldl-btn ldl-btn-warm" id="btn-submit-obs">Submit Observation</button>
+    <button class="ldl-btn" id="btn-export">Export Data</button>
+    <button class="ldl-btn ldl-btn-danger" id="btn-emergency">Emergency</button>
   </div>
 
 </div>
 
 <!-- Scripts (order matters) -->
-<script src="js/lil.js"></script>
+<script src="js/ldl.js"></script>
 <script src="js/hal.js"></script>
 <script src="js/calibration.js"></script>
 <script src="js/species.js"></script>

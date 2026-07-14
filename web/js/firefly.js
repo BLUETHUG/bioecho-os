@@ -97,28 +97,28 @@ class FireflyGuide {
 
   render(ctx) {
     if (!this.visible || !ctx) return;
-    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, 30);
-    grad.addColorStop(0, `rgba(250,204,21,${this.glowIntensity})`);
-    grad.addColorStop(0.4, `rgba(250,204,21,${this.glowIntensity * 0.4})`);
-    grad.addColorStop(1, 'rgba(250,204,21,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(this.x - 30, this.y - 30, 60, 60);
-    ctx.fillStyle = `rgba(255,255,220,${this.glowIntensity})`;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
-    ctx.fill();
+      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, 30);
+      grad.addColorStop(0, `rgba(231,169,90,${this.glowIntensity})`);
+      grad.addColorStop(0.4, `rgba(231,169,90,${this.glowIntensity * 0.4})`);
+      grad.addColorStop(1, 'rgba(231,169,90,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(this.x - 30, this.y - 30, 60, 60);
+      ctx.fillStyle = `rgba(245,240,232,${this.glowIntensity})`;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+      ctx.fill();
 
-    if (this.message) {
-      ctx.font = '13px Inter, sans-serif';
+      if (this.message) {
+        ctx.font = '300 13px Inter, system-ui, sans-serif';
       const metrics = ctx.measureText(this.message);
       const tw = metrics.width + 20;
       const tx = this.x - tw / 2;
       const ty = this.y - 45;
-      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillStyle = 'rgba(15,61,46,0.85)';
       ctx.beginPath();
       ctx.roundRect(tx, ty, tw, 28, 8);
       ctx.fill();
-      ctx.fillStyle = '#fbbf24';
+      ctx.fillStyle = '#E7A95A';
       ctx.textAlign = 'center';
       ctx.fillText(this.message, this.x, ty + 18);
       ctx.textAlign = 'start';

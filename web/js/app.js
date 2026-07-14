@@ -78,10 +78,10 @@ async function initLanding() {
 // MAIN APP INIT
 // ============================================================
 async function initApp() {
-  // Update LIL ambient
+  // Update LDL ambient
   ambientEngine.update();
-  const palette = LIL.getPalette();
-  document.documentElement.style.setProperty('--lil-primary', palette.primary);
+  const palette = LDL.seasons[LDL.currentSeason];
+  document.documentElement.style.setProperty('--ldl-primary', palette.leaf);
 
   // Init firefly guide
   firefly = new FireflyGuide(worldEngine, soundEngine);
@@ -111,7 +111,7 @@ async function initApp() {
   setInterval(() => ambientEngine.update(), 60000);
   setInterval(() => {
     const config = ambientEngine.getAmbientConfig();
-    document.documentElement.style.setProperty('--lil-primary', LIL.getPalette().primary);
+    document.documentElement.style.setProperty('--ldl-primary', LDL.seasons[LDL.currentSeason].leaf);
   }, 60000);
 
   // Populate knowledge graph
@@ -125,25 +125,25 @@ function loadOrganisms() {
   const list = document.getElementById('organism-list');
   const twins = twinEngine.getAll();
   if (twins.length === 0) {
-    list.innerHTML = '<div style="font-size:11px;color:var(--lil-text3);padding:8px">No organisms yet. Connect a device to begin.</div>';
+    list.innerHTML = '<div style="font-size:12px;color:var(--ldl-text3);padding:10px;font-weight:300">No organisms yet. Connect a device to begin.</div>';
     return;
   }
   list.innerHTML = twins.map(t => {
     const health = t.state?.healthScore;
-    const healthColor = health > 0.7 ? 'var(--lil-primary)' : health > 0.4 ? 'var(--lil-accent)' : 'var(--lil-danger)';
+    const healthColor = health > 0.7 ? 'var(--ldl-fern)' : health > 0.4 ? 'var(--ldl-sunset)' : '#c0392b';
     const stage = t.lifecycle?.lifecycleStage || 'unknown';
     const icon = t.species === 'pothos' ? '🌿' : t.species === 'monstera-deliciosa' ? '🪴' : t.species === 'spider-plant' ? '🌱' : t.species === 'golden-retriever' ? '🐕' : t.species === 'domestic-cat' ? '🐈' : '🌿';
-    return `<div class="lil-organism ${t.id === activeOrganismId ? 'active' : ''}" data-id="${t.id}">
-      <div class="lil-organism-icon">${icon}</div>
-      <div class="lil-organism-info">
-        <div class="lil-organism-name">${t.name || t.id}</div>
-        <div class="lil-organism-species">${t.species || 'Unknown'}</div>
+    return `<div class="ldl-organism ${t.id === activeOrganismId ? 'active' : ''}" data-id="${t.id}">
+      <div class="ldl-organism-icon">${icon}</div>
+      <div class="ldl-organism-info">
+        <div class="ldl-organism-name">${t.name || t.id}</div>
+        <div class="ldl-organism-species">${t.species || 'Unknown'}</div>
       </div>
-      <div class="lil-organism-health" style="color:${healthColor}">${health !== undefined ? health.toFixed(2) : '--'}</div>
+      <div class="ldl-organism-health" style="color:${healthColor}">${health !== undefined ? health.toFixed(2) : '--'}</div>
     </div>`;
   }).join('');
 
-  list.querySelectorAll('.lil-organism').forEach(el => {
+  list.querySelectorAll('.ldl-organism').forEach(el => {
     el.addEventListener('click', () => selectOrganism(el.dataset.id));
   });
 
@@ -185,7 +185,7 @@ function updateIdentityPanel() {
 
   document.getElementById('identity-name').textContent = identity.name || activeOrganismId;
   const stage = identity.lifecycle?.lifecycleStage || 'unknown';
-  document.getElementById('identity-stage').innerHTML = `<span class="lil-stage lil-stage-${stage}">${stage}</span>`;
+  document.getElementById('identity-stage').innerHTML = `<span class="ldl-stage ldl-stage-${stage}">${stage}</span>`;
   document.getElementById('id-species').textContent = identity.species || '--';
   document.getElementById('id-age').textContent = identity.createdAt ? Math.floor((Date.now() - identity.createdAt) / 86400000) + 'd' : '--';
   document.getElementById('id-events').textContent = twin?.events?.length || 0;
@@ -198,7 +198,7 @@ function updateIdentityPanel() {
   const transitions = twinEngine.getStageHistory(activeOrganismId);
   document.getElementById('lifecycle-section').style.display = transitions.length > 0 ? '' : 'none';
   transEl.innerHTML = transitions.slice(-5).reverse().map(t =>
-    `<div class="lil-row"><span class="lil-row-key">${t.from || 'init'} → ${t.stage}</span><span class="lil-row-value" style="font-size:9px">${new Date(t.time).toLocaleDateString()}</span></div>`
+    `<div class="ldl-row"><span class="ldl-row-key">${t.from || 'init'} → ${t.stage}</span><span class="ldl-row-value" style="font-size:10px">${new Date(t.time).toLocaleDateString()}</span></div>`
   ).join('');
 }
 
@@ -219,7 +219,7 @@ function updateStatsPanel() {
   const healthBar = document.getElementById('health-bar');
   const health = state.healthScore || 0;
   healthBar.style.width = (health * 100) + '%';
-  healthBar.style.background = health > 0.7 ? 'var(--lil-primary)' : health > 0.4 ? 'var(--lil-accent)' : 'var(--lil-danger)';
+  healthBar.style.background = health > 0.7 ? 'var(--ldl-fern)' : health > 0.4 ? 'var(--ldl-sunset)' : '#c0392b';
 }
 
 // ============================================================
@@ -241,9 +241,9 @@ function updatePredictionPanel() {
   predictiveEngine.predictNextEvent(activeOrganismId).then(pred => {
     const el = document.getElementById('prediction-content');
     if (pred && pred.type !== 'no_prediction') {
-      el.innerHTML = `<div style="color:var(--lil-primary);font-weight:600">${pred.type.replace(/_/g, ' ')}</div>
-        <div style="color:var(--lil-text3);font-size:10px;margin-top:2px">${pred.reasoning?.join('; ') || ''}</div>
-        <div style="color:var(--lil-accent);font-size:10px;margin-top:4px">${pred.recommendedAction || ''}</div>`;
+      el.innerHTML = `<div style="color:var(--ldl-fern);font-weight:400">${pred.type.replace(/_/g, ' ')}</div>
+        <div style="color:var(--ldl-text3);font-size:11px;margin-top:3px;font-weight:300">${pred.reasoning?.join('; ') || ''}</div>
+        <div style="color:var(--ldl-sunset);font-size:11px;margin-top:5px;font-weight:300">${pred.recommendedAction || ''}</div>`;
     } else {
       el.textContent = 'No predictions — monitoring...';
     }
@@ -261,8 +261,8 @@ function updateActivityFeed() {
   const el = document.getElementById('activity-feed');
   el.innerHTML = events.map(e => {
     const icon = e.type === 'spike' ? '⚡' : e.type === 'rest' ? '🌙' : '📊';
-    return `<div class="lil-row"><span class="lil-row-key">${icon} ${e.type || 'event'}</span><span class="lil-row-value" style="font-size:9px">${new Date(e.timestamp).toLocaleTimeString()}</span></div>`;
-  }).join('') || '<div style="font-size:11px;color:var(--lil-text3)">No activity yet</div>';
+    return `<div class="ldl-row"><span class="ldl-row-key">${icon} ${e.type || 'event'}</span><span class="ldl-row-value" style="font-size:10px">${new Date(e.timestamp).toLocaleTimeString()}</span></div>`;
+  }).join('') || '<div style="font-size:12px;color:var(--ldl-text3);font-weight:300">No activity yet</div>';
 }
 
 // ============================================================
@@ -276,7 +276,7 @@ function updateCitizenSciencePanel() {
     const allBadges = Array.from(citizenScience.badges.values());
     badgesEl.innerHTML = allBadges.map(b => {
       const earned = b.unlockedFor?.has('local-user');
-      return `<span class="lil-badge ${earned ? 'earned' : ''}">${b.name}</span>`;
+      return `<span class="ldl-badge ${earned ? 'earned' : ''}">${b.name}</span>`;
     }).join('');
   }).catch(() => {});
 }
@@ -294,9 +294,9 @@ function updateVerificationPanel() {
 // NAVIGATION
 // ============================================================
 function setupNavigation() {
-  document.querySelectorAll('.lil-nav-btn').forEach(btn => {
+  document.querySelectorAll('.ldl-nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.lil-nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.ldl-nav-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       if (soundEngine.enabled) soundEngine.playNote(600, 0.1, 'sine');
     });
@@ -403,14 +403,14 @@ function startMonitoring() {
   if (!isConnected) { log('Connect a device first'); return; }
   isMonitoring = true;
   document.getElementById('btn-start').textContent = 'Stop Monitoring';
-  document.getElementById('btn-start').classList.add('lil-btn-danger');
+  document.getElementById('btn-start').classList.add('ldl-btn-danger');
   log('Monitoring started');
 }
 
 function stopMonitoring() {
   isMonitoring = false;
   document.getElementById('btn-start').textContent = 'Start Monitoring';
-  document.getElementById('btn-start').classList.remove('lil-btn-danger');
+  document.getElementById('btn-start').classList.remove('ldl-btn-danger');
   log('Monitoring stopped');
 }
 
