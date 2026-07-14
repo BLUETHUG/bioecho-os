@@ -1,13 +1,16 @@
 // BioEcho OS v4 — Living World Experience
 
 const world = new WorldV4(document.getElementById('world-canvas'));
+const tree = new LivingTree(world);
 let experienceReady = false;
 let lastFrame = 0;
+let activeView = 'home';
 
 function initLanding() {
   const landing = document.getElementById('landing');
   const seedCanvas = document.getElementById('seed-canvas');
   const worldCanvas = document.getElementById('world-canvas');
+  const uiLayer = document.getElementById('ui-layer');
 
   worldCanvas.width = window.innerWidth;
   worldCanvas.height = window.innerHeight;
@@ -21,8 +24,17 @@ function initLanding() {
     seq.start(() => {
       landing.classList.add('hidden');
       experienceReady = true;
-      lastFrame = performance.now();
+      uiLayer.style.display = 'block';
+
+      // Start tree growth from center
+      tree.initialize();
       requestAnimationFrame(renderLoop);
+
+      // Fade in tree orbs after a moment
+      setTimeout(() => {
+        tree._revealFeatures();
+        enableTreeInteraction();
+      }, 2000);
     });
   }, { once: true });
 
@@ -64,7 +76,57 @@ function initLanding() {
   requestAnimationFrame(drawIdle);
 }
 
+function enableTreeInteraction() {
+  const worldCanvas = document.getElementById('world-canvas');
+
+  worldCanvas.addEventListener('click', (e) => {
+    if (!experienceReady) return;
+    const idx = tree.hitTest(e.clientX, e.clientY);
+    if (idx >= 0) {
+      openFeature(idx);
+    }
+  });
+
+  worldCanvas.addEventListener('mousemove', (e) => {
+    if (!experienceReady) return;
+    const idx = tree.hitTest(e.clientX, e.clientY);
+    tree.setHover(idx);
+    worldCanvas.style.cursor = idx >= 0 ? 'pointer' : 'default';
+  });
+}
+
+function openFeature(index) {
+  const featureNames = ['lens', 'care', 'earth', 'research', 'community', 'story'];
+  const name = featureNames[index] || 'home';
+  showView(name);
+}
+
+function showView(name) {
+  activeView = name;
+  const overlay = document.getElementById('content-overlay');
+  const title = document.getElementById('overlay-title');
+  const body = document.getElementById('overlay-body');
+
+  if (name === 'home') {
+    overlay.classList.remove('visible');
+    return;
+  }
+
+  const icons = { lens: '💧', care: '🌿', earth: '🌍', research: '🌳', community: '🕊', story: '📖' };
+  title.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+  title.dataset.icon = icons[name] || '';
+
+  body.innerHTML = `
+    <div style="padding:16px;color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
+      <p style="margin:0 0 12px;opacity:0.7">Connect a device to begin exploring ${name}.</p>
+      <p style="margin:0;opacity:0.5">This view is part of BioEcho's living interface.</p>
+    </div>`;
+
+  overlay.classList.add('visible');
+}
+
 function renderLoop(timestamp) {
+  if (!experienceReady) return;
   const dt = Math.min((timestamp - lastFrame) / 1000, 0.05);
   lastFrame = timestamp;
 
@@ -73,6 +135,11 @@ function renderLoop(timestamp) {
 
   world.update(dt, LDL.currentTime);
   world.render(LDL.currentTime, LDL.currentSeason || 'spring');
+
+  // Tree renders ON TOP of world
+  const ctx = document.getElementById('world-canvas').getContext('2d');
+  tree.update(dt);
+  tree.render(ctx, LDL.currentTime);
 
   requestAnimationFrame(renderLoop);
 }

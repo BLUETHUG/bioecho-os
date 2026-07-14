@@ -17,9 +17,9 @@ class LivingTree {
 
   initialize() {
     if (!this.world?.ctx) return;
-    this.x = this.world.width * 0.5;
-    this.y = this.world.height * 0.72;
-    this.trunkHeight = this.world.height * 0.3;
+    this.x = (this.world.w || this.world.width) * 0.5;
+    this.y = (this.world.h || this.world.height) * 0.72;
+    this.trunkHeight = (this.world.h || this.world.height) * 0.3;
     this._initFeatures();
     this._growTree();
   }
