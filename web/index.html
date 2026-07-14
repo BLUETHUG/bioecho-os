@@ -112,6 +112,8 @@
         <button class="tab" data-tab="environment">Env</button>
         <button class="tab" data-tab="relationships">Care</button>
         <button class="tab" data-tab="evidence">Evidence</button>
+        <button class="tab" data-tab="verification">Verify</button>
+        <button class="tab" data-tab="citizen">Science</button>
         <button class="tab" data-tab="experiment">Experiment</button>
       </div>
 
@@ -303,6 +305,50 @@
         </div>
       </div>
 
+      <!-- Verification Chain -->
+      <div class="tab-pane" id="pane-verification">
+        <div class="vc-header">
+          <span class="vc-title">Verification Chain</span>
+          <button id="btn-create-chain" class="btn-small">Create Chain</button>
+        </div>
+        <div class="stats-grid vc-stats">
+          <div class="stat-card"><div class="stat-label">Total Chains</div><div class="stat-value" id="vc-total">0</div></div>
+          <div class="stat-card"><div class="stat-label">Avg Confidence</div><div class="stat-value" id="vc-confidence">0.00</div></div>
+          <div class="stat-card"><div class="stat-label">Validated</div><div class="stat-value" id="vc-validated">0</div></div>
+          <div class="stat-card"><div class="stat-label">Published</div><div class="stat-value" id="vc-published">0</div></div>
+        </div>
+        <div class="vc-section">
+          <div class="vc-section-title">Verification Levels</div>
+          <div id="vc-levels"></div>
+        </div>
+        <div class="vc-section">
+          <div class="vc-section-title">Recent Chains</div>
+          <div id="vc-chains"></div>
+        </div>
+      </div>
+
+      <!-- Citizen Science -->
+      <div class="tab-pane" id="pane-citizen">
+        <div class="cs-header">
+          <span class="cs-title">Citizen Science</span>
+          <button id="btn-submit-obs" class="btn-small">Submit</button>
+        </div>
+        <div class="stats-grid cs-stats">
+          <div class="stat-card"><div class="stat-label">Submissions</div><div class="stat-value" id="cs-total">0</div></div>
+          <div class="stat-card"><div class="stat-label">Reviews</div><div class="stat-value" id="cs-reviews">0</div></div>
+          <div class="stat-card"><div class="stat-label">Species</div><div class="stat-value" id="cs-species">0</div></div>
+          <div class="stat-card"><div class="stat-label">Reputation</div><div class="stat-value" id="cs-reputation">0</div></div>
+        </div>
+        <div class="cs-section">
+          <div class="cs-section-title">Contribution Badges</div>
+          <div id="cs-badges"></div>
+        </div>
+        <div class="cs-section">
+          <div class="cs-section-title">Recent Submissions</div>
+          <div id="cs-submissions"></div>
+        </div>
+      </div>
+
       <!-- Experiment Log -->
       <div class="tab-pane" id="pane-experiment">
         <div id="experiment-header">
@@ -335,6 +381,8 @@
 <script src="js/relationship.js"></script>
 <script src="js/knowledge-graph.js"></script>
 <script src="js/lens.js"></script>
+<script src="js/verification.js"></script>
+<script src="js/citizen-science.js"></script>
 <script src="js/dsp.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/chat.js"></script>

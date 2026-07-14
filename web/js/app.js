@@ -17,6 +17,8 @@ const environmentEngine = new EnvironmentEngine();
 const relationshipEngine = new RelationshipEngine();
 const knowledgeGraph = new KnowledgeGraph();
 const lens = new BioEchoLens(knowledgeGraph, twinEngine, speciesDB, contextEngine, meaningEngine);
+const verificationChain = new VerificationChain(localDB, identityLayer);
+const citizenScience = new CitizenScienceEngine(localDB, verificationChain, knowledgeGraph);
 
 // ============================================================
 // APP STATE
@@ -636,6 +638,8 @@ function setupNewTabs() {
   updateRelationshipsUI();
   updateEvidenceUI(null);
   updateIdentityUI();
+  updateVerificationUI();
+  updateCitizenScienceUI();
 
   // Export identity button
   document.getElementById('btn-export-identity')?.addEventListener('click', async () => {
@@ -985,5 +989,92 @@ function updateLensUI(result) {
     ).join('') || '<div style="font-size:11px;color:var(--text3)">No recommendations</div>';
   }
 }
+
+// ============================================================
+// VERIFICATION UI
+// ============================================================
+function updateVerificationUI() {
+  const stats = verificationChain.getStats();
+  document.getElementById('vc-total').textContent = stats.totalChains;
+  document.getElementById('vc-confidence').textContent = stats.avgConfidence.toFixed(2);
+  document.getElementById('vc-validated').textContent = (stats.byLevel.validated || 0) + (stats.byLevel.peer_reviewed || 0);
+  document.getElementById('vc-published').textContent = stats.byLevel.published || 0;
+
+  const levelsEl = document.getElementById('vc-levels');
+  levelsEl.innerHTML = Object.entries(stats.byLevel).map(([level, count]) =>
+    `<div class="stats-row"><span class="vc-level-${level}">${level.replace('_', ' ')}</span><span>${count}</span></div>`
+  ).join('') || '<div style="font-size:11px;color:var(--text3)">No chains yet</div>';
+
+  const chainsEl = document.getElementById('vc-chains');
+  const chains = Array.from(verificationChain.chains.values()).slice(-10).reverse();
+  chainsEl.innerHTML = chains.map(c => {
+    const lvl = c.verificationLevel;
+    return `<div class="vc-chain-item"><span class="vc-level-badge vc-level-${lvl}">${lvl}</span><span style="color:var(--text3);font-size:10px">${c.steps.length} steps · ${(c.overallConfidence * 100).toFixed(0)}%</span></div>`;
+  }).join('') || '<div style="font-size:11px;color:var(--text3)">No chains yet</div>';
+}
+
+// ============================================================
+// CITIZEN SCIENCE UI
+// ============================================================
+function updateCitizenScienceUI() {
+  const stats = citizenScience.getStats();
+  document.getElementById('cs-total').textContent = stats.totalSubmissions;
+  document.getElementById('cs-reviews').textContent = stats.totalReviews;
+  document.getElementById('cs-species').textContent = stats.uniqueSpecies;
+
+  citizenScience.getContributionStats('local-user').then(userStats => {
+    document.getElementById('cs-reputation').textContent = userStats.reputationScore;
+    const badgesEl = document.getElementById('cs-badges');
+    const allBadges = Array.from(citizenScience.badges.values());
+    badgesEl.innerHTML = allBadges.map(b => {
+      const unlocked = b.unlockedFor?.has('local-user');
+      return `<span class="cs-badge ${unlocked ? 'unlocked' : ''}">${b.name}</span>`;
+    }).join('') || '<div style="font-size:11px;color:var(--text3)">No badges</div>';
+  }).catch(() => {});
+
+  const subsEl = document.getElementById('cs-submissions');
+  const subs = Array.from(citizenScience.submissions.values()).slice(-10).reverse();
+  subsEl.innerHTML = subs.map(s => {
+    return `<div class="cs-sub-item"><span class="cs-level-badge cs-level-${s.verificationLevel}">${s.verificationLevel}</span><span style="font-size:10px;color:var(--text3)">${s.speciesId || 'Unknown'} · ${s.reviewCount} reviews</span></div>`;
+  }).join('') || '<div style="font-size:11px;color:var(--text3)">No submissions yet</div>';
+}
+
+// ============================================================
+// BUTTON HANDLERS (Verification + Citizen Science)
+// ============================================================
+document.getElementById('btn-create-chain')?.addEventListener('click', async () => {
+  if (!activeOrganismId) { log('Select an organism first'); return; }
+  const chain = await verificationChain.createChain(
+    activeOrganismId, 'sensor-default',
+    { score: 0.85, timestamp: Date.now() },
+    { name: 'dsp-v1', filters: ['bandpass', 'notch'], version: '1.0' }
+  );
+  await verificationChain.completeChain(chain.id, {
+    valid: true, adjustedConfidence: 0.75, model: 'local-classifier', version: '1.0'
+  });
+  updateVerificationUI();
+  log(`Verification chain created: ${chain.id}`);
+});
+
+document.getElementById('btn-submit-obs')?.addEventListener('click', async () => {
+  if (!activeOrganismId) { log('Select an organism first'); return; }
+  const twin = twinEngine.getTwin(activeOrganismId);
+  const state = twin?.state || {};
+  const result = await citizenScience.submitObservation({
+    organismId: activeOrganismId,
+    speciesId: twin?.species || null,
+    sensorId: 'sensor-default',
+    classification: { type: 'observation', confidence: 0.7 },
+    notes: 'Citizen science observation',
+    confidence: 0.7,
+    features: { healthScore: state.healthScore, stressIndex: state.stressIndex, spikeRate: state.spikeRate }
+  });
+  updateCitizenScienceUI();
+  log(`Observation submitted: ${result.submission?.id}`);
+});
+
+// Periodic UI updates for verification and citizen science
+setInterval(updateVerificationUI, 10000);
+setInterval(updateCitizenScienceUI, 10000);
 
 document.addEventListener('DOMContentLoaded', init);

@@ -263,3 +263,35 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .lens-notes{font-size:10px;color:var(--text3);margin-top:4px}
 .lens-section{padding:8px 12px;border-bottom:1px solid var(--border)}
 .lens-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+
+/* Verification Chain Tab */
+.vc-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.vc-title{font-size:12px;font-weight:600;color:var(--text)}
+.vc-stats{grid-template-columns:repeat(2,1fr)}
+.vc-section{padding:8px 12px;border-bottom:1px solid var(--border)}
+.vc-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+.vc-chain-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px}
+.vc-chain-item:last-child{border-bottom:none}
+.vc-level-badge{font-size:9px;padding:2px 6px;border-radius:var(--radius);text-transform:capitalize;font-weight:600}
+.vc-level-raw{background:rgba(107,114,128,0.2);color:#9ca3af}
+.vc-level-validated{background:rgba(59,130,246,0.2);color:#3b82f6}
+.vc-level-peer_reviewed{background:rgba(34,197,94,0.2);color:#22c55e}
+.vc-level-published{background:rgba(168,85,247,0.2);color:#a855f7}
+.vc-level-raw,.vc-level-validated,.vc-level-peer_reviewed,.vc-level-published{display:inline-block}
+
+/* Citizen Science Tab */
+.cs-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.cs-title{font-size:12px;font-weight:600;color:var(--text)}
+.cs-stats{grid-template-columns:repeat(2,1fr)}
+.cs-section{padding:8px 12px;border-bottom:1px solid var(--border)}
+.cs-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+.cs-badge{display:inline-block;font-size:9px;padding:3px 8px;margin:2px;border:1px solid var(--border);border-radius:var(--radius);color:var(--text3)}
+.cs-badge.unlocked{border-color:var(--accent);color:var(--accent);background:rgba(59,130,246,0.1)}
+.cs-sub-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px}
+.cs-sub-item:last-child{border-bottom:none}
+.cs-level-badge{font-size:9px;padding:2px 6px;border-radius:var(--radius);text-transform:capitalize;font-weight:600}
+.cs-level-raw{background:rgba(107,114,128,0.2);color:#9ca3af}
+.cs-level-validated{background:rgba(59,130,246,0.2);color:#3b82f6}
+.cs-level-peer_reviewed{background:rgba(34,197,94,0.2);color:#22c55e}
+.cs-level-published{background:rgba(168,85,247,0.2);color:#a855f7}
+.cs-level-raw,.cs-level-validated,.cs-level-peer_reviewed,.cs-level-published{display:inline-block}
