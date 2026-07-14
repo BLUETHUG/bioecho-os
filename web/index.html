@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0F3D2E">
-<meta name="description" content="BioEcho — The living intelligence platform for every organism on Earth">
 <title>BioEcho</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,70 +12,30 @@
 </head>
 <body>
 
-<!-- Living World Canvas — Full bleed, behind everything -->
+<!-- World — THE interface -->
 <canvas id="world-canvas"></canvas>
 
-<!-- Cinematic Landing — Seed click to begin -->
+<!-- Landing seed -->
 <div id="landing">
   <canvas id="seed-canvas" width="200" height="200"></canvas>
-  <div id="landing-hint">touch to begin</div>
 </div>
 
-<!-- Experience — Revealed after seed animation -->
-<div id="experience">
+<!-- Hidden UI — appears on interaction only -->
+<div id="ui-layer" style="display:none">
 
-  <!-- Root Navigation — Grows from ground -->
-  <nav id="root-nav">
-    <button class="root-btn active" data-view="home">
-      <span class="bioecho-icon" style="width:18px;height:18px"></span>
-      <span>home</span>
-    </button>
-    <button class="root-btn" data-view="lens">
-      <span class="bioecho-icon" style="width:18px;height:18px"></span>
-      <span>lens</span>
-    </button>
-    <button class="root-btn" data-view="graph">
-      <span class="bioecho-icon" style="width:18px;height:18px"></span>
-      <span>graph</span>
-    </button>
-    <button class="root-btn" data-view="predict">
-      <span class="bioecho-icon" style="width:18px;height:18px"></span>
-      <span>predict</span>
-    </button>
-    <button class="root-btn" data-view="search">
-      <span class="bioecho-icon" style="width:18px;height:18px"></span>
-      <span>search</span>
-    </button>
-    <button class="root-btn" data-view="earth">
-      <span class="bioecho-icon" style="width:18px;height:18px"></span>
-      <span>earth</span>
-    </button>
-    <button class="root-btn" data-view="shop">
-      <span class="bioecho-icon" style="width:18px;height:18px"></span>
-      <span>shop</span>
-    </button>
-  </nav>
-
-  <!-- Left Panel — Organisms & Identity -->
-  <div class="living-panel left" id="panel-left">
-    <div class="panel-section">
-      <div class="panel-label">organisms</div>
-      <div id="organism-list"></div>
-    </div>
-    <div class="panel-section" id="identity-section" style="display:none">
-      <div class="panel-label">identity</div>
+  <!-- Side panels — appear on organism select -->
+  <div class="living-panel left" id="panel-left" style="opacity:0;pointer-events:none">
+    <div id="organism-list"></div>
+    <div id="identity-section" style="display:none">
       <div id="identity-name" class="panel-value growth"></div>
-      <div id="identity-stage" style="margin-top:4px"></div>
       <div style="margin-top:8px">
         <div class="panel-row"><span class="panel-label">species</span><span class="panel-value" id="id-species">--</span></div>
         <div class="panel-row"><span class="panel-label">age</span><span class="panel-value" id="id-age">--</span></div>
-        <div class="panel-row"><span class="panel-label">events</span><span class="panel-value" id="id-events">0</span></div>
       </div>
     </div>
   </div>
 
-  <!-- Right Panel — Data & Intelligence -->
-  <div class="living-panel right" id="panel-right">
+  <div class="living-panel right" id="panel-right" style="opacity:0;pointer-events:none">
     <div class="panel-section">
       <div class="panel-label">signal</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -92,18 +51,10 @@
       <div class="panel-row"><span class="panel-label">light</span><span class="panel-value" id="env-light">--</span></div>
       <div class="panel-row"><span class="panel-label">soil</span><span class="panel-value" id="env-soil">--</span></div>
       <div class="panel-row"><span class="panel-label">season</span><span class="panel-value" id="env-season">--</span></div>
-      <div class="panel-row"><span class="panel-label">greeting</span><span class="panel-value" id="env-greeting" style="font-style:italic"></span></div>
     </div>
     <div class="panel-section">
       <div class="panel-label">prediction</div>
-      <div class="panel-value" id="prediction-content">Select an organism</div>
-    </div>
-    <div class="panel-section">
-      <div class="panel-label">citizen science</div>
-      <div style="display:flex;gap:16px">
-        <div><span class="panel-value" id="stat-reputation">0</span><br><span class="panel-label">reputation</span></div>
-        <div><span class="panel-value" id="stat-contributions">0</span><br><span class="panel-label">contributions</span></div>
-      </div>
+      <div class="panel-value" id="prediction-content">--</div>
     </div>
     <div class="panel-section">
       <div class="panel-label">verification</div>
@@ -112,38 +63,32 @@
     </div>
   </div>
 
-  <!-- Action Bar — Organic buttons -->
-  <div class="action-bar visible" id="action-bar">
-    <button class="organic-btn" id="btn-connect">
-      <span class="bioecho-icon" style="width:14px;height:14px"></span>
-      Connect Device
-    </button>
-    <button class="organic-btn" id="btn-start">
-      <span class="bioecho-icon" style="width:14px;height:14px"></span>
-      Start Monitoring
-    </button>
-    <button class="organic-btn" id="btn-scan">
-      <span class="bioecho-icon" style="width:14px;height:14px"></span>
-      Scan with Lens
-    </button>
-    <button class="organic-btn" id="btn-submit-obs">
-      <span class="bioecho-icon" style="width:14px;height:14px"></span>
-      Submit Observation
-    </button>
-    <button class="organic-btn" id="btn-emergency">
-      <span class="bioecho-icon" style="width:14px;height:14px"></span>
-      Emergency
-    </button>
+  <!-- Bottom nav — appears on hover at bottom edge -->
+  <nav id="root-nav" style="opacity:0;pointer-events:none;transition:opacity 0.8s ease">
+    <button class="root-btn" data-view="home"></button>
+    <button class="root-btn" data-view="lens"></button>
+    <button class="root-btn" data-view="graph"></button>
+    <button class="root-btn" data-view="predict"></button>
+    <button class="root-btn" data-view="search"></button>
+    <button class="root-btn" data-view="earth"></button>
+    <button class="root-btn" data-view="shop"></button>
+  </nav>
+
+  <!-- Action bar — appears on organism select -->
+  <div class="action-bar" id="action-bar" style="opacity:0;pointer-events:none">
+    <button class="organic-btn" id="btn-connect"></button>
+    <button class="organic-btn" id="btn-start"></button>
+    <button class="organic-btn" id="btn-scan"></button>
+    <button class="organic-btn" id="btn-submit-obs"></button>
+    <button class="organic-btn" id="btn-emergency"></button>
   </div>
 
-  <!-- Content Overlay — For feature views -->
+  <!-- Content overlay -->
   <div class="content-overlay" id="content-overlay">
     <div class="content-card">
       <div class="content-card-header">
         <div class="content-card-title" id="overlay-title"></div>
-        <button class="content-card-close" id="overlay-close">
-          <span class="bioecho-icon" style="width:16px;height:16px"></span>
-        </button>
+        <button class="content-card-close" id="overlay-close"></button>
       </div>
       <div id="overlay-body"></div>
     </div>
@@ -151,7 +96,6 @@
 
 </div>
 
-<!-- Scripts -->
 <script src="js/ldl.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/hal.js"></script>
