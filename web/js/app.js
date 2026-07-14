@@ -180,6 +180,27 @@ function initExperience() {
 
   // Load organisms
   loadOrganisms();
+
+  // Add icons to action buttons
+  const actionIcons = ['connection', 'water', 'dew', 'leaf', 'emergency'];
+  const actionBtns = document.querySelectorAll('.organic-btn');
+  actionBtns.forEach((btn, i) => {
+    const icon = document.createElement('span');
+    icon.className = 'bioecho-icon';
+    icon.style.cssText = 'width:16px;height:16px';
+    icon.innerHTML = BioEchoIcons[actionIcons[i]] || '';
+    btn.appendChild(icon);
+  });
+
+  // Add icons to overlay close
+  const closeBtn = document.getElementById('overlay-close');
+  if (closeBtn) {
+    const icon = document.createElement('span');
+    icon.className = 'bioecho-icon';
+    icon.style.cssText = 'width:14px;height:14px';
+    icon.innerHTML = BioEchoIcons.close || '';
+    closeBtn.appendChild(icon);
+  }
 }
 
 // ============================================================
