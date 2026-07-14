@@ -1,281 +1,389 @@
-// BioEcho OS — Main Application Controller (Real Data Only)
+// BioEcho OS — Main Application Controller (6 Engines)
 
 // ============================================================
-// STATE
+// ENGINE INSTANCES
 // ============================================================
-let pipeline, waveformChart, spectrogramChart, spikeChart, chat, twin;
-let serial, audioCapture;
-let isConnected = false;
-let sampleCount = 0;
-let spikeCount = 0;
-let connectTime = 0;
-let recentWindow = [];
-let lastUIUpdate = 0;
-const SAMPLE_RATE = 250;
+const hal = new HardwareAbstractionLayer();
+const calibration = new CalibrationEngine();
+const speciesDB = new SpeciesDB();
+const twinEngine = new DigitalTwinEngine();
+const contextEngine = new ContextEngine(twinEngine, speciesDB);
+const meaningEngine = new MeaningEngine(speciesDB);
+const experimentLog = new ExperimentLog();
+
+// ============================================================
+// APP STATE
+// ============================================================
+let pipeline, waveformChart, spectrogramChart, spikeChart, chat;
+let isConnected = false, isMonitoring = false;
+let sampleCount = 0, spikeCount = 0, connectTime = 0;
+let recentWindow = [], lastUIUpdate = 0;
+let activeOrganismId = null;
+let calibrationResult = null;
 const UI_FPS = 30;
 
 // ============================================================
 // INIT
 // ============================================================
 function init() {
-  // Charts
   waveformChart = new WaveformChart('waveform-canvas');
   spectrogramChart = new SpectrogramChart('spectrogram-canvas');
   spikeChart = new SpikeChart('spike-canvas');
-
-  // DSP
-  pipeline = new DspPipeline(SAMPLE_RATE);
-
-  // Digital twin
-  twin = {
-    healthScore: 1.0,
-    stressIndex: 0,
-    spikeRate: 0,
-    baselineNoise: 0,
-    totalEvents: 0,
-    events: [],
-    baseline: { amplitude: 5, freq: 0.5, noise: 2 }
-  };
-
-  // Chat
+  pipeline = new DspPipeline(250);
   chat = new ChatEngine('chat-messages');
 
-  // Connection screen
-  setupConnectionScreen();
+  // Create default organism if none exist
+  if (twinEngine.getAll().length === 0) {
+    const org = twinEngine.create('org-1', 'Plant #42', 'epipremnum-aureum', 'plant');
+    activeOrganismId = org.id;
+  } else {
+    activeOrganismId = twinEngine.getAll()[0].id;
+  }
 
-  // Main app controls
+  setupScreens();
   setupAppControls();
-
-  // Clock
   updateClock();
   setInterval(updateClock, 1000);
 }
 
 // ============================================================
-// CONNECTION SCREEN
+// SCREEN MANAGEMENT
 // ============================================================
-function setupConnectionScreen() {
-  document.querySelectorAll('.connect-option').forEach(opt => {
-    opt.addEventListener('click', async () => {
-      const source = opt.dataset.source;
-      const statusMsg = document.getElementById('connect-status-msg');
-      statusMsg.className = 'connect-status';
-      statusMsg.textContent = 'Requesting access...';
-
-      try {
-        if (source === 'serial') {
-          if (!('serial' in navigator)) {
-            statusMsg.className = 'connect-status error';
-            statusMsg.textContent = 'Web Serial API not available. Use Chrome or Edge 89+.';
-            return;
-          }
-          serial = new SerialDevice();
-          serial.onSample = handleSample;
-          serial.onDisconnect = handleDisconnect;
-          await serial.connect();
-          showApp('USB Serial Device');
-
-        } else if (source === 'audio') {
-          audioCapture = new AudioCapture();
-          audioCapture.onSample = handleSample;
-          await audioCapture.start();
-          showApp('Microphone');
-        }
-      } catch (err) {
-        statusMsg.className = 'connect-status error';
-        statusMsg.textContent = err.name === 'NotFoundError'
-          ? 'No device selected.'
-          : `Error: ${err.message}`;
-      }
-    });
-  });
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
 }
 
-function showApp(deviceLabel) {
-  isConnected = true;
+function setupScreens() {
+  // Connection options
+  document.querySelectorAll('.option').forEach(opt => {
+    opt.addEventListener('click', () => connectDevice(opt.dataset.source));
+  });
+
+  // Calibration buttons
+  document.getElementById('btn-skip-cal').addEventListener('click', () => startMonitoring());
+  document.getElementById('btn-start-monitoring').addEventListener('click', () => startMonitoring());
+}
+
+// ============================================================
+// DEVICE CONNECTION
+// ============================================================
+async function connectDevice(sourceId) {
+  const msg = document.getElementById('connect-msg');
+  msg.className = 'status-msg'; msg.textContent = 'Connecting...';
+
+  try {
+    const source = await hal.connect(sourceId);
+    isConnected = true;
+    pipeline = new DspPipeline(source.sampleRate);
+    document.getElementById('sample-rate-label').textContent = source.sampleRate + ' Hz';
+
+    // Go to calibration
+    showScreen('calibrate');
+    runCalibration(source);
+  } catch (err) {
+    msg.className = 'status-msg error';
+    msg.textContent = err.name === 'NotFoundError' ? 'No device selected.' : err.message;
+  }
+}
+
+// ============================================================
+// CALIBRATION
+// ============================================================
+async function runCalibration(source) {
+  const status = document.getElementById('cal-status');
+  const fill = document.getElementById('cal-progress-fill');
+  const resultsDiv = document.getElementById('cal-results');
+
+  calibration.onProgress = (p, msg) => {
+    fill.style.width = (p * 100) + '%';
+    status.textContent = msg;
+  };
+
+  try {
+    calibrationResult = await calibration.runCalibration(source, 3000);
+    fill.style.width = '100%';
+    status.textContent = 'Calibration complete';
+
+    // Show results
+    resultsDiv.classList.remove('hidden');
+    document.getElementById('cal-score').textContent = calibrationResult.score + '/100';
+    document.getElementById('cal-grade').textContent =
+      calibrationResult.quality === 'good' ? 'Good Signal Quality' :
+      calibrationResult.quality === 'fair' ? 'Fair — Some Issues Detected' : 'Poor — Check Connections';
+    document.getElementById('cal-grade').className = 'cal-grade cal-' + calibrationResult.quality;
+
+    document.getElementById('cal-details').innerHTML = [
+      `DC Offset: ${calibrationResult.dcOffset} µV`,
+      `RMS Noise: ${calibrationResult.rmsNoise} µV`,
+      `Peak-to-Peak: ${calibrationResult.peakToPeak} µV`,
+      `Mains Interference: ${(calibrationResult.mainsInterference * 100).toFixed(1)}%`,
+      `Saturation: ${calibrationResult.saturationPct}%`
+    ].map(d => `<div class="cal-detail">${d}</div>`).join('');
+
+    document.getElementById('cal-recommendations').innerHTML =
+      calibrationResult.recommendations.map(r => `<div class="cal-rec">${r}</div>`).join('');
+
+    document.getElementById('btn-start-monitoring').classList.remove('hidden');
+    document.getElementById('cal-badge').textContent = 'Cal: ' + calibrationResult.score;
+    document.getElementById('cal-badge').className = 'topbar-chip cal-' + calibrationResult.quality;
+  } catch (err) {
+    status.textContent = 'Calibration failed: ' + err.message;
+    document.getElementById('btn-start-monitoring').classList.remove('hidden');
+  }
+}
+
+// ============================================================
+// START MONITORING
+// ============================================================
+function startMonitoring() {
+  isMonitoring = true;
   connectTime = Date.now();
   sampleCount = 0;
   spikeCount = 0;
   recentWindow = [];
   pipeline.reset();
 
-  document.getElementById('connect-screen').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  document.getElementById('device-label').textContent = deviceLabel;
-  document.getElementById('live-indicator').className = 'live-on';
-  document.getElementById('log-line').textContent = `Connected to ${deviceLabel}`;
-  document.getElementById('sample-rate-label').textContent = `${SAMPLE_RATE} Hz`;
-
+  showScreen('app');
   waveformChart.resize();
   spectrogramChart.resize();
   spikeChart.resize();
 
-  // Send connection message to chat
-  chat.addMessage({
-    type: 'event',
-    text: `Connected to ${deviceLabel}. Monitoring at ${SAMPLE_RATE} Hz. Signal processing pipeline active.`,
-    time: Date.now()
+  // Start experiment
+  const source = hal.getActive();
+  experimentLog.startSession(activeOrganismId, {
+    species: twinEngine.getTwin(activeOrganismId)?.species || '',
+    sensorType: source?.type || 'unknown',
+    calibrationScore: calibrationResult?.score ?? null,
+    sampleRate: source?.sampleRate || 250
   });
+
+  // Connect data handler
+  hal.onSample = handleSample;
+  hal.onSourceDisconnected = () => {
+    isMonitoring = false;
+    document.getElementById('live-indicator').className = 'live-off';
+    document.getElementById('log-line').textContent = 'Device disconnected';
+    experimentLog.endSession();
+  };
+
+  document.getElementById('device-label').textContent = source?.name || 'Device';
+  document.getElementById('live-indicator').className = 'live-on';
+  document.getElementById('log-line').textContent = 'Monitoring started';
+
+  chat.addMessage({ type: 'event', text: `Monitoring started. Signal processing pipeline active at ${source?.sampleRate || 250} Hz.`, time: Date.now() });
 
   requestAnimationFrame(mainLoop);
 }
 
-function handleDisconnect() {
-  isConnected = false;
-  document.getElementById('live-indicator').className = 'live-off';
-  document.getElementById('log-line').textContent = 'Device disconnected';
-  chat.addMessage({ type: 'error', text: 'Device disconnected.', time: Date.now() });
-}
-
 // ============================================================
-// DATA HANDLER — Every sample passes through here
+// DATA HANDLER — Every sample passes through all 6 engines
 // ============================================================
-function handleSample(value, timestamp) {
-  if (!isConnected) return;
+function handleSample(raw) {
+  if (!isMonitoring || !isConnected) return;
 
-  const result = pipeline.process(value);
+  // 1. DSP Pipeline (Engine: Signal Processing)
+  const result = pipeline.process(raw.value);
 
-  // Push to charts
-  waveformChart.push(result.raw, result.filtered);
+  // 2. Push to charts
+  waveformChart.push(raw.value, result.filtered);
   waveformChart.setThreshold(pipeline.detector.threshold * pipeline.gain);
-
-  // Store recent for spike window extraction
   recentWindow.push(result.filtered);
   if (recentWindow.length > 500) recentWindow.shift();
 
-  // Spike detection
+  sampleCount++;
+  experimentLog.recordSamples(1);
+
+  // 3. Spike Detection
   if (result.spike) {
     spikeCount++;
-    twin.totalEvents++;
 
     // Extract spike window
-    const spikeIdx = recentWindow.length;
-    const pre = Math.min(60, spikeIdx);
-    const post = Math.min(140, 200);
-    const window = recentWindow.slice(spikeIdx - pre, spikeIdx + post);
+    const pre = Math.min(60, recentWindow.length);
+    const window = recentWindow.slice(recentWindow.length - pre, recentWindow.length + 140);
     spikeChart.setData(window);
 
-    // Extract features
-    const features = extractSpikeFeatures(window, SAMPLE_RATE);
-    if (features) {
-      // Classify
-      const cls = classify(features);
+    // Feature Extraction
+    const features = extractSpikeFeatures(window, pipeline.sampleRate);
+    if (!features) return;
 
-      // Record event
-      const event = {
-        time: Date.now(),
-        type: 'spike',
-        classification: cls.classification,
-        confidence: cls.confidence,
-        features: features,
-        amplitude: result.spike.amplitude,
-        snr: result.spike.snr,
-        noiseFloor: result.spike.noiseFloor
-      };
-      twin.events.push(event);
-      if (twin.events.length > 5000) twin.events.shift();
+    // 4. Context Engine — gather organism, species, environment, history
+    const context = contextEngine.getContext(activeOrganismId);
 
-      // Update twin
-      updateTwin(event);
+    // 5. Meaning Engine — interpret with evidence chain
+    const explanation = meaningEngine.interpret(
+      classify(features), features, context, calibrationResult
+    );
 
-      // Waveform spike marker
-      waveformChart.addSpike(spikeCount, result.spike.amplitude);
+    // 6. Digital Twin — record event
+    const event = {
+      time: Date.now(),
+      type: 'spike',
+      classification: explanation.classification,
+      confidence: explanation.confidence,
+      features,
+      amplitude: result.spike.amplitude,
+      snr: result.spike.snr,
+      noiseFloor: result.spike.noiseFloor,
+      explanation: {
+        statement: explanation.statement,
+        evidenceChain: explanation.evidenceChain,
+        physics: explanation.physics,
+        scientificRef: explanation.scientificRef,
+        guidance: explanation.guidance
+      }
+    };
+    twinEngine.recordEvent(activeOrganismId, event);
+    twinEngine.updateBaseline(activeOrganismId, features.amplitude, features.dominantFreq, result.spike.noiseFloor);
 
-      // Log
-      logSpike(event);
+    // 7. Experiment Log — record
+    experimentLog.recordEvent(event);
+
+    // 8. Waveform spike marker
+    waveformChart.addSpike(spikeCount, result.spike.amplitude);
+
+    // 9. Chat — only significant events
+    if (explanation.confidence > 0.5 && explanation.classification !== 'resting') {
+      logEvent(event, explanation);
     }
+
+    // 10. Update explainability panel
+    updateExplainPanel(explanation);
   }
 
-  sampleCount++;
-
-  // Update spectrogram every 8 samples
-  if (sampleCount % 8 === 0) {
-    updateSpectrogram();
-  }
+  // Spectrogram update (every 8 samples)
+  if (sampleCount % 8 === 0) updateSpectrogram();
 }
 
 // ============================================================
-// CLASSIFIER — Threshold-based, grounded in literature
+// CLASSIFIER
 // ============================================================
 function classify(features) {
-  const { amplitude, duration, riseTime, dominantFreq, spectralEntropy } = features;
-  const baseline = twin.baseline;
+  const twin = twinEngine.getTwin(activeOrganismId);
+  const baseline = twin?.baseline || { amplitude: 5, freq: 0.5 };
   const scores = {};
 
-  // Resting
-  if (amplitude < baseline.amplitude * 1.5 && dominantFreq > 0.1 && dominantFreq < 2) {
-    scores.resting = 0.7 + (1 - amplitude / (baseline.amplitude * 1.5)) * 0.3;
+  if (features.amplitude < baseline.amplitude * 1.5) {
+    scores.resting = 0.7 + (1 - features.amplitude / (baseline.amplitude * 1.5)) * 0.3;
+  }
+  if (features.amplitude > baseline.amplitude * 2 && features.dominantFreq < baseline.freq * 0.6) {
+    scores.water_stress = Math.min(0.92, 0.4 + features.amplitude / (baseline.amplitude * 6) * 0.3);
+  }
+  if (features.amplitude > baseline.amplitude * 3 && features.riseTime < 80 && features.duration < 300) {
+    scores.touch_response = Math.min(0.90, 0.35 + features.amplitude / (baseline.amplitude * 5) * 0.3);
+  }
+  if (features.amplitude > baseline.amplitude * 5 && features.duration > 400) {
+    scores.wounding = Math.min(0.95, 0.5 + features.amplitude / (baseline.amplitude * 8) * 0.25);
   }
 
-  // Water stress
-  if (amplitude > baseline.amplitude * 2 && dominantFreq < baseline.freq * 0.6) {
-    scores.water_stress = Math.min(0.92, 0.4 + amplitude / (baseline.amplitude * 6) * 0.3 + (1 - dominantFreq / baseline.freq) * 0.2);
-  }
-
-  // Touch response
-  if (amplitude > baseline.amplitude * 3 && riseTime < 80 && duration < 300) {
-    scores.touch_response = Math.min(0.90, 0.35 + amplitude / (baseline.amplitude * 5) * 0.3 + (1 - riseTime / 80) * 0.25);
-  }
-
-  // Wounding
-  if (amplitude > baseline.amplitude * 5 && duration > 400) {
-    scores.wounding = Math.min(0.95, 0.5 + amplitude / (baseline.amplitude * 8) * 0.25 + duration / 800 * 0.2);
-  }
-
-  // Unknown
   const best = Object.entries(scores).sort((a,b) => b[1] - a[1])[0];
-  if (!best || best[1] < 0.5) {
-    return { classification: 'unknown', confidence: 0.3 };
-  }
-  return { classification: best[0], confidence: Math.round(best[1] * 1000) / 1000 };
+  if (!best || best[1] < 0.5) return 'unknown';
+  return best[0];
 }
 
 // ============================================================
-// DIGITAL TWIN UPDATE
+// CHAT LOGGING — Evidence-backed
 // ============================================================
-function updateTwin(event) {
-  const recent = twin.events.slice(-100);
-  const stressEvents = recent.filter(e => ['water_stress','wounding','temperature_shock'].includes(e.classification));
-  const fiveMin = twin.events.filter(e => e.time > Date.now() - 300000).length;
+function logEvent(event, explanation) {
+  const confClass = explanation.confidence > 0.85 ? 'high' : explanation.confidence > 0.7 ? 'med' : 'low';
+  const confTag = `<span class="confidence-tag ${confClass}">${(explanation.confidence*100).toFixed(0)}%</span>`;
 
-  twin.spikeRate = fiveMin / 5;
-  twin.stressIndex = Math.min(1, stressEvents.length / 20);
-  twin.healthScore = Math.max(0, 1 - twin.stressIndex * 0.8);
+  const evidenceRows = explanation.evidence.slice(0, 6).map(e => {
+    const cls = e.trend === 'up' ? 'ev-up' : e.trend === 'down' ? 'ev-down' : 'ev-stable';
+    return `<tr><td>${e.label}</td><td>${e.value}</td><td class="${cls}">${e.trend}</td></tr>`;
+  }).join('');
 
-  // Baseline adaptation (slow)
-  if (event.features) {
-    twin.baseline.amplitude += 0.0005 * (event.features.amplitude - twin.baseline.amplitude);
-    twin.baseline.freq += 0.0005 * (event.features.dominantFreq - twin.baseline.freq);
-    twin.baseline.noise += 0.0005 * (event.noiseFloor - twin.baseline.noise);
-  }
+  const ref = explanation.scientificRef
+    ? `<div class="chat-ref">Ref: ${explanation.scientificRef.paper}</div>` : '';
+
+  const guidance = explanation.guidance
+    ? `<div class="chat-guidance">→ ${explanation.guidance.action} (${explanation.guidance.urgency})</div>` : '';
+
+  const labels = {
+    water_stress: 'Water Stress', touch_response: 'Touch Response',
+    wounding: 'Wounding Signal', resting: 'Resting State', unknown: 'Unknown Pattern'
+  };
+  const type = event.classification === 'wounding' ? 'warning' : 'event';
+
+  chat.addMessage({
+    type,
+    text: `${labels[event.classification] || event.classification} ${confTag}`,
+    evidence: `<table>${evidenceRows}</table>${ref}${guidance}`,
+    time: event.time
+  });
 }
 
 // ============================================================
-// SPECTROGRAM UPDATE
+// EXPLAINABILITY PANEL
+// ============================================================
+function updateExplainPanel(explanation) {
+  const container = document.getElementById('explain-content');
+  const chain = explanation.evidenceChain.map(s =>
+    `<div class="explain-step"><span class="explain-step-title">${s.step}</span><span class="explain-step-detail">${s.detail}</span></div>`
+  ).join('');
+
+  const physics = explanation.physics.map(p =>
+    `<div class="explain-physics">• ${p}</div>`
+  ).join('');
+
+  const ref = explanation.scientificRef
+    ? `<div class="explain-ref"><strong>Reference:</strong> ${explanation.scientificRef.paper}<br><em>${explanation.scientificRef.title}</em></div>`
+    : '';
+
+  const guidance = explanation.guidance
+    ? `<div class="explain-guidance"><strong>Recommendation:</strong> ${explanation.guidance.action}<br><em>${explanation.guidance.rationale}</em></div>`
+    : '';
+
+  const confBreakdown = Object.entries(explanation.confidenceBreakdown).map(([k,v]) =>
+    `<span class="explain-conf-item">${k}: ${v > 0 ? '+' : ''}${(v*100).toFixed(0)}%</span>`
+  ).join(' ');
+
+  container.innerHTML = `
+    <div class="explain-header">
+      <span class="explain-cls">${explanation.classification}</span>
+      <span class="explain-conf">${(explanation.confidence*100).toFixed(0)}% confidence</span>
+    </div>
+    <div class="explain-statement">${explanation.statement}</div>
+    <div class="explain-section">
+      <div class="explain-section-title">Evidence Chain</div>
+      ${chain}
+    </div>
+    <div class="explain-section">
+      <div class="explain-section-title">Physics</div>
+      ${physics}
+    </div>
+    ${ref}
+    ${guidance}
+    <div class="explain-section">
+      <div class="explain-section-title">Confidence Breakdown</div>
+      <div class="explain-conf-breakdown">${confBreakdown || 'Base confidence only'}</div>
+    </div>
+  `;
+}
+
+// ============================================================
+// SPECTROGRAM
 // ============================================================
 function updateSpectrogram() {
   const data = waveformChart.filteredData;
   if (data.length < 128) return;
   const win = data.slice(-128);
-  const fftSize = 128;
-  const fft = new FFT(fftSize);
+  const fft = new FFT(128);
   const complex = fft.createComplexArray();
   fft.toComplexArray(win, complex);
   fft.transform(complex, complex);
-  const half = fftSize / 2;
   const freqs = [];
-  for (let i = 0; i < half; i++) {
-    freqs.push(Math.sqrt(complex[2*i]**2 + complex[2*i+1]**2) / fftSize);
+  for (let i = 0; i < 64; i++) {
+    freqs.push(Math.sqrt(complex[2*i]**2 + complex[2*i+1]**2) / 128);
   }
   spectrogramChart.pushFrame(freqs);
 }
 
 // ============================================================
-// MAIN LOOP — UI update at 30fps
+// MAIN LOOP
 // ============================================================
 function mainLoop() {
-  if (!isConnected) return;
-
+  if (!isMonitoring) return;
   const now = performance.now();
   if (now - lastUIUpdate > 1000 / UI_FPS) {
     lastUIUpdate = now;
@@ -284,133 +392,83 @@ function mainLoop() {
     spikeChart.render();
     updateStats();
   }
-
   requestAnimationFrame(mainLoop);
 }
 
 // ============================================================
-// STATS UPDATE
+// STATS
 // ============================================================
 function updateStats() {
   const elapsed = (Date.now() - connectTime) / 1000;
-  const minutes = Math.floor(elapsed / 60);
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  const secs = Math.floor(elapsed % 60);
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = Math.floor(elapsed % 60);
 
-  document.getElementById('stat-health').textContent = twin.healthScore.toFixed(2);
-  document.getElementById('stat-stress').textContent = twin.stressIndex.toFixed(2);
-  document.getElementById('stat-spike-rate').textContent = twin.spikeRate.toFixed(1);
-  document.getElementById('stat-baseline').textContent = twin.baseline.noise.toFixed(1);
-  document.getElementById('stat-snr').textContent = twin.baseline.noise > 0
+  const twin = twinEngine.getTwin(activeOrganismId);
+  document.getElementById('s-health').textContent = twin ? twin.state.healthScore.toFixed(2) : '--';
+  document.getElementById('s-stress').textContent = twin ? twin.state.stressIndex.toFixed(2) : '--';
+  document.getElementById('s-rate').textContent = twin ? twin.state.spikeRate.toFixed(1) : '--';
+  document.getElementById('s-snr').textContent = twin && twin.baseline.noise > 0
     ? (20 * Math.log10(twin.baseline.amplitude / twin.baseline.noise)).toFixed(1) : '--';
-  document.getElementById('stat-samples').textContent = sampleCount.toLocaleString();
-  document.getElementById('stat-spikes').textContent = spikeCount;
-  document.getElementById('stat-uptime').textContent = `${hours}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-  document.getElementById('stat-threshold').textContent = `${pipeline.detector.thresholdMult}× MAD`;
-}
-
-// ============================================================
-// SPIKE LOG (to chat)
-// ============================================================
-function logSpike(event) {
-  const f = event.features;
-  if (!f) return;
-
-  // Only log significant events
-  if (event.classification === 'unknown' && event.confidence < 0.5) return;
-
-  const confClass = event.confidence > 0.85 ? 'high' : event.confidence > 0.7 ? 'med' : 'low';
-
-  const evidenceRows = [
-    `<tr><td>Amplitude</td><td>${f.amplitude.toFixed(1)} µV</td><td class="${f.amplitude > twin.baseline.amplitude*2 ? 'ev-up' : 'ev-stable'}">${f.amplitude > twin.baseline.amplitude*2 ? '↑ above baseline' : 'baseline'}</td></tr>`,
-    `<tr><td>Frequency</td><td>${f.dominantFreq.toFixed(2)} Hz</td><td class="${f.dominantFreq < twin.baseline.freq*0.6 ? 'ev-down' : 'ev-stable'}">${f.dominantFreq < twin.baseline.freq*0.6 ? '↓' : '→'} ${f.dominantFreq < twin.baseline.freq*0.6 ? 'reduced' : 'normal'}</td></tr>`,
-    `<tr><td>Duration</td><td>${f.duration.toFixed(0)} ms</td><td class="ev-stable">${f.duration > 400 ? 'long' : 'normal'}</td></tr>`,
-    `<tr><td>Rise time</td><td>${f.riseTime.toFixed(0)} ms</td><td class="${f.riseTime < 50 ? 'ev-up' : 'ev-stable'}">${f.riseTime < 50 ? 'fast' : 'normal'}</td></tr>`,
-    `<tr><td>Spectral entropy</td><td>${f.spectralEntropy.toFixed(2)}</td><td class="ev-stable">${f.spectralEntropy > 0.6 ? 'complex' : 'simple'}</td></tr>`
-  ].join('');
-
-  const confTag = `<span class="confidence-tag ${confClass}">${(event.confidence*100).toFixed(0)}%</span>`;
-
-  const labels = {
-    water_stress: 'Water Stress Detected',
-    touch_response: 'Touch Response',
-    wounding: 'Wounding Signal',
-    resting: 'Resting State',
-    unknown: 'Unknown Pattern'
-  };
-
-  const type = event.classification === 'wounding' ? 'warning' : 'event';
-
-  chat.addMessage({
-    type,
-    text: `${labels[event.classification] || event.classification} ${confTag}`,
-    evidence: `<table>${evidenceRows}</table>`,
-    time: event.time
-  });
+  document.getElementById('s-samples').textContent = sampleCount.toLocaleString();
+  document.getElementById('s-spikes').textContent = spikeCount;
+  document.getElementById('s-uptime').textContent = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  document.getElementById('s-baseline').textContent = twin ? twin.baseline.noise.toFixed(1) + ' µV' : '--';
+  document.getElementById('s-threshold').textContent = pipeline.detector.thresholdMult + '× MAD';
 }
 
 // ============================================================
 // APP CONTROLS
 // ============================================================
 function setupAppControls() {
-  // Filter toggles
-  document.getElementById('filter-toggle').addEventListener('change', e => {
-    pipeline.filtersOn = e.target.checked;
-    log(`Filters ${e.target.checked ? 'enabled' : 'disabled'}`);
-  });
-  document.getElementById('notch-toggle').addEventListener('change', e => {
-    pipeline.notchOn = e.target.checked;
-    log(`Notch filter ${e.target.checked ? 'enabled' : 'disabled'}`);
-  });
+  document.getElementById('filter-toggle').addEventListener('change', e => { pipeline.filtersOn = e.target.checked; });
+  document.getElementById('notch-toggle').addEventListener('change', e => { pipeline.notchOn = e.target.checked; });
 
-  // Scale buttons
   document.getElementById('btn-scale-auto').addEventListener('click', () => {
     waveformChart.autoScale = true;
     document.getElementById('btn-scale-auto').classList.add('active');
     document.getElementById('btn-scale-fixed').classList.remove('active');
   });
   document.getElementById('btn-scale-fixed').addEventListener('click', () => {
-    waveformChart.autoScale = false;
-    waveformChart.yMin = -20;
-    waveformChart.yMax = 20;
+    waveformChart.autoScale = false; waveformChart.yMin = -20; waveformChart.yMax = 20;
     document.getElementById('btn-scale-fixed').classList.add('active');
     document.getElementById('btn-scale-auto').classList.remove('active');
   });
 
-  // Disconnect
   document.getElementById('btn-disconnect').addEventListener('click', async () => {
-    if (serial && serial.isConnected) await serial.disconnect();
-    if (audioCapture && audioCapture.isCapturing) audioCapture.stop();
+    await hal.disconnect();
+    isMonitoring = false;
     isConnected = false;
-    document.getElementById('app').classList.add('hidden');
-    document.getElementById('connect-screen').classList.remove('hidden');
-    document.getElementById('connect-status-msg').textContent = '';
+    if (experimentLog.getActive()) experimentLog.endSession();
+    showScreen('connect');
+    document.getElementById('connect-msg').textContent = '';
     waveformChart.clear();
     spectrogramChart.spectrum = [];
     spikeChart.setData([]);
-    sampleCount = 0;
-    spikeCount = 0;
-    twin.events = [];
   });
 
-  // Export CSV
-  document.getElementById('btn-export-csv').addEventListener('click', () => {
-    if (twin.events.length === 0) return;
-    let csv = 'Timestamp,Classification,Confidence,Amplitude_uV,Duration_ms,RiseTime_ms,Freq_Hz,Entropy,SNR\n';
-    for (const e of twin.events) {
-      if (!e.features) continue;
-      csv += `${new Date(e.time).toISOString()},${e.classification},${e.confidence},`
-           + `${e.features.amplitude.toFixed(2)},${e.features.duration.toFixed(1)},`
-           + `${e.features.riseTime.toFixed(1)},${e.features.dominantFreq.toFixed(3)},`
-           + `${e.features.spectralEntropy.toFixed(3)},${e.snr.toFixed(1)}\n`;
-    }
-    const blob = new Blob([csv], {type:'text/csv'});
+  document.getElementById('btn-new-experiment').addEventListener('click', () => {
+    if (experimentLog.getActive()) experimentLog.endSession();
+    const source = hal.getActive();
+    experimentLog.startSession(activeOrganismId, {
+      species: twinEngine.getTwin(activeOrganismId)?.species || '',
+      sensorType: source?.type || 'unknown',
+      calibrationScore: calibrationResult?.score ?? null,
+      sampleRate: source?.sampleRate || 250
+    });
+    document.getElementById('log-line').textContent = 'New experiment started';
+    chat.addMessage({ type: 'event', text: 'New experiment session started.', time: Date.now() });
+  });
+
+  document.getElementById('btn-export').addEventListener('click', () => {
+    const csv = experimentLog.exportCSV();
+    if (!csv) return;
+    const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `bioecho-export-${Date.now()}.csv`;
+    a.download = `bioecho-${Date.now()}.csv`;
     a.click();
-    log(`Exported ${twin.events.length} events to CSV`);
+    log('Exported experiment to CSV');
   });
 
   // Tabs
@@ -422,6 +480,30 @@ function setupAppControls() {
       document.getElementById('pane-' + tab.dataset.tab).classList.add('active');
     });
   });
+
+  // Update experiment list
+  setInterval(() => {
+    const sessions = experimentLog.getSessions();
+    const active = experimentLog.getActive();
+    const list = document.getElementById('experiment-list');
+    const status = document.getElementById('exp-status');
+
+    if (active) {
+      status.textContent = `Active: ${active.id} (${active.events.length} events)`;
+      status.className = 'exp-active';
+    } else {
+      status.textContent = 'No active experiment';
+      status.className = 'exp-inactive';
+    }
+
+    list.innerHTML = sessions.slice(-10).reverse().map(s => `
+      <div class="exp-item">
+        <span class="exp-id">${s.id}</span>
+        <span class="exp-events">${s.events.length} events</span>
+        <span class="exp-time">${new Date(s.startTime).toLocaleDateString()}</span>
+      </div>
+    `).join('');
+  }, 2000);
 }
 
 function log(msg) {
@@ -430,10 +512,8 @@ function log(msg) {
 }
 
 function updateClock() {
-  document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+  const el = document.getElementById('clock');
+  if (el) el.textContent = new Date().toLocaleTimeString();
 }
 
-// ============================================================
-// START
-// ============================================================
 document.addEventListener('DOMContentLoaded', init);

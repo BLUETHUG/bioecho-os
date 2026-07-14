@@ -7,40 +7,54 @@
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-<!-- Connection Screen (shown before device is connected) -->
-<div id="connect-screen">
-  <div class="connect-card">
-    <div class="connect-logo">BioEcho</div>
-    <div class="connect-subtitle">Biological Intelligence Platform</div>
-    <div class="connect-desc">Connect a sensor device to begin monitoring plant electrophysiology signals.</div>
-
-    <div class="connect-options">
-      <div class="connect-option" data-source="serial">
+<!-- SCREEN 1: Connection -->
+<div id="screen-connect" class="screen active">
+  <div class="center-card">
+    <div class="logo">BioEcho</div>
+    <div class="subtitle">Biological Intelligence Platform</div>
+    <p class="desc">Connect a sensor device to begin monitoring.</p>
+    <div class="options">
+      <div class="option" data-source="serial">
         <div class="option-icon">USB</div>
-        <div class="option-title">USB Serial Device</div>
-        <div class="option-desc">Backyard Brains SpikerBox or ESP32 + ADS1115 node</div>
+        <div><div class="option-title">USB Serial Device</div><div class="option-desc">SpikerBox or ESP32 + ADS1115</div></div>
       </div>
-      <div class="connect-option" data-source="audio">
+      <div class="option" data-source="audio">
         <div class="option-icon">MIC</div>
-        <div class="option-title">Microphone</div>
-        <div class="option-desc">Live audio capture for bioacoustic analysis</div>
+        <div><div class="option-title">Microphone</div><div class="option-desc">Bioacoustic analysis</div></div>
       </div>
     </div>
+    <div id="connect-msg" class="status-msg"></div>
+    <div class="foot">Chrome 89+ or Edge 89+ required for Web Serial.</div>
+  </div>
+</div>
 
-    <div id="connect-status-msg" class="connect-status"></div>
-
-    <div class="connect-footer">
-      Requires Chrome 89+ or Edge 89+ for Web Serial API support.
+<!-- SCREEN 2: Calibration -->
+<div id="screen-calibrate" class="screen">
+  <div class="center-card">
+    <div class="logo">Calibration</div>
+    <div class="subtitle">Measuring signal integrity</div>
+    <div id="cal-progress-bar" class="progress-bar"><div id="cal-progress-fill" class="progress-fill"></div></div>
+    <div id="cal-status" class="status-msg">Preparing calibration...</div>
+    <div id="cal-results" class="cal-results hidden">
+      <div class="cal-score" id="cal-score">--</div>
+      <div class="cal-grade" id="cal-grade">--</div>
+      <div class="cal-details" id="cal-details"></div>
+      <div class="cal-recommendations" id="cal-recommendations"></div>
+    </div>
+    <div class="cal-actions">
+      <button id="btn-skip-cal" class="btn-secondary">Skip Calibration</button>
+      <button id="btn-start-monitoring" class="btn-primary hidden">Start Monitoring</button>
     </div>
   </div>
 </div>
 
-<!-- Main Application (hidden until device connected) -->
-<div id="app" class="hidden">
+<!-- SCREEN 3: Main Application -->
+<div id="screen-app" class="screen">
   <div id="topbar">
     <div class="topbar-left">
       <span class="topbar-brand">BioEcho</span>
-      <span id="device-label" class="topbar-device">USB Serial</span>
+      <span id="device-label" class="topbar-chip">USB</span>
+      <span id="cal-badge" class="topbar-chip cal-good">Cal: --</span>
       <span id="sample-rate-label" class="topbar-meta"></span>
     </div>
     <div class="topbar-center">
@@ -48,14 +62,13 @@
     </div>
     <div class="topbar-right">
       <span id="clock"></span>
-      <button id="btn-disconnect" class="btn-topbar">Disconnect</button>
+      <button id="btn-new-experiment" class="btn-topbar">New Experiment</button>
+      <button id="btn-disconnect" class="btn-topbar btn-danger">Disconnect</button>
     </div>
   </div>
 
   <div id="workspace">
-    <!-- Left Panel: Waveform + Controls -->
     <div id="left-panel">
-      <!-- Waveform -->
       <div class="panel" id="waveform-panel">
         <div class="panel-header">
           <span class="panel-title">Waveform</span>
@@ -66,30 +79,19 @@
             <label class="toggle-sm"><input type="checkbox" id="notch-toggle" checked> Notch</label>
           </div>
         </div>
-        <div class="panel-body">
-          <canvas id="waveform-canvas"></canvas>
-          <div class="axis-label-y">Voltage (µV)</div>
-          <div class="axis-label-x">Time (s)</div>
-        </div>
+        <div class="panel-body"><canvas id="waveform-canvas"></canvas></div>
       </div>
-
-      <!-- Spectrogram -->
       <div class="panel" id="spectrogram-panel">
         <div class="panel-header">
           <span class="panel-title">Spectrogram</span>
           <span id="spectrogram-info" class="panel-meta"></span>
         </div>
-        <div class="panel-body">
-          <canvas id="spectrogram-canvas"></canvas>
-          <div class="axis-label-y">Freq (Hz)</div>
-        </div>
+        <div class="panel-body"><canvas id="spectrogram-canvas"></canvas></div>
       </div>
-
-      <!-- Spike Detail -->
       <div class="panel" id="spike-panel">
         <div class="panel-header">
           <span class="panel-title">Spike Detail</span>
-          <span id="spike-info" class="panel-meta">No spike detected</span>
+          <span id="spike-info" class="panel-meta">No spike</span>
         </div>
         <div class="panel-body">
           <canvas id="spike-canvas"></canvas>
@@ -98,107 +100,63 @@
       </div>
     </div>
 
-    <!-- Right Panel: Chat + Stats -->
     <div id="right-panel">
-      <!-- Tabs -->
       <div class="tab-bar">
         <button class="tab active" data-tab="chat">Chat</button>
+        <button class="tab" data-tab="explain">Explain</button>
         <button class="tab" data-tab="stats">Stats</button>
-        <button class="tab" data-tab="history">History</button>
+        <button class="tab" data-tab="experiment">Experiment</button>
       </div>
 
-      <!-- Chat Tab -->
+      <!-- Chat -->
       <div class="tab-pane active" id="pane-chat">
         <div id="chat-messages"></div>
       </div>
 
-      <!-- Stats Tab -->
+      <!-- Explainability -->
+      <div class="tab-pane" id="pane-explain">
+        <div id="explain-content">
+          <div class="explain-empty">No explanations yet. Connect and monitor to see evidence chains.</div>
+        </div>
+      </div>
+
+      <!-- Stats -->
       <div class="tab-pane" id="pane-stats">
         <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">Health</div>
-            <div class="stat-value" id="stat-health">--</div>
-            <div class="stat-unit">score</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Stress</div>
-            <div class="stat-value" id="stat-stress">--</div>
-            <div class="stat-unit">index</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Spike Rate</div>
-            <div class="stat-value" id="stat-spike-rate">--</div>
-            <div class="stat-unit">per min</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Baseline</div>
-            <div class="stat-value" id="stat-baseline">--</div>
-            <div class="stat-unit">µV RMS</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">SNR</div>
-            <div class="stat-value" id="stat-snr">--</div>
-            <div class="stat-unit">dB</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Samples</div>
-            <div class="stat-value" id="stat-samples">0</div>
-            <div class="stat-unit">total</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Spikes</div>
-            <div class="stat-value" id="stat-spikes">0</div>
-            <div class="stat-unit">detected</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Uptime</div>
-            <div class="stat-value" id="stat-uptime">0:00</div>
-            <div class="stat-unit">h:mm</div>
-          </div>
+          <div class="stat-card"><div class="stat-label">Health</div><div class="stat-value" id="s-health">--</div></div>
+          <div class="stat-card"><div class="stat-label">Stress</div><div class="stat-value" id="s-stress">--</div></div>
+          <div class="stat-card"><div class="stat-label">Spikes/min</div><div class="stat-value" id="s-rate">--</div></div>
+          <div class="stat-card"><div class="stat-label">SNR</div><div class="stat-value" id="s-snr">--</div></div>
+          <div class="stat-card"><div class="stat-label">Samples</div><div class="stat-value" id="s-samples">0</div></div>
+          <div class="stat-card"><div class="stat-label">Spikes</div><div class="stat-value" id="s-spikes">0</div></div>
+          <div class="stat-card"><div class="stat-label">Uptime</div><div class="stat-value" id="s-uptime">0:00</div></div>
+          <div class="stat-card"><div class="stat-label">Baseline</div><div class="stat-value" id="s-baseline">--</div></div>
         </div>
-
         <div class="stats-section">
           <div class="stats-section-title">Environment</div>
-          <div class="stats-row">
-            <span>Temperature</span><span id="stat-temp">--</span>
-          </div>
-          <div class="stats-row">
-            <span>Humidity</span><span id="stat-humidity">--</span>
-          </div>
-          <div class="stats-row">
-            <span>Soil Moisture</span><span id="stat-soil">--</span>
-          </div>
-          <div class="stats-row">
-            <span>Light Level</span><span id="stat-light">--</span>
-          </div>
+          <div class="stats-row"><span>Temperature</span><span id="s-temp">--</span></div>
+          <div class="stats-row"><span>Humidity</span><span id="s-humidity">--</span></div>
+          <div class="stats-row"><span>Soil Moisture</span><span id="s-soil">--</span></div>
+          <div class="stats-row"><span>Light Level</span><span id="s-light">--</span></div>
         </div>
-
         <div class="stats-section">
           <div class="stats-section-title">DSP Pipeline</div>
-          <div class="stats-row">
-            <span>High-pass</span><span id="stat-hp">0.01 Hz</span>
-          </div>
-          <div class="stats-row">
-            <span>Bandpass</span><span id="stat-bp">0.1–100 Hz</span>
-          </div>
-          <div class="stats-row">
-            <span>Notch</span><span id="stat-notch">50 Hz</span>
-          </div>
-          <div class="stats-row">
-            <span>Threshold</span><span id="stat-threshold">3.5× MAD</span>
-          </div>
+          <div class="stats-row"><span>High-pass</span><span>0.01 Hz</span></div>
+          <div class="stats-row"><span>Bandpass</span><span>0.1–100 Hz</span></div>
+          <div class="stats-row"><span>Notch</span><span id="s-notch-status">50/60 Hz active</span></div>
+          <div class="stats-row"><span>Threshold</span><span id="s-threshold">3.5× MAD</span></div>
         </div>
       </div>
 
-      <!-- History Tab -->
-      <div class="tab-pane" id="pane-history">
-        <div class="history-header">
-          <button id="btn-export-csv" class="btn-small">Export CSV</button>
+      <!-- Experiment Log -->
+      <div class="tab-pane" id="pane-experiment">
+        <div id="experiment-header">
+          <span id="exp-status" class="exp-inactive">No active experiment</span>
+          <button id="btn-export" class="btn-small">Export CSV</button>
         </div>
-        <div id="history-table"></div>
+        <div id="experiment-list"></div>
       </div>
 
-      <!-- Log Footer -->
       <div id="log-footer">
         <span id="log-line">Ready</span>
         <span id="log-time"></span>
@@ -207,10 +165,15 @@
   </div>
 </div>
 
+<script src="js/hal.js"></script>
+<script src="js/calibration.js"></script>
+<script src="js/species.js"></script>
+<script src="js/twin.js"></script>
+<script src="js/context.js"></script>
+<script src="js/meaning.js"></script>
+<script src="js/experiment.js"></script>
 <script src="js/dsp.js"></script>
 <script src="js/chart.js"></script>
-<script src="js/serial.js"></script>
-<script src="js/audio-capture.js"></script>
 <script src="js/chat.js"></script>
 <script src="js/app.js"></script>
 </body>
