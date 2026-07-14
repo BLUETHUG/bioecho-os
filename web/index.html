@@ -2,547 +2,131 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BioEcho OS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a1a0f">
+<meta name="description" content="BioEcho — The living intelligence platform for every organism on Earth">
+<title>BioEcho</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/lil.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-<!-- SCREEN 1: Connection -->
-<div id="screen-connect" class="screen active">
-  <div class="center-card">
-    <div class="logo">BioEcho</div>
-    <div class="subtitle">Biological Intelligence Platform</div>
-    <p class="desc">Connect a sensor device to begin monitoring.</p>
-    <div class="options">
-      <div class="option" data-source="serial">
-        <div class="option-icon">USB</div>
-        <div><div class="option-title">USB Serial Device</div><div class="option-desc">SpikerBox or ESP32 + ADS1115</div></div>
-      </div>
-      <div class="option" data-source="audio">
-        <div class="option-icon">MIC</div>
-        <div><div class="option-title">Microphone</div><div class="option-desc">Bioacoustic analysis</div></div>
-      </div>
-    </div>
-    <div id="connect-msg" class="status-msg"></div>
-    <div class="foot">Chrome 89+ or Edge 89+ required for Web Serial.</div>
-  </div>
+
+<!-- Living World Canvas -->
+<canvas id="world-canvas"></canvas>
+
+<!-- Cinematic Landing -->
+<div id="landing">
+  <div class="landing-seed" id="landing-seed"></div>
+  <div class="landing-text">touch to begin</div>
 </div>
 
-<!-- SCREEN 2: Calibration -->
-<div id="screen-calibrate" class="screen">
-  <div class="center-card">
-    <div class="logo">Calibration</div>
-    <div class="subtitle">Measuring signal integrity</div>
-    <div id="cal-progress-bar" class="progress-bar"><div id="cal-progress-fill" class="progress-fill"></div></div>
-    <div id="cal-status" class="status-msg">Preparing calibration...</div>
-    <div id="cal-results" class="cal-results hidden">
-      <div class="cal-score" id="cal-score">--</div>
-      <div class="cal-grade" id="cal-grade">--</div>
-      <div class="cal-details" id="cal-details"></div>
-      <div class="cal-recommendations" id="cal-recommendations"></div>
+<!-- App (revealed after landing) -->
+<div id="app">
+
+  <!-- Floating Top Bar -->
+  <div class="lil-panel lil-topbar">
+    <div class="lil-logo">
+      <span class="lil-logo-dot"></span>
+      BioEcho
     </div>
-    <div class="cal-actions">
-      <button id="btn-skip-cal" class="btn-secondary">Skip Calibration</button>
-      <button id="btn-start-monitoring" class="btn-primary hidden">Start Monitoring</button>
+    <nav class="lil-nav">
+      <button class="lil-nav-btn active" data-view="home">Home</button>
+      <button class="lil-nav-btn" data-view="lens">Lens</button>
+      <button class="lil-nav-btn" data-view="graph">Graph</button>
+      <button class="lil-nav-btn" data-view="predict">Predict</button>
+      <button class="lil-nav-btn" data-view="search">Search</button>
+      <button class="lil-nav-btn" data-view="earth">Earth</button>
+      <button class="lil-nav-btn" data-view="shop">Shop</button>
+    </nav>
+    <div class="lil-status">
+      <span class="lil-status-dot offline" id="status-dot"></span>
+      <span id="status-text">Disconnected</span>
     </div>
   </div>
+
+  <!-- Left Panel — Organisms & Identity -->
+  <div class="lil-panel lil-side-left" id="panel-left">
+    <div class="lil-section">
+      <div class="lil-section-title">Organisms</div>
+      <div id="organism-list"></div>
+      <button class="lil-btn" id="btn-add-organism" style="margin-top:8px;width:100%">+ Add Organism</button>
+    </div>
+    <div class="lil-section" id="identity-section" style="display:none">
+      <div class="lil-section-title">Identity</div>
+      <div id="identity-name" style="font-size:14px;font-weight:700;color:var(--lil-primary)"></div>
+      <div id="identity-stage" style="margin-top:4px"></div>
+      <div style="margin-top:8px">
+        <div class="lil-row"><span class="lil-row-key">Species</span><span class="lil-row-value" id="id-species">--</span></div>
+        <div class="lil-row"><span class="lil-row-key">Age</span><span class="lil-row-value" id="id-age">--</span></div>
+        <div class="lil-row"><span class="lil-row-key">Events</span><span class="lil-row-value" id="id-events">0</span></div>
+        <div class="lil-row"><span class="lil-row-key">Provenance</span><span class="lil-row-value" id="id-provenance">0 chains</span></div>
+      </div>
+    </div>
+    <div class="lil-section" id="lifecycle-section" style="display:none">
+      <div class="lil-section-title">Lifecycle</div>
+      <div id="lifecycle-transitions"></div>
+    </div>
+  </div>
+
+  <!-- Right Panel — Data & Intelligence -->
+  <div class="lil-panel lil-side-right" id="panel-right">
+    <div class="lil-section">
+      <div class="lil-section-title">Signal</div>
+      <div class="lil-stats">
+        <div class="lil-stat"><div class="lil-stat-value" id="stat-health">--</div><div class="lil-stat-label">Health</div></div>
+        <div class="lil-stat"><div class="lil-stat-value" id="stat-stress">--</div><div class="lil-stat-label">Stress</div></div>
+        <div class="lil-stat"><div class="lil-stat-value" id="stat-spikes">--</div><div class="lil-stat-label">Spikes</div></div>
+        <div class="lil-stat"><div class="lil-stat-value" id="stat-growth">--</div><div class="lil-stat-label">Growth</div></div>
+      </div>
+      <div class="lil-health-bar"><div class="lil-health-fill" id="health-bar" style="width:0%;background:var(--lil-primary)"></div></div>
+    </div>
+    <div class="lil-section">
+      <div class="lil-section-title">Environment</div>
+      <div class="lil-row"><span class="lil-row-key">Light</span><span class="lil-row-value" id="env-light">--</span></div>
+      <div class="lil-row"><span class="lil-row-key">Soil</span><span class="lil-row-value" id="env-soil">--</span></div>
+      <div class="lil-row"><span class="lil-row-key">Season</span><span class="lil-row-value" id="env-season">--</span></div>
+      <div class="lil-row"><span class="lil-row-key">Greeting</span><span class="lil-row-value" id="env-greeting" style="font-style:italic"></span></div>
+    </div>
+    <div class="lil-section">
+      <div class="lil-section-title">Prediction</div>
+      <div id="prediction-content" style="font-size:11px;color:var(--lil-text2)">Select an organism</div>
+    </div>
+    <div class="lil-section">
+      <div class="lil-section-title">Recent Activity</div>
+      <div id="activity-feed" style="max-height:120px;overflow-y:auto"></div>
+    </div>
+    <div class="lil-section">
+      <div class="lil-section-title">Citizen Science</div>
+      <div class="lil-stats">
+        <div class="lil-stat"><div class="lil-stat-value" id="stat-reputation">0</div><div class="lil-stat-label">Reputation</div></div>
+        <div class="lil-stat"><div class="lil-stat-value" id="stat-contributions">0</div><div class="lil-stat-label">Contributions</div></div>
+      </div>
+      <div id="badges-container" style="margin-top:6px"></div>
+    </div>
+    <div class="lil-section">
+      <div class="lil-section-title">Verification</div>
+      <div class="lil-row"><span class="lil-row-key">Chains</span><span class="lil-row-value" id="stat-chains">0</span></div>
+      <div class="lil-row"><span class="lil-row-key">Confidence</span><span class="lil-row-value" id="stat-confidence">0%</span></div>
+    </div>
+  </div>
+
+  <!-- Bottom Controls -->
+  <div class="lil-panel lil-bottom">
+    <button class="lil-btn" id="btn-connect">Connect Device</button>
+    <button class="lil-btn" id="btn-start">Start Monitoring</button>
+    <button class="lil-btn" id="btn-scan">Scan with Lens</button>
+    <button class="lil-btn" id="btn-submit-obs">Submit Observation</button>
+    <button class="lil-btn" id="btn-export">Export Data</button>
+    <button class="lil-btn lil-btn-danger" id="btn-emergency">Emergency</button>
+  </div>
+
 </div>
 
-<!-- SCREEN 3: Main Application -->
-<div id="screen-app" class="screen">
-  <div id="topbar">
-    <div class="topbar-left">
-      <span class="topbar-brand">BioEcho</span>
-      <span id="device-label" class="topbar-chip">USB</span>
-      <span id="cal-badge" class="topbar-chip cal-good">Cal: --</span>
-      <span id="sample-rate-label" class="topbar-meta"></span>
-    </div>
-      <div class="topbar-center">
-      <div id="live-indicator" class="live-on"><span class="live-dot"></span>LIVE</div>
-      <button id="btn-lens" class="btn-topbar btn-lens" style="margin-left:8px">Lens</button>
-    </div>
-    <div class="topbar-right">
-      <span id="clock"></span>
-      <button id="btn-new-experiment" class="btn-topbar">New Experiment</button>
-      <button id="btn-disconnect" class="btn-topbar btn-danger">Disconnect</button>
-    </div>
-  </div>
-
-  <div id="workspace">
-    <div id="left-panel">
-      <div class="panel" id="waveform-panel">
-        <div class="panel-header">
-          <span class="panel-title">Waveform</span>
-          <div class="panel-controls">
-            <button class="btn-mini active" id="btn-scale-auto">Auto</button>
-            <button class="btn-mini" id="btn-scale-fixed">Fixed</button>
-            <label class="toggle-sm"><input type="checkbox" id="filter-toggle" checked> Filter</label>
-            <label class="toggle-sm"><input type="checkbox" id="notch-toggle" checked> Notch</label>
-          </div>
-        </div>
-        <div class="panel-body"><canvas id="waveform-canvas"></canvas></div>
-      </div>
-      <div class="panel" id="spectrogram-panel">
-        <div class="panel-header">
-          <span class="panel-title">Spectrogram</span>
-          <span id="spectrogram-info" class="panel-meta"></span>
-        </div>
-        <div class="panel-body"><canvas id="spectrogram-canvas"></canvas></div>
-      </div>
-      <div class="panel" id="spike-panel">
-        <div class="panel-header">
-          <span class="panel-title">Spike Detail</span>
-          <span id="spike-info" class="panel-meta">No spike</span>
-        </div>
-        <div class="panel-body">
-          <canvas id="spike-canvas"></canvas>
-          <div id="spike-features" class="feature-bar"></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="right-panel">
-      <div class="tab-bar">
-        <button class="tab active" data-tab="chat">Chat</button>
-        <button class="tab" data-tab="lens">Lens</button>
-        <button class="tab" data-tab="explain">Explain</button>
-        <button class="tab" data-tab="identity">Identity</button>
-        <button class="tab" data-tab="stats">Stats</button>
-        <button class="tab" data-tab="knowledge">Graph</button>
-        <button class="tab" data-tab="environment">Env</button>
-        <button class="tab" data-tab="relationships">Care</button>
-        <button class="tab" data-tab="evidence">Evidence</button>
-        <button class="tab" data-tab="verification">Verify</button>
-        <button class="tab" data-tab="citizen">Science</button>
-        <button class="tab" data-tab="predict">Predict</button>
-        <button class="tab" data-tab="research">Research</button>
-        <button class="tab" data-tab="search">Search</button>
-        <button class="tab" data-tab="earth">Earth</button>
-        <button class="tab" data-tab="timemachine">Timeline</button>
-        <button class="tab" data-tab="emergency">Emergency</button>
-        <button class="tab" data-tab="marketplace">Shop</button>
-        <button class="tab" data-tab="experiment">Experiment</button>
-      </div>
-
-      <!-- Chat -->
-      <div class="tab-pane active" id="pane-chat">
-        <div id="chat-messages"></div>
-      </div>
-
-      <!-- BioEcho Lens -->
-      <div class="tab-pane" id="pane-lens">
-        <div class="lens-header">
-          <span class="lens-title">BioEcho Lens</span>
-          <button id="btn-start-scan" class="btn-small">Start Scan</button>
-        </div>
-        <div class="lens-camera">
-          <video id="lens-video" playsinline muted></video>
-          <canvas id="lens-canvas"></canvas>
-          <div id="lens-overlay" class="lens-overlay"></div>
-        </div>
-        <div class="lens-result" id="lens-result">
-          <div class="lens-empty">Point camera at an organism to identify</div>
-        </div>
-        <div class="lens-section">
-          <div class="lens-section-title">Recommendations</div>
-          <div id="lens-recommendations"></div>
-        </div>
-      </div>
-
-      <!-- Explainability -->
-      <div class="tab-pane" id="pane-explain">
-        <div id="explain-content">
-          <div class="explain-empty">No explanations yet. Connect and monitor to see evidence chains.</div>
-        </div>
-      </div>
-
-      <!-- Identity / Lifecycle -->
-      <div class="tab-pane" id="pane-identity">
-        <div class="id-header">
-          <span class="id-title">Living Identity</span>
-          <span id="id-stage" class="id-chip">--</span>
-        </div>
-        <div class="id-name" id="id-name">--</div>
-        <div class="id-section">
-          <div class="id-section-title">Identity</div>
-          <div class="stats-row"><span>Version</span><span id="id-version">--</span></div>
-          <div class="stats-row"><span>Species</span><span id="id-species">--</span></div>
-          <div class="stats-row"><span>Age</span><span id="id-age">--</span></div>
-          <div class="stats-row"><span>Acquired</span><span id="id-acquired">--</span></div>
-          <div class="stats-row"><span>Parent</span><span id="id-parent">--</span></div>
-          <div class="stats-row"><span>Propagation</span><span id="id-propagation">--</span></div>
-          <div class="stats-row"><span>Location</span><span id="id-location">--</span></div>
-        </div>
-        <div class="id-section">
-          <div class="id-section-title">Lifecycle Transitions</div>
-          <div id="id-transitions"></div>
-        </div>
-        <div class="id-section">
-          <div class="id-section-title">State History</div>
-          <div id="id-state-history"></div>
-        </div>
-        <div class="id-section">
-          <div class="id-section-title">Provenance</div>
-          <div class="stats-row"><span>Events with chain</span><span id="id-prov-count">--</span></div>
-          <div class="stats-row"><span>Integrity</span><span id="id-integrity">--</span></div>
-        </div>
-        <div class="id-section">
-          <button id="btn-export-identity" class="btn-small">Export Identity</button>
-        </div>
-      </div>
-
-      <!-- Stats -->
-      <div class="tab-pane" id="pane-stats">
-        <div class="stats-grid">
-          <div class="stat-card"><div class="stat-label">Health</div><div class="stat-value" id="s-health">--</div></div>
-          <div class="stat-card"><div class="stat-label">Stress</div><div class="stat-value" id="s-stress">--</div></div>
-          <div class="stat-card"><div class="stat-label">Spikes/min</div><div class="stat-value" id="s-rate">--</div></div>
-          <div class="stat-card"><div class="stat-label">SNR</div><div class="stat-value" id="s-snr">--</div></div>
-          <div class="stat-card"><div class="stat-label">Samples</div><div class="stat-value" id="s-samples">0</div></div>
-          <div class="stat-card"><div class="stat-label">Spikes</div><div class="stat-value" id="s-spikes">0</div></div>
-          <div class="stat-card"><div class="stat-label">Uptime</div><div class="stat-value" id="s-uptime">0:00</div></div>
-          <div class="stat-card"><div class="stat-label">Baseline</div><div class="stat-value" id="s-baseline">--</div></div>
-        </div>
-        <div class="stats-section">
-          <div class="stats-section-title">Environment</div>
-          <div class="stats-row"><span>Temperature</span><span id="s-temp">--</span></div>
-          <div class="stats-row"><span>Humidity</span><span id="s-humidity">--</span></div>
-          <div class="stats-row"><span>Soil Moisture</span><span id="s-soil">--</span></div>
-          <div class="stats-row"><span>Light Level</span><span id="s-light">--</span></div>
-        </div>
-        <div class="stats-section">
-          <div class="stats-section-title">DSP Pipeline</div>
-          <div class="stats-row"><span>High-pass</span><span>0.01 Hz</span></div>
-          <div class="stats-row"><span>Bandpass</span><span>0.1–100 Hz</span></div>
-          <div class="stats-row"><span>Notch</span><span id="s-notch-status">50/60 Hz active</span></div>
-          <div class="stats-row"><span>Threshold</span><span id="s-threshold">3.5× MAD</span></div>
-        </div>
-      </div>
-
-      <!-- Knowledge Graph -->
-      <div class="tab-pane" id="pane-knowledge">
-        <div class="kg-header">
-          <span class="kg-title">Knowledge Graph</span>
-          <button id="btn-refresh-graph" class="btn-small">Refresh</button>
-        </div>
-        <div class="stats-grid kg-stats">
-          <div class="stat-card"><div class="stat-label">Nodes</div><div class="stat-value" id="kg-nodes">--</div></div>
-          <div class="stat-card"><div class="stat-label">Edges</div><div class="stat-value" id="kg-edges">--</div></div>
-        </div>
-        <div class="kg-section">
-          <div class="kg-section-title">Entity Counts</div>
-          <div id="kg-entity-counts"></div>
-        </div>
-        <div class="kg-section">
-          <div class="kg-section-title">Relationship Types</div>
-          <div id="kg-edge-counts"></div>
-        </div>
-        <div class="kg-section">
-          <div class="kg-section-title">Subgraph (Active Organism)</div>
-          <div id="kg-subgraph"></div>
-        </div>
-      </div>
-
-      <!-- Environment -->
-      <div class="tab-pane" id="pane-environment">
-        <div class="env-header">
-          <span class="env-title">Environmental Context</span>
-          <span id="env-season" class="env-chip">--</span>
-        </div>
-        <div class="env-grid">
-          <div class="env-card"><div class="env-icon">&#9788;</div><div class="env-label">Light Phase</div><div class="env-value" id="env-light-phase">--</div></div>
-          <div class="env-card"><div class="env-icon">&#9790;</div><div class="env-label">Sunrise</div><div class="env-value" id="env-sunrise">--</div></div>
-          <div class="env-card"><div class="env-icon">&#9789;</div><div class="env-label">Sunset</div><div class="env-value" id="env-sunset">--</div></div>
-          <div class="env-card"><div class="env-icon">&#9681;</div><div class="env-label">Day Length</div><div class="env-value" id="env-daylength">--</div></div>
-        </div>
-        <div class="env-stats">
-          <div class="stats-row"><span>Temperature</span><span id="env-temp">--</span></div>
-          <div class="stats-row"><span>Humidity</span><span id="env-humidity">--</span></div>
-          <div class="stats-row"><span>Soil Moisture</span><span id="env-soil">--</span></div>
-          <div class="stats-row"><span>Light Level</span><span id="env-light">--</span></div>
-          <div class="stats-row"><span>Temp Trend</span><span id="env-temp-trend">--</span></div>
-          <div class="stats-row"><span>Soil Trend</span><span id="env-soil-trend">--</span></div>
-        </div>
-        <div class="env-section">
-          <div class="env-section-title">Watering Prediction</div>
-          <div id="env-watering" class="env-watering">No sensor data</div>
-        </div>
-      </div>
-
-      <!-- Relationships / Care -->
-      <div class="tab-pane" id="pane-relationships">
-        <div class="rel-header">
-          <span class="rel-title">Organism Care</span>
-          <button id="btn-add-activity" class="btn-small">+ Activity</button>
-        </div>
-        <div id="rel-organism-name" class="rel-name">No organism selected</div>
-        <div id="rel-recommendations" class="rel-section">
-          <div class="rel-section-title">Recommendations</div>
-          <div id="rel-recs-list" class="rel-recs">Connect to see care recommendations</div>
-        </div>
-        <div id="rel-activities" class="rel-section">
-          <div class="rel-section-title">Recent Activities</div>
-          <div id="rel-activity-list"></div>
-        </div>
-        <div id="rel-milestones" class="rel-section">
-          <div class="rel-section-title">Milestones</div>
-          <div id="rel-milestone-list"></div>
-        </div>
-      </div>
-
-      <!-- Evidence Validation -->
-      <div class="tab-pane" id="pane-evidence">
-        <div class="evi-header">
-          <span class="evi-title">Signal Integrity</span>
-          <span id="evi-rate" class="evi-chip">--</span>
-        </div>
-        <div class="stats-grid evi-stats">
-          <div class="stat-card"><div class="stat-label">Valid</div><div class="stat-value" id="evi-valid">--</div></div>
-          <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-value" id="evi-rejected">--</div></div>
-          <div class="stat-card"><div class="stat-label">Artifacts</div><div class="stat-value" id="evi-artifacts">--</div></div>
-          <div class="stat-card"><div class="stat-label">Valid Rate</div><div class="stat-value" id="evi-validrate">--</div></div>
-        </div>
-        <div class="evi-section">
-          <div class="evi-section-title">Recent Validations</div>
-          <div id="evi-history"></div>
-        </div>
-        <div class="evi-section">
-          <div class="evi-section-title">Artifact Types Detected</div>
-          <div id="evi-artifact-types"></div>
-        </div>
-      </div>
-
-      <!-- Verification Chain -->
-      <div class="tab-pane" id="pane-verification">
-        <div class="vc-header">
-          <span class="vc-title">Verification Chain</span>
-          <button id="btn-create-chain" class="btn-small">Create Chain</button>
-        </div>
-        <div class="stats-grid vc-stats">
-          <div class="stat-card"><div class="stat-label">Total Chains</div><div class="stat-value" id="vc-total">0</div></div>
-          <div class="stat-card"><div class="stat-label">Avg Confidence</div><div class="stat-value" id="vc-confidence">0.00</div></div>
-          <div class="stat-card"><div class="stat-label">Validated</div><div class="stat-value" id="vc-validated">0</div></div>
-          <div class="stat-card"><div class="stat-label">Published</div><div class="stat-value" id="vc-published">0</div></div>
-        </div>
-        <div class="vc-section">
-          <div class="vc-section-title">Verification Levels</div>
-          <div id="vc-levels"></div>
-        </div>
-        <div class="vc-section">
-          <div class="vc-section-title">Recent Chains</div>
-          <div id="vc-chains"></div>
-        </div>
-      </div>
-
-      <!-- Citizen Science -->
-      <div class="tab-pane" id="pane-citizen">
-        <div class="cs-header">
-          <span class="cs-title">Citizen Science</span>
-          <button id="btn-submit-obs" class="btn-small">Submit</button>
-        </div>
-        <div class="stats-grid cs-stats">
-          <div class="stat-card"><div class="stat-label">Submissions</div><div class="stat-value" id="cs-total">0</div></div>
-          <div class="stat-card"><div class="stat-label">Reviews</div><div class="stat-value" id="cs-reviews">0</div></div>
-          <div class="stat-card"><div class="stat-label">Species</div><div class="stat-value" id="cs-species">0</div></div>
-          <div class="stat-card"><div class="stat-label">Reputation</div><div class="stat-value" id="cs-reputation">0</div></div>
-        </div>
-        <div class="cs-section">
-          <div class="cs-section-title">Contribution Badges</div>
-          <div id="cs-badges"></div>
-        </div>
-        <div class="cs-section">
-          <div class="cs-section-title">Recent Submissions</div>
-          <div id="cs-submissions"></div>
-        </div>
-      </div>
-
-      <!-- Predictive Intelligence -->
-      <div class="tab-pane" id="pane-predict">
-        <div class="pred-header">
-          <span class="pred-title">Predictive Intelligence</span>
-          <button id="btn-run-prediction" class="btn-small">Run</button>
-        </div>
-        <div class="stats-grid pred-stats">
-          <div class="stat-card"><div class="stat-label">Anomalies</div><div class="stat-value" id="pred-anomalies">0</div></div>
-          <div class="stat-card"><div class="stat-label">Tracked</div><div class="stat-value" id="pred-tracked">0</div></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Next Prediction</div>
-          <div id="pred-next"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Needs Forecast</div>
-          <div id="pred-needs"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Health Trajectory</div>
-          <div id="pred-health"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Anomalies</div>
-          <div id="pred-anomaly-list"></div>
-        </div>
-      </div>
-
-      <!-- Research Assistant -->
-      <div class="tab-pane" id="pane-research">
-        <div class="res-header">
-          <span class="res-title">Research Assistant</span>
-        </div>
-        <div class="res-search-bar">
-          <input id="res-query" type="text" placeholder="Search research..." class="res-input">
-          <button id="btn-res-search" class="btn-small">Search</button>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Local History</div>
-          <div id="res-local-results"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Research Papers</div>
-          <div id="res-papers"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Hypotheses</div>
-          <button id="btn-gen-hypotheses" class="btn-small" style="margin-bottom:6px">Generate</button>
-          <div id="res-hypotheses"></div>
-        </div>
-      </div>
-
-      <!-- Biological Search -->
-      <div class="tab-pane" id="pane-search">
-        <div class="srch-header">
-          <span class="srch-title">Biological Search</span>
-        </div>
-        <div class="res-search-bar">
-          <input id="srch-query" type="text" placeholder="Search all data..." class="res-input">
-          <button id="btn-srch-search" class="btn-small">Search</button>
-        </div>
-        <div class="stats-grid pred-stats">
-          <div class="stat-card"><div class="stat-label">Indexed</div><div class="stat-value" id="srch-indexed">0</div></div>
-          <div class="stat-card"><div class="stat-label">Results</div><div class="stat-value" id="srch-results-count">0</div></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Results</div>
-          <div id="srch-results"></div>
-        </div>
-      </div>
-
-      <!-- BioEcho Earth -->
-      <div class="tab-pane" id="pane-earth">
-        <div class="earth-header">
-          <span class="earth-title">BioEcho Earth</span>
-          <button id="btn-load-earth" class="btn-small">Load</button>
-        </div>
-        <div class="stats-grid earth-stats">
-          <div class="stat-card"><div class="stat-label">Data Points</div><div class="stat-value" id="earth-points">0</div></div>
-          <div class="stat-card"><div class="stat-label">Layers</div><div class="stat-value" id="earth-layers">0</div></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Layers</div>
-          <div id="earth-layer-list"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Community Missions</div>
-          <div id="earth-missions"></div>
-        </div>
-      </div>
-
-      <!-- Time Machine -->
-      <div class="tab-pane" id="pane-timemachine">
-        <div class="tm-header">
-          <span class="tm-title">Time Machine</span>
-          <div class="tm-controls">
-            <button id="btn-tm-load" class="btn-small">Load</button>
-            <button id="btn-tm-play" class="btn-small">Play</button>
-            <button id="btn-tm-pause" class="btn-small" style="display:none">Pause</button>
-          </div>
-        </div>
-        <div class="stats-grid tm-stats">
-          <div class="stat-card"><div class="stat-label">Events</div><div class="stat-value" id="tm-events">0</div></div>
-          <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-value" id="tm-progress">0%</div></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Timeline</div>
-          <div id="tm-timeline"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Current Snapshot</div>
-          <div id="tm-snapshot"></div>
-        </div>
-        <div class="tm-export">
-          <button id="btn-tm-export" class="btn-small">Export Timeline</button>
-        </div>
-      </div>
-
-      <!-- Emergency Intelligence -->
-      <div class="tab-pane" id="pane-emergency">
-        <div class="emg-header">
-          <span class="emg-title">Emergency Intelligence</span>
-          <button id="btn-detect-emergency" class="btn-small">Detect</button>
-        </div>
-        <div class="stats-grid emg-stats">
-          <div class="stat-card"><div class="stat-label">Emergencies</div><div class="stat-value" id="emg-total">0</div></div>
-          <div class="stat-card"><div class="stat-label">Affected</div><div class="stat-value" id="emg-affected">0</div></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Medical Passport</div>
-          <button id="btn-passport" class="btn-small" style="margin-bottom:6px">View</button>
-          <div id="emg-passport"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Nearby Vets</div>
-          <div id="emg-vets"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Emergency History</div>
-          <div id="emg-history"></div>
-        </div>
-      </div>
-
-      <!-- Marketplace -->
-      <div class="tab-pane" id="pane-marketplace">
-        <div class="mkt-header">
-          <span class="mkt-title">Marketplace</span>
-        </div>
-        <div class="res-search-bar">
-          <input id="mkt-query" type="text" placeholder="Search products..." class="res-input">
-          <button id="btn-mkt-search" class="btn-small">Search</button>
-        </div>
-        <div class="stats-grid earth-stats">
-          <div class="stat-card"><div class="stat-label">Products</div><div class="stat-value" id="mkt-products">0</div></div>
-          <div class="stat-card"><div class="stat-label">Orders</div><div class="stat-value" id="mkt-orders">0</div></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Recommended for You</div>
-          <div id="mkt-recommendations"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">All Products</div>
-          <div id="mkt-products-list"></div>
-        </div>
-        <div class="pred-section">
-          <div class="pred-section-title">Conservation Donations</div>
-          <div id="mkt-donations"></div>
-        </div>
-      </div>
-
-      <!-- Experiment Log -->
-      <div class="tab-pane" id="pane-experiment">
-        <div id="experiment-header">
-          <span id="exp-status" class="exp-inactive">No active experiment</span>
-          <button id="btn-export" class="btn-small">Export CSV</button>
-        </div>
-        <div id="experiment-list"></div>
-      </div>
-
-      <div id="log-footer">
-        <span id="log-line">Ready</span>
-        <span id="log-time"></span>
-      </div>
-    </div>
-  </div>
-</div>
-
+<!-- Scripts (order matters) -->
+<script src="js/lil.js"></script>
 <script src="js/hal.js"></script>
 <script src="js/calibration.js"></script>
 <script src="js/species.js"></script>
@@ -551,11 +135,10 @@
 <script src="js/twin.js"></script>
 <script src="js/context.js"></script>
 <script src="js/meaning.js"></script>
-<script src="js/experiment.js"></script>
 <script src="js/evidence.js"></script>
-<script src="js/local-db.js"></script>
 <script src="js/environment.js"></script>
 <script src="js/relationship.js"></script>
+<script src="js/experiment.js"></script>
 <script src="js/knowledge-graph.js"></script>
 <script src="js/lens.js"></script>
 <script src="js/verification.js"></script>
@@ -569,6 +152,12 @@
 <script src="js/emergency.js"></script>
 <script src="js/marketplace.js"></script>
 <script src="js/dsp.js"></script>
+<script src="js/serial.js"></script>
+<script src="js/audio-capture.js"></script>
+<script src="js/ambient.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/world.js"></script>
+<script src="js/firefly.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/chat.js"></script>
 <script src="js/app.js"></script>
