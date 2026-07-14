@@ -57,8 +57,9 @@
       <span id="cal-badge" class="topbar-chip cal-good">Cal: --</span>
       <span id="sample-rate-label" class="topbar-meta"></span>
     </div>
-    <div class="topbar-center">
+      <div class="topbar-center">
       <div id="live-indicator" class="live-on"><span class="live-dot"></span>LIVE</div>
+      <button id="btn-lens" class="btn-topbar btn-lens" style="margin-left:8px">Lens</button>
     </div>
     <div class="topbar-right">
       <span id="clock"></span>
@@ -103,6 +104,7 @@
     <div id="right-panel">
       <div class="tab-bar">
         <button class="tab active" data-tab="chat">Chat</button>
+        <button class="tab" data-tab="lens">Lens</button>
         <button class="tab" data-tab="explain">Explain</button>
         <button class="tab" data-tab="identity">Identity</button>
         <button class="tab" data-tab="stats">Stats</button>
@@ -116,6 +118,26 @@
       <!-- Chat -->
       <div class="tab-pane active" id="pane-chat">
         <div id="chat-messages"></div>
+      </div>
+
+      <!-- BioEcho Lens -->
+      <div class="tab-pane" id="pane-lens">
+        <div class="lens-header">
+          <span class="lens-title">BioEcho Lens</span>
+          <button id="btn-start-scan" class="btn-small">Start Scan</button>
+        </div>
+        <div class="lens-camera">
+          <video id="lens-video" playsinline muted></video>
+          <canvas id="lens-canvas"></canvas>
+          <div id="lens-overlay" class="lens-overlay"></div>
+        </div>
+        <div class="lens-result" id="lens-result">
+          <div class="lens-empty">Point camera at an organism to identify</div>
+        </div>
+        <div class="lens-section">
+          <div class="lens-section-title">Recommendations</div>
+          <div id="lens-recommendations"></div>
+        </div>
       </div>
 
       <!-- Explainability -->
@@ -312,6 +334,7 @@
 <script src="js/environment.js"></script>
 <script src="js/relationship.js"></script>
 <script src="js/knowledge-graph.js"></script>
+<script src="js/lens.js"></script>
 <script src="js/dsp.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/chat.js"></script>

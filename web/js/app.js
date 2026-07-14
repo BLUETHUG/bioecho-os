@@ -16,6 +16,7 @@ const evidenceValidator = new EvidenceValidator();
 const environmentEngine = new EnvironmentEngine();
 const relationshipEngine = new RelationshipEngine();
 const knowledgeGraph = new KnowledgeGraph();
+const lens = new BioEchoLens(knowledgeGraph, twinEngine, speciesDB, contextEngine, meaningEngine);
 
 // ============================================================
 // APP STATE
@@ -664,6 +665,44 @@ function setupNewTabs() {
     knowledgeGraph.populateFromEngines(twinEngine, speciesDB, environmentEngine, experimentLog, relationshipEngine, localDB);
     updateKnowledgeGraphUI();
   }, 15000);
+
+  // Lens button (topbar)
+  document.getElementById('btn-lens')?.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelector('.tab[data-tab="lens"]')?.classList.add('active');
+    document.getElementById('pane-lens')?.classList.add('active');
+  });
+
+  // Lens scan button
+  document.getElementById('btn-start-scan')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-start-scan');
+    if (lens.isCapturing) {
+      lens.stopCamera();
+      lens.stopScanning();
+      btn.textContent = 'Start Scan';
+      document.getElementById('lens-result').innerHTML = '<div class="lens-empty">Camera stopped</div>';
+      return;
+    }
+    btn.textContent = 'Initializing...';
+    const init = await lens.initialize('lens-video', 'lens-canvas');
+    if (!init) { btn.textContent = 'Start Scan'; return; }
+    const cam = await lens.startCamera();
+    if (!cam.success) {
+      btn.textContent = 'Start Scan';
+      document.getElementById('lens-result').innerHTML = `<div class="lens-empty">${cam.error}</div>`;
+      return;
+    }
+    btn.textContent = 'Scanning...';
+
+    const scanLoop = async () => {
+      if (!lens.isCapturing) return;
+      const result = await lens.scan(activeOrganismId);
+      if (result) updateLensUI(result);
+      requestAnimationFrame(scanLoop);
+    };
+    requestAnimationFrame(scanLoop);
+  });
 }
 
 // ============================================================
@@ -900,6 +939,50 @@ function updateKnowledgeGraphUI() {
     }).join('') || '<div style="font-size:11px;color:var(--text3)">No connections</div>';
   } else {
     subgraphEl.innerHTML = '<div style="font-size:11px;color:var(--text3)">No organism selected</div>';
+  }
+}
+
+// ============================================================
+// LENS UI
+// ============================================================
+function updateLensUI(result) {
+  if (!result) return;
+  const rec = result.recognition;
+  const el = document.getElementById('lens-result');
+  if (!el) return;
+
+  const sp = rec.matchedSpecies;
+  const org = rec.matchedOrganism;
+  const id = rec.identification;
+
+  let html = '<div class="lens-result-content">';
+  if (sp) {
+    html += `<div class="lens-species">${sp.commonName}</div>`;
+    html += `<div class="lens-scientific">${sp.scientificName}</div>`;
+    html += `<div class="lens-family">${sp.family || ''}</div>`;
+  } else {
+    html += `<div class="lens-species">${id.type}</div>`;
+    html += `<div class="lens-confidence">${(id.confidence * 100).toFixed(0)}% confidence</div>`;
+  }
+  if (org) {
+    const state = org.state || {};
+    html += `<div class="lens-stats">`;
+    html += `<div class="stats-row"><span>Health</span><span>${(state.healthScore || 0).toFixed(2)}</span></div>`;
+    html += `<div class="stats-row"><span>Stress</span><span>${(state.stressIndex || 0).toFixed(2)}</span></div>`;
+    html += `<div class="stats-row"><span>Spike Rate</span><span>${(state.spikeRate || 0).toFixed(1)}/min</span></div>`;
+    html += `</div>`;
+  }
+  if (sp?.notes) {
+    html += `<div class="lens-notes">${sp.notes.substring(0, 120)}...</div>`;
+  }
+  html += '</div>';
+  el.innerHTML = html;
+
+  const recsEl = document.getElementById('lens-recommendations');
+  if (recsEl && rec.recommendations) {
+    recsEl.innerHTML = rec.recommendations.map(r =>
+      `<div class="rel-rec-item ${r.urgency || 'low'}">${r.text}</div>`
+    ).join('') || '<div style="font-size:11px;color:var(--text3)">No recommendations</div>';
   }
 }
 
