@@ -105,6 +105,9 @@
         <button class="tab active" data-tab="chat">Chat</button>
         <button class="tab" data-tab="explain">Explain</button>
         <button class="tab" data-tab="stats">Stats</button>
+        <button class="tab" data-tab="environment">Env</button>
+        <button class="tab" data-tab="relationships">Care</button>
+        <button class="tab" data-tab="evidence">Evidence</button>
         <button class="tab" data-tab="experiment">Experiment</button>
       </div>
 
@@ -148,6 +151,75 @@
         </div>
       </div>
 
+      <!-- Environment -->
+      <div class="tab-pane" id="pane-environment">
+        <div class="env-header">
+          <span class="env-title">Environmental Context</span>
+          <span id="env-season" class="env-chip">--</span>
+        </div>
+        <div class="env-grid">
+          <div class="env-card"><div class="env-icon">&#9788;</div><div class="env-label">Light Phase</div><div class="env-value" id="env-light-phase">--</div></div>
+          <div class="env-card"><div class="env-icon">&#9790;</div><div class="env-label">Sunrise</div><div class="env-value" id="env-sunrise">--</div></div>
+          <div class="env-card"><div class="env-icon">&#9789;</div><div class="env-label">Sunset</div><div class="env-value" id="env-sunset">--</div></div>
+          <div class="env-card"><div class="env-icon">&#9681;</div><div class="env-label">Day Length</div><div class="env-value" id="env-daylength">--</div></div>
+        </div>
+        <div class="env-stats">
+          <div class="stats-row"><span>Temperature</span><span id="env-temp">--</span></div>
+          <div class="stats-row"><span>Humidity</span><span id="env-humidity">--</span></div>
+          <div class="stats-row"><span>Soil Moisture</span><span id="env-soil">--</span></div>
+          <div class="stats-row"><span>Light Level</span><span id="env-light">--</span></div>
+          <div class="stats-row"><span>Temp Trend</span><span id="env-temp-trend">--</span></div>
+          <div class="stats-row"><span>Soil Trend</span><span id="env-soil-trend">--</span></div>
+        </div>
+        <div class="env-section">
+          <div class="env-section-title">Watering Prediction</div>
+          <div id="env-watering" class="env-watering">No sensor data</div>
+        </div>
+      </div>
+
+      <!-- Relationships / Care -->
+      <div class="tab-pane" id="pane-relationships">
+        <div class="rel-header">
+          <span class="rel-title">Organism Care</span>
+          <button id="btn-add-activity" class="btn-small">+ Activity</button>
+        </div>
+        <div id="rel-organism-name" class="rel-name">No organism selected</div>
+        <div id="rel-recommendations" class="rel-section">
+          <div class="rel-section-title">Recommendations</div>
+          <div id="rel-recs-list" class="rel-recs">Connect to see care recommendations</div>
+        </div>
+        <div id="rel-activities" class="rel-section">
+          <div class="rel-section-title">Recent Activities</div>
+          <div id="rel-activity-list"></div>
+        </div>
+        <div id="rel-milestones" class="rel-section">
+          <div class="rel-section-title">Milestones</div>
+          <div id="rel-milestone-list"></div>
+        </div>
+      </div>
+
+      <!-- Evidence Validation -->
+      <div class="tab-pane" id="pane-evidence">
+        <div class="evi-header">
+          <span class="evi-title">Signal Integrity</span>
+          <span id="evi-rate" class="evi-chip">--</span>
+        </div>
+        <div class="stats-grid evi-stats">
+          <div class="stat-card"><div class="stat-label">Valid</div><div class="stat-value" id="evi-valid">--</div></div>
+          <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-value" id="evi-rejected">--</div></div>
+          <div class="stat-card"><div class="stat-label">Artifacts</div><div class="stat-value" id="evi-artifacts">--</div></div>
+          <div class="stat-card"><div class="stat-label">Valid Rate</div><div class="stat-value" id="evi-validrate">--</div></div>
+        </div>
+        <div class="evi-section">
+          <div class="evi-section-title">Recent Validations</div>
+          <div id="evi-history"></div>
+        </div>
+        <div class="evi-section">
+          <div class="evi-section-title">Artifact Types Detected</div>
+          <div id="evi-artifact-types"></div>
+        </div>
+      </div>
+
       <!-- Experiment Log -->
       <div class="tab-pane" id="pane-experiment">
         <div id="experiment-header">
@@ -172,6 +244,10 @@
 <script src="js/context.js"></script>
 <script src="js/meaning.js"></script>
 <script src="js/experiment.js"></script>
+<script src="js/evidence.js"></script>
+<script src="js/local-db.js"></script>
+<script src="js/environment.js"></script>
+<script src="js/relationship.js"></script>
 <script src="js/dsp.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/chat.js"></script>

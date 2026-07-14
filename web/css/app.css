@@ -174,3 +174,54 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
 /* Log Footer */
 #log-footer{padding:5px 12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:var(--mono);background:var(--bg3)}
+
+/* Environment Tab */
+.env-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.env-title{font-size:12px;font-weight:600;color:var(--text)}
+.env-chip{font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius);color:var(--accent)}
+.env-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:10px 12px}
+.env-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:8px;text-align:center}
+.env-icon{font-size:18px;margin-bottom:2px}
+.env-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.env-value{font-size:13px;font-weight:600;color:var(--text);font-family:var(--mono);margin-top:2px}
+.env-stats{padding:0 12px 8px}
+.env-section{padding:8px 12px;border-top:1px solid var(--border)}
+.env-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+.env-watering{font-size:11px;color:var(--text2);padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius)}
+.env-watering.urgent{border-color:var(--orange);color:var(--orange)}
+.env-watering.soon{border-color:var(--yellow);color:var(--yellow)}
+
+/* Relationships Tab */
+.rel-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.rel-title{font-size:12px;font-weight:600;color:var(--text)}
+.rel-name{padding:8px 12px;font-size:13px;font-weight:600;color:var(--accent);border-bottom:1px solid var(--border)}
+.rel-section{padding:8px 12px;border-bottom:1px solid var(--border)}
+.rel-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+.rel-recs{font-size:11px;color:var(--text2)}
+.rel-rec-item{padding:6px 8px;margin-bottom:4px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);font-size:11px}
+.rel-rec-item.high{border-left:3px solid var(--red)}
+.rel-rec-item.medium{border-left:3px solid var(--orange)}
+.rel-rec-item.low{border-left:3px solid var(--accent)}
+.rel-activity-item{display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--border)}
+.rel-activity-item:last-child{border-bottom:none}
+.rel-activity-type{color:var(--text2);text-transform:capitalize}
+.rel-activity-time{color:var(--text3);font-size:10px;font-family:var(--mono)}
+.rel-milestone-item{padding:4px 0;font-size:11px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
+.rel-milestone-item:last-child{border-bottom:none}
+.rel-milestone-desc{color:var(--text2)}
+.rel-milestone-date{color:var(--text3);font-size:10px;font-family:var(--mono)}
+
+/* Evidence Tab */
+.evi-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.evi-title{font-size:12px;font-weight:600;color:var(--text)}
+.evi-chip{font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius);color:var(--green)}
+.evi-chip.warn{border-color:var(--orange);color:var(--orange)}
+.evi-stats{grid-template-columns:repeat(2,1fr)}
+.evi-section{padding:8px 12px;border-bottom:1px solid var(--border)}
+.evi-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+.evi-history-item{display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--border)}
+.evi-history-item:last-child{border-bottom:none}
+.evi-hist-valid{color:var(--green)}
+.evi-hist-rejected{color:var(--red)}
+.evi-artifact-tag{display:inline-block;font-size:10px;padding:2px 6px;margin:2px;border:1px solid var(--border);border-radius:var(--radius);color:var(--text2)}
+.evi-artifact-tag.high{border-color:var(--red);color:var(--red)}

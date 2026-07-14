@@ -1,4 +1,4 @@
-// BioEcho OS — Main Application Controller (6 Engines)
+// BioEcho OS — Main Application Controller (10 Engines)
 
 // ============================================================
 // ENGINE INSTANCES
@@ -10,6 +10,10 @@ const twinEngine = new DigitalTwinEngine();
 const contextEngine = new ContextEngine(twinEngine, speciesDB);
 const meaningEngine = new MeaningEngine(speciesDB);
 const experimentLog = new ExperimentLog();
+const evidenceValidator = new EvidenceValidator();
+const localDB = new LocalDB();
+const environmentEngine = new EnvironmentEngine();
+const relationshipEngine = new RelationshipEngine();
 
 // ============================================================
 // APP STATE
@@ -32,6 +36,12 @@ function init() {
   pipeline = new DspPipeline(250);
   chat = new ChatEngine('chat-messages');
 
+  // Initialize local database
+  localDB.init().then(() => {
+    log('Local database initialized');
+    updateDBStats();
+  }).catch(() => log('LocalDB init failed'));
+
   // Create default organism if none exist
   if (twinEngine.getAll().length === 0) {
     const org = twinEngine.create('org-1', 'Plant #42', 'epipremnum-aureum', 'plant');
@@ -40,8 +50,18 @@ function init() {
     activeOrganismId = twinEngine.getAll()[0].id;
   }
 
+  // Set up default relationship
+  const userId = 'user-default';
+  if (!relationshipEngine.getRelationship(userId, activeOrganismId)) {
+    relationshipEngine.createRelationship(userId, activeOrganismId, 'owner', {
+      name: 'Plant #42',
+      adoptionDate: Date.now()
+    });
+  }
+
   setupScreens();
   setupAppControls();
+  setupNewTabs();
   updateClock();
   setInterval(updateClock, 1000);
 }
@@ -173,11 +193,21 @@ function startMonitoring() {
 
   chat.addMessage({ type: 'event', text: `Monitoring started. Signal processing pipeline active at ${source?.sampleRate || 250} Hz.`, time: Date.now() });
 
+  // Persist experiment to local DB
+  const session = experimentLog.getActive();
+  if (session) {
+    localDB.saveExperiment({ ...session, organismId: activeOrganismId }).catch(() => {});
+  }
+
+  // Refresh relationship UI
+  updateRelationshipsUI();
+  updateEnvironmentUI();
+
   requestAnimationFrame(mainLoop);
 }
 
 // ============================================================
-// DATA HANDLER — Every sample passes through all 6 engines
+// DATA HANDLER — Every sample passes through all 10 engines
 // ============================================================
 function handleSample(raw) {
   if (!isMonitoring || !isConnected) return;
@@ -194,7 +224,13 @@ function handleSample(raw) {
   sampleCount++;
   experimentLog.recordSamples(1);
 
-  // 3. Spike Detection
+  // 3. Update environment with any sensor data from device
+  if (raw.env) {
+    environmentEngine.update(raw.env);
+    updateEnvironmentUI();
+  }
+
+  // 4. Spike Detection
   if (result.spike) {
     spikeCount++;
 
@@ -207,24 +243,52 @@ function handleSample(raw) {
     const features = extractSpikeFeatures(window, pipeline.sampleRate);
     if (!features) return;
 
-    // 4. Context Engine — gather organism, species, environment, history
+    // 5. Context Engine — gather organism, species, environment, history
     const context = contextEngine.getContext(activeOrganismId);
 
-    // 5. Meaning Engine — interpret with evidence chain
+    // 6. Meaning Engine — interpret with evidence chain
     const explanation = meaningEngine.interpret(
       classify(features), features, context, calibrationResult
     );
 
-    // 6. Digital Twin — record event
+    // 7. Evidence Validator — validate BEFORE recording
+    const signalStats = {
+      recentSpikeCount: spikeCount,
+      periodicity: 0,
+      periodicityFreq: 0
+    };
+    const evidenceResult = evidenceValidator.validate(
+      { features, confidence: explanation.confidence, classification: explanation.classification },
+      signalStats,
+      context
+    );
+
+    // Update evidence UI
+    updateEvidenceUI(evidenceResult);
+
+    // 8. If rejected by evidence validator, skip recording but log it
+    if (!evidenceResult.valid) {
+      chat.addMessage({
+        type: 'warning',
+        text: `Signal rejected: ${evidenceResult.rejectionReason}`,
+        time: Date.now()
+      });
+      return;
+    }
+
+    // 9. Digital Twin — record event (with adjusted confidence)
     const event = {
       time: Date.now(),
       type: 'spike',
       classification: explanation.classification,
-      confidence: explanation.confidence,
+      confidence: evidenceResult.adjustedConfidence,
+      originalConfidence: explanation.confidence,
+      confidencePenalty: evidenceResult.confidencePenalty,
       features,
       amplitude: result.spike.amplitude,
       snr: result.spike.snr,
       noiseFloor: result.spike.noiseFloor,
+      artifacts: evidenceResult.artifacts,
       explanation: {
         statement: explanation.statement,
         evidenceChain: explanation.evidenceChain,
@@ -236,18 +300,30 @@ function handleSample(raw) {
     twinEngine.recordEvent(activeOrganismId, event);
     twinEngine.updateBaseline(activeOrganismId, features.amplitude, features.dominantFreq, result.spike.noiseFloor);
 
-    // 7. Experiment Log — record
+    // 10. Experiment Log — record
     experimentLog.recordEvent(event);
 
-    // 8. Waveform spike marker
+    // 11. Local Database — persist
+    localDB.saveEvent({ ...event, organismId: activeOrganismId }).catch(() => {});
+
+    // 12. Relationship Engine — log observation activity
+    const relId = `user-default-${activeOrganismId}`;
+    if (relationshipEngine.getRelationship('user-default', activeOrganismId)) {
+      relationshipEngine.recordActivity(relId, 'observation', {
+        classification: explanation.classification,
+        confidence: evidenceResult.adjustedConfidence
+      });
+    }
+
+    // 13. Waveform spike marker
     waveformChart.addSpike(spikeCount, result.spike.amplitude);
 
-    // 9. Chat — only significant events
+    // 14. Chat — only significant events
     if (explanation.confidence > 0.5 && explanation.classification !== 'resting') {
       logEvent(event, explanation);
     }
 
-    // 10. Update explainability panel
+    // 15. Update explainability panel
     updateExplainPanel(explanation);
   }
 
@@ -514,6 +590,158 @@ function log(msg) {
 function updateClock() {
   const el = document.getElementById('clock');
   if (el) el.textContent = new Date().toLocaleTimeString();
+}
+
+// ============================================================
+// NEW TAB FUNCTIONS — Environment, Relationships, Evidence, DB
+// ============================================================
+function setupNewTabs() {
+  // Activity button
+  document.getElementById('btn-add-activity').addEventListener('click', () => {
+    const relId = `user-default-${activeOrganismId}`;
+    const types = ['watering', 'feeding', 'observation', 'pruning', 'photo'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    relationshipEngine.recordActivity(relId, type, { manual: true });
+    updateRelationshipsUI();
+    log(`Logged activity: ${type}`);
+  });
+
+  // Initial UI updates
+  updateEnvironmentUI();
+  updateRelationshipsUI();
+  updateEvidenceUI(null);
+}
+
+// ============================================================
+// ENVIRONMENT UI
+// ============================================================
+function updateEnvironmentUI() {
+  const ctx = environmentEngine.getContext();
+  document.getElementById('env-light-phase').textContent = ctx.lightPhase || '--';
+  document.getElementById('env-sunrise').textContent = ctx.sunriseHour ? `${ctx.sunriseHour}h` : '--';
+  document.getElementById('env-sunset').textContent = ctx.sunsetHour ? `${ctx.sunsetHour}h` : '--';
+  document.getElementById('env-daylength').textContent = ctx.dayLength ? `${ctx.dayLength}h` : '--';
+  document.getElementById('env-season').textContent = ctx.season || '--';
+
+  const cur = ctx.current;
+  document.getElementById('env-temp').textContent = cur.temperature !== null ? `${cur.temperature.toFixed(1)}°C` : '--';
+  document.getElementById('env-humidity').textContent = cur.humidity !== null ? `${cur.humidity.toFixed(0)}%` : '--';
+  document.getElementById('env-soil').textContent = cur.soilMoisture !== null ? `${cur.soilMoisture.toFixed(0)}%` : '--';
+  document.getElementById('env-light').textContent = cur.lightLevel !== null ? `${cur.lightLevel.toFixed(0)} lux` : '--';
+
+  const tempTrend = environmentEngine.getTrend('temperature');
+  const soilTrend = environmentEngine.getTrend('soilMoisture');
+  document.getElementById('env-temp-trend').textContent = tempTrend === 'insufficient_data' ? 'Need data' : tempTrend;
+  document.getElementById('env-soil-trend').textContent = soilTrend === 'insufficient_data' ? 'Need data' : soilTrend;
+
+  const watering = environmentEngine.predictWateringNeed();
+  const waterEl = document.getElementById('env-watering');
+  if (!watering) {
+    waterEl.textContent = 'No soil sensor data';
+    waterEl.className = 'env-watering';
+  } else if (watering.needed) {
+    waterEl.textContent = `Water needed ${watering.urgency === 'soon' ? '(SOON)' : ''} — ~${watering.estimatedHours}h remaining (moisture: ${watering.currentMoisture.toFixed(0)}%)`;
+    waterEl.className = 'env-watering ' + watering.urgency;
+  } else {
+    waterEl.textContent = `Soil moisture adequate (${watering.currentMoisture?.toFixed(0) || '--'}%)`;
+    waterEl.className = 'env-watering';
+  }
+}
+
+// ============================================================
+// RELATIONSHIPS UI
+// ============================================================
+function updateRelationshipsUI() {
+  const userId = 'user-default';
+  const rels = relationshipEngine.getRelationshipsForUser(userId);
+  const rel = rels.find(r => r.organismId === activeOrganismId);
+
+  if (!rel) {
+    document.getElementById('rel-organism-name').textContent = 'No organism selected';
+    document.getElementById('rel-recs-list').textContent = 'Connect to see care recommendations';
+    document.getElementById('rel-activity-list').innerHTML = '';
+    document.getElementById('rel-milestone-list').innerHTML = '';
+    return;
+  }
+
+  document.getElementById('rel-organism-name').textContent = rel.metadata.name || activeOrganismId;
+
+  // Recommendations
+  const recs = relationshipEngine.getRecommendations(rel.id);
+  const recsEl = document.getElementById('rel-recs-list');
+  if (recs.length === 0) {
+    recsEl.textContent = 'No care recommendations yet — activities will build patterns';
+  } else {
+    recsEl.innerHTML = recs.map(r =>
+      `<div class="rel-rec-item ${r.urgency}">${r.message}</div>`
+    ).join('');
+  }
+
+  // Recent activities
+  const activities = rel.activities.slice(-15).reverse();
+  const actEl = document.getElementById('rel-activity-list');
+  actEl.innerHTML = activities.map(a =>
+    `<div class="rel-activity-item"><span class="rel-activity-type">${a.type}</span><span class="rel-activity-time">${new Date(a.time).toLocaleString()}</span></div>`
+  ).join('') || '<div style="font-size:11px;color:var(--text3)">No activities yet</div>';
+
+  // Milestones
+  const milestones = rel.milestones.slice(-10).reverse();
+  const msEl = document.getElementById('rel-milestone-list');
+  msEl.innerHTML = milestones.map(m =>
+    `<div class="rel-milestone-item"><span class="rel-milestone-desc">${m.description}</span><span class="rel-milestone-date">${new Date(m.date).toLocaleDateString()}</span></div>`
+  ).join('') || '<div style="font-size:11px;color:var(--text3)">No milestones recorded</div>';
+}
+
+// ============================================================
+// EVIDENCE UI
+// ============================================================
+function updateEvidenceUI(lastResult) {
+  const stats = evidenceValidator.getStats();
+  document.getElementById('evi-valid').textContent = stats.valid || '--';
+  document.getElementById('evi-rejected').textContent = stats.rejected || '--';
+  document.getElementById('evi-artifacts').textContent = stats.avgArtifacts ? stats.avgArtifacts.toFixed(1) : '--';
+  document.getElementById('evi-validrate').textContent = stats.validRate ? `${(stats.validRate * 100).toFixed(0)}%` : '--';
+
+  const chip = document.getElementById('evi-rate');
+  if (stats.validRate < 0.7) {
+    chip.textContent = 'POOR';
+    chip.className = 'evi-chip warn';
+  } else if (stats.validRate < 0.9) {
+    chip.textContent = 'FAIR';
+    chip.className = 'evi-chip warn';
+  } else {
+    chip.textContent = 'GOOD';
+    chip.className = 'evi-chip';
+  }
+
+  // History
+  const history = evidenceValidator.validationHistory.slice(-20).reverse();
+  const histEl = document.getElementById('evi-history');
+  histEl.innerHTML = history.map(h => {
+    const cls = h.valid ? 'evi-hist-valid' : 'evi-hist-rejected';
+    const label = h.valid ? 'Valid' : 'Rejected';
+    return `<div class="evi-history-item"><span class="${cls}">${label}</span><span style="color:var(--text3);font-size:10px">${h.artifactCount} artifacts</span></div>`;
+  }).join('') || '<div style="font-size:11px;color:var(--text3);padding:4px">No validations yet</div>';
+
+  // Artifact types
+  const typeCounts = {};
+  evidenceValidator.validationHistory.forEach(h => {
+    h.artifacts.forEach(a => { typeCounts[a.type] = (typeCounts[a.type] || 0) + 1; });
+  });
+  const typesEl = document.getElementById('evi-artifact-types');
+  typesEl.innerHTML = Object.entries(typeCounts).sort((a,b) => b[1] - a[1]).map(([type, count]) =>
+    `<span class="evi-artifact-tag${count > 5 ? ' high' : ''}">${type}: ${count}</span>`
+  ).join('') || '<div style="font-size:11px;color:var(--text3)">None detected</div>';
+}
+
+// ============================================================
+// LOCAL DB STATS
+// ============================================================
+async function updateDBStats() {
+  try {
+    const stats = await localDB.getStats();
+    document.getElementById('s-samples').textContent = stats.events ? stats.events.toLocaleString() : '0';
+  } catch {}
 }
 
 document.addEventListener('DOMContentLoaded', init);
