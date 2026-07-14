@@ -22,6 +22,11 @@ const citizenScience = new CitizenScienceEngine(localDB, verificationChain, know
 const predictiveEngine = new PredictiveEngine(twinEngine, speciesDB, contextEngine, localDB);
 const researchAssistant = new ResearchAssistant(twinEngine, speciesDB, knowledgeGraph, localDB, meaningEngine);
 const bioSearch = new BioSearchEngine(twinEngine, speciesDB, knowledgeGraph, localDB, contextEngine);
+const earth = new BioEchoEarth(knowledgeGraph, twinEngine, citizenScience);
+const timeMachine = new TimeMachine(twinEngine, localDB, identityLayer);
+const sdk = new BioEchoSDK();
+const emergency = new EmergencyEngine(twinEngine, speciesDB, localDB);
+const marketplace = new Marketplace(twinEngine, speciesDB);
 
 // ============================================================
 // APP STATE
@@ -646,6 +651,10 @@ function setupNewTabs() {
   updatePredictiveUI();
   updateResearchUI();
   updateSearchUI();
+  updateEarthUI();
+  updateTimeMachineUI();
+  updateEmergencyUI();
+  updateMarketplaceUI();
 
   // Export identity button
   document.getElementById('btn-export-identity')?.addEventListener('click', async () => {
@@ -1196,7 +1205,210 @@ document.getElementById('btn-srch-search')?.addEventListener('click', async () =
   log(`Search: ${results.length} results for "${q}"`);
 });
 
+// ============================================================
+// EARTH UI
+// ============================================================
+function updateEarthUI() {
+  const stats = earth.getStats();
+  document.getElementById('earth-points').textContent = stats.totalPoints;
+  document.getElementById('earth-layers').textContent = stats.layers;
+
+  const layerEl = document.getElementById('earth-layer-list');
+  const layerStats = earth.getLayerStats();
+  layerEl.innerHTML = Object.entries(layerStats).map(([id, l]) =>
+    `<div class="stats-row"><span style="color:${l.color}">${l.visible ? '●' : '○'} ${l.name}</span><span>${l.count}</span></div>`
+  ).join('');
+
+  const missions = earth.layers.get('missions')?.points || [];
+  const missionsEl = document.getElementById('earth-missions');
+  missionsEl.innerHTML = missions.map(m => {
+    const d = m.data;
+    return `<div class="pred-anomaly-item"><span class="pred-type">${m.label.substring(0, 30)}</span><span style="font-size:10px;color:var(--text3)">${d.participants}/${d.target}</span></div>`;
+  }).join('') || '<div style="font-size:11px;color:var(--text3)">No missions</div>';
+}
+
+// ============================================================
+// TIME MACHINE UI
+// ============================================================
+function updateTimeMachineUI() {
+  const stats = timeMachine.getStats();
+  document.getElementById('tm-events').textContent = stats.totalEvents;
+  document.getElementById('tm-progress').textContent = `${(stats.progress * 100).toFixed(0)}%`;
+
+  const timelineEl = document.getElementById('tm-timeline');
+  const visibleItems = timeMachine.timeline.slice(
+    Math.max(0, timeMachine.currentIndex - 5),
+    timeMachine.currentIndex + 10
+  );
+  timelineEl.innerHTML = visibleItems.map((t, i) => {
+    const isCurrent = t.index === timeMachine.currentIndex;
+    return `<div class="tm-item ${isCurrent ? 'tm-current' : ''}"><span class="tm-type">${t.type}</span><span class="tm-label">${t.label.substring(0, 40)}</span><span style="font-size:9px;color:var(--text3)">${new Date(t.timestamp).toLocaleDateString()}</span></div>`;
+  }).join('') || '<div style="font-size:11px;color:var(--text3)">No timeline loaded</div>';
+
+  const snapshot = timeMachine.getCurrentSnapshot();
+  const snapEl = document.getElementById('tm-snapshot');
+  if (snapshot) {
+    snapEl.innerHTML = `<div class="stats-row"><span>Time</span><span>${new Date(snapshot.timestamp).toLocaleString()}</span></div><div class="stats-row"><span>Type</span><span>${snapshot.type}</span></div><div class="stats-row"><span>Label</span><span>${snapshot.label.substring(0, 50)}</span></div>`;
+  } else {
+    snapEl.innerHTML = '<div style="font-size:11px;color:var(--text3)">No snapshot</div>';
+  }
+}
+
+// ============================================================
+// EMERGENCY UI
+// ============================================================
+function updateEmergencyUI() {
+  const stats = emergency.getStats();
+  document.getElementById('emg-total').textContent = stats.totalEmergencies;
+  document.getElementById('emg-affected').textContent = stats.organismsAffected;
+
+  const passportEl = document.getElementById('emg-passport');
+  if (activeOrganismId) {
+    emergency.getMedicalPassport(activeOrganismId).then(passport => {
+      if (passport) {
+        passportEl.innerHTML = `
+          <div class="stats-row"><span>Name</span><span>${passport.name}</span></div>
+          <div class="stats-row"><span>Species</span><span>${passport.species}</span></div>
+          <div class="stats-row"><span>Age</span><span>${passport.age ? passport.age + ' days' : '--'}</span></div>
+          <div class="stats-row"><span>History</span><span>${passport.medicalHistory.length} events</span></div>
+        `;
+      } else {
+        passportEl.innerHTML = '<div style="font-size:11px;color:var(--text3)">No organism selected</div>';
+      }
+    }).catch(() => {});
+  }
+
+  emergency.findNearestVet(activeOrganismId ? (twinEngine.getTwin(activeOrganismId)?.location) : null).then(vets => {
+    const vetsEl = document.getElementById('emg-vets');
+    vetsEl.innerHTML = vets.map(v =>
+      `<div class="pred-anomaly-item"><span class="pred-type">${v.name}</span><span style="font-size:10px;color:var(--text3)">${v.specialty} · ${v.distance ? v.distance.toFixed(0) + 'km' : '--'}</span></div>`
+    ).join('') || '<div style="font-size:11px;color:var(--text3)">No vets found</div>';
+  }).catch(() => {});
+
+  if (activeOrganismId) {
+    const history = emergency.emergencyHistory.get(activeOrganismId) || [];
+    const histEl = document.getElementById('emg-history');
+    histEl.innerHTML = history.slice(-5).reverse().map(e =>
+      `<div class="pred-anomaly-item pred-sev-${e.severity}"><span>${e.type}</span><span style="font-size:10px">${new Date(e.timestamp).toLocaleDateString()}</span></div>`
+    ).join('') || '<div style="font-size:11px;color:var(--text3)">No emergencies</div>';
+  }
+}
+
+// ============================================================
+// MARKETPLACE UI
+// ============================================================
+function updateMarketplaceUI() {
+  const stats = marketplace.getStats();
+  document.getElementById('mkt-products').textContent = stats.totalProducts;
+  document.getElementById('mkt-orders').textContent = stats.totalOrders;
+
+  marketplace.getRecommendations(activeOrganismId).then(recs => {
+    const recsEl = document.getElementById('mkt-recommendations');
+    recsEl.innerHTML = recs.map(p =>
+      `<div class="mkt-product"><div class="mkt-product-name">${p.name}</div><div class="mkt-product-desc">${p.description.substring(0, 60)}</div><div class="mkt-product-footer"><span class="mkt-price">$${p.price}</span><span class="mkt-rating">★ ${p.rating}</span><button class="btn-small mkt-buy" data-id="${p.id}">Add</button></div></div>`
+    ).join('') || '<div style="font-size:11px;color:var(--text3)">No recommendations</div>';
+  }).catch(() => {});
+
+  marketplace.browse().then(products => {
+    const listEl = document.getElementById('mkt-products-list');
+    listEl.innerHTML = products.map(p =>
+      `<div class="mkt-product"><div class="mkt-product-name">${p.name}</div><div class="mkt-product-footer"><span class="mkt-price">$${p.price}</span><span class="mkt-rating">★ ${p.rating} (${p.reviews})</span></div></div>`
+    ).join('');
+  }).catch(() => {});
+
+  const donEl = document.getElementById('mkt-donations');
+  donEl.innerHTML = `<div class="mkt-donation-option"><span>Plant Trees Foundation</span><button class="btn-small mkt-donate" data-org="ptf" data-amount="10">$10</button></div><div class="mkt-donation-option"><span>Coral Reef Alliance</span><button class="btn-small mkt-donate" data-org="coral" data-amount="25">$25</button></div><div class="mkt-donation-option"><span>WWF Conservation</span><button class="btn-small mkt-donate" data-org="wwf" data-amount="50">$50</button></div>`;
+}
+
+// ============================================================
+// BUTTON HANDLERS (Phase 6)
+// ============================================================
+
+// Earth
+document.getElementById('btn-load-earth')?.addEventListener('click', async () => {
+  await earth.loadData();
+  updateEarthUI();
+  log(`Earth loaded: ${earth.getStats().totalPoints} data points`);
+});
+
+// Time Machine
+document.getElementById('btn-tm-load')?.addEventListener('click', async () => {
+  if (!activeOrganismId) { log('Select an organism first'); return; }
+  await timeMachine.loadTimeline(activeOrganismId);
+  document.getElementById('btn-tm-play').style.display = '';
+  document.getElementById('btn-tm-pause').style.display = 'none';
+  updateTimeMachineUI();
+  log(`Timeline loaded: ${timeMachine.timeline.length} events`);
+});
+
+document.getElementById('btn-tm-play')?.addEventListener('click', () => {
+  timeMachine.play(2);
+  document.getElementById('btn-tm-play').style.display = 'none';
+  document.getElementById('btn-tm-pause').style.display = '';
+  log('Timeline playing');
+});
+
+document.getElementById('btn-tm-pause')?.addEventListener('click', () => {
+  timeMachine.pause();
+  document.getElementById('btn-tm-play').style.display = '';
+  document.getElementById('btn-tm-pause').style.display = 'none';
+  log('Timeline paused');
+});
+
+document.getElementById('btn-tm-export')?.addEventListener('click', async () => {
+  const data = await timeMachine.exportTimeline();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `bioecho-timeline-${activeOrganismId || 'unknown'}.json`;
+  a.click();
+  log('Timeline exported');
+});
+
+// Emergency
+document.getElementById('btn-detect-emergency')?.addEventListener('click', async () => {
+  if (!activeOrganismId) { log('Select an organism first'); return; }
+  const emergencyResult = await emergency.detectEmergency(activeOrganismId);
+  if (emergencyResult) {
+    log(`Emergency detected: ${emergencyResult.type} (${emergencyResult.severity})`);
+  } else {
+    log('No emergency detected — organism stable');
+  }
+  updateEmergencyUI();
+});
+
+document.getElementById('btn-passport')?.addEventListener('click', () => updateEmergencyUI());
+
+// Marketplace
+document.getElementById('btn-mkt-search')?.addEventListener('click', async () => {
+  const q = document.getElementById('mkt-query').value.trim();
+  const products = await marketplace.browse(null, { search: q || undefined });
+  const listEl = document.getElementById('mkt-products-list');
+  listEl.innerHTML = products.map(p =>
+    `<div class="mkt-product"><div class="mkt-product-name">${p.name}</div><div class="mkt-product-desc">${p.description.substring(0, 60)}</div><div class="mkt-product-footer"><span class="mkt-price">$${p.price}</span><span class="mkt-rating">★ ${p.rating}</span></div></div>`
+  ).join('') || '<div style="font-size:11px;color:var(--text3)">No products found</div>';
+});
+
+// Event delegation for marketplace buy/donate buttons
+document.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('mkt-buy')) {
+    const id = e.target.dataset.id;
+    const result = await marketplace.purchase(id);
+    if (result.success) { log(`Purchased: ${result.order.productName}`); updateMarketplaceUI(); }
+  }
+  if (e.target.classList.contains('mkt-donate')) {
+    const org = e.target.dataset.org;
+    const amount = parseFloat(e.target.dataset.amount);
+    const result = await marketplace.donate(org, amount);
+    if (result.success) { log(`Donated $${amount} to ${org}`); updateMarketplaceUI(); }
+  }
+});
+
 // Periodic UI updates for new engines
 setInterval(updatePredictiveUI, 15000);
 setInterval(updateResearchUI, 15000);
 setInterval(updateSearchUI, 15000);
+setInterval(updateEarthUI, 20000);
+setInterval(updateTimeMachineUI, 1000);
+setInterval(updateEmergencyUI, 15000);
+setInterval(updateMarketplaceUI, 20000);

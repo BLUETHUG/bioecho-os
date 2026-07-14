@@ -330,3 +330,39 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 /* Biological Search Tab */
 .srch-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
 .srch-title{font-size:12px;font-weight:600;color:var(--text)}
+
+/* Earth Tab */
+.earth-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.earth-title{font-size:12px;font-weight:600;color:var(--text)}
+.earth-stats{grid-template-columns:repeat(2,1fr)}
+
+/* Time Machine Tab */
+.tm-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.tm-title{font-size:12px;font-weight:600;color:var(--text)}
+.tm-controls{display:flex;gap:4px}
+.tm-stats{grid-template-columns:repeat(2,1fr)}
+.tm-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;border-bottom:1px solid var(--border)}
+.tm-item:last-child{border-bottom:none}
+.tm-current{background:rgba(59,130,246,0.1);border-left:2px solid var(--accent);padding-left:6px}
+.tm-type{color:var(--accent);font-size:10px;text-transform:capitalize;min-width:60px}
+.tm-label{color:var(--text2);flex:1;margin:0 6px}
+.tm-export{padding:8px 12px;border-bottom:1px solid var(--border)}
+
+/* Emergency Tab */
+.emg-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.emg-title{font-size:12px;font-weight:600;color:var(--text)}
+.emg-stats{grid-template-columns:repeat(2,1fr)}
+
+/* Marketplace Tab */
+.mkt-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.mkt-title{font-size:12px;font-weight:600;color:var(--text)}
+.mkt-product{padding:8px 0;border-bottom:1px solid var(--border)}
+.mkt-product:last-child{border-bottom:none}
+.mkt-product-name{font-size:11px;font-weight:600;color:var(--text)}
+.mkt-product-desc{font-size:10px;color:var(--text3);margin:2px 0}
+.mkt-product-footer{display:flex;align-items:center;gap:8px;margin-top:4px}
+.mkt-price{font-size:12px;font-weight:700;color:var(--green)}
+.mkt-rating{font-size:10px;color:var(--yellow)}
+.mkt-buy{margin-left:auto}
+.mkt-donation-option{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px}
+.mkt-donation-option:last-child{border-bottom:none}

@@ -117,6 +117,10 @@
         <button class="tab" data-tab="predict">Predict</button>
         <button class="tab" data-tab="research">Research</button>
         <button class="tab" data-tab="search">Search</button>
+        <button class="tab" data-tab="earth">Earth</button>
+        <button class="tab" data-tab="timemachine">Timeline</button>
+        <button class="tab" data-tab="emergency">Emergency</button>
+        <button class="tab" data-tab="marketplace">Shop</button>
         <button class="tab" data-tab="experiment">Experiment</button>
       </div>
 
@@ -423,6 +427,105 @@
         </div>
       </div>
 
+      <!-- BioEcho Earth -->
+      <div class="tab-pane" id="pane-earth">
+        <div class="earth-header">
+          <span class="earth-title">BioEcho Earth</span>
+          <button id="btn-load-earth" class="btn-small">Load</button>
+        </div>
+        <div class="stats-grid earth-stats">
+          <div class="stat-card"><div class="stat-label">Data Points</div><div class="stat-value" id="earth-points">0</div></div>
+          <div class="stat-card"><div class="stat-label">Layers</div><div class="stat-value" id="earth-layers">0</div></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Layers</div>
+          <div id="earth-layer-list"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Community Missions</div>
+          <div id="earth-missions"></div>
+        </div>
+      </div>
+
+      <!-- Time Machine -->
+      <div class="tab-pane" id="pane-timemachine">
+        <div class="tm-header">
+          <span class="tm-title">Time Machine</span>
+          <div class="tm-controls">
+            <button id="btn-tm-load" class="btn-small">Load</button>
+            <button id="btn-tm-play" class="btn-small">Play</button>
+            <button id="btn-tm-pause" class="btn-small" style="display:none">Pause</button>
+          </div>
+        </div>
+        <div class="stats-grid tm-stats">
+          <div class="stat-card"><div class="stat-label">Events</div><div class="stat-value" id="tm-events">0</div></div>
+          <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-value" id="tm-progress">0%</div></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Timeline</div>
+          <div id="tm-timeline"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Current Snapshot</div>
+          <div id="tm-snapshot"></div>
+        </div>
+        <div class="tm-export">
+          <button id="btn-tm-export" class="btn-small">Export Timeline</button>
+        </div>
+      </div>
+
+      <!-- Emergency Intelligence -->
+      <div class="tab-pane" id="pane-emergency">
+        <div class="emg-header">
+          <span class="emg-title">Emergency Intelligence</span>
+          <button id="btn-detect-emergency" class="btn-small">Detect</button>
+        </div>
+        <div class="stats-grid emg-stats">
+          <div class="stat-card"><div class="stat-label">Emergencies</div><div class="stat-value" id="emg-total">0</div></div>
+          <div class="stat-card"><div class="stat-label">Affected</div><div class="stat-value" id="emg-affected">0</div></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Medical Passport</div>
+          <button id="btn-passport" class="btn-small" style="margin-bottom:6px">View</button>
+          <div id="emg-passport"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Nearby Vets</div>
+          <div id="emg-vets"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Emergency History</div>
+          <div id="emg-history"></div>
+        </div>
+      </div>
+
+      <!-- Marketplace -->
+      <div class="tab-pane" id="pane-marketplace">
+        <div class="mkt-header">
+          <span class="mkt-title">Marketplace</span>
+        </div>
+        <div class="res-search-bar">
+          <input id="mkt-query" type="text" placeholder="Search products..." class="res-input">
+          <button id="btn-mkt-search" class="btn-small">Search</button>
+        </div>
+        <div class="stats-grid earth-stats">
+          <div class="stat-card"><div class="stat-label">Products</div><div class="stat-value" id="mkt-products">0</div></div>
+          <div class="stat-card"><div class="stat-label">Orders</div><div class="stat-value" id="mkt-orders">0</div></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Recommended for You</div>
+          <div id="mkt-recommendations"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">All Products</div>
+          <div id="mkt-products-list"></div>
+        </div>
+        <div class="pred-section">
+          <div class="pred-section-title">Conservation Donations</div>
+          <div id="mkt-donations"></div>
+        </div>
+      </div>
+
       <!-- Experiment Log -->
       <div class="tab-pane" id="pane-experiment">
         <div id="experiment-header">
@@ -460,6 +563,11 @@
 <script src="js/predictive.js"></script>
 <script src="js/research-assistant.js"></script>
 <script src="js/bio-search.js"></script>
+<script src="js/earth.js"></script>
+<script src="js/timemachine.js"></script>
+<script src="js/sdk.js"></script>
+<script src="js/emergency.js"></script>
+<script src="js/marketplace.js"></script>
 <script src="js/dsp.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/chat.js"></script>
