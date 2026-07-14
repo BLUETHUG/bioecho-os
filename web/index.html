@@ -104,6 +104,7 @@
       <div class="tab-bar">
         <button class="tab active" data-tab="chat">Chat</button>
         <button class="tab" data-tab="explain">Explain</button>
+        <button class="tab" data-tab="identity">Identity</button>
         <button class="tab" data-tab="stats">Stats</button>
         <button class="tab" data-tab="environment">Env</button>
         <button class="tab" data-tab="relationships">Care</button>
@@ -120,6 +121,41 @@
       <div class="tab-pane" id="pane-explain">
         <div id="explain-content">
           <div class="explain-empty">No explanations yet. Connect and monitor to see evidence chains.</div>
+        </div>
+      </div>
+
+      <!-- Identity / Lifecycle -->
+      <div class="tab-pane" id="pane-identity">
+        <div class="id-header">
+          <span class="id-title">Living Identity</span>
+          <span id="id-stage" class="id-chip">--</span>
+        </div>
+        <div class="id-name" id="id-name">--</div>
+        <div class="id-section">
+          <div class="id-section-title">Identity</div>
+          <div class="stats-row"><span>Version</span><span id="id-version">--</span></div>
+          <div class="stats-row"><span>Species</span><span id="id-species">--</span></div>
+          <div class="stats-row"><span>Age</span><span id="id-age">--</span></div>
+          <div class="stats-row"><span>Acquired</span><span id="id-acquired">--</span></div>
+          <div class="stats-row"><span>Parent</span><span id="id-parent">--</span></div>
+          <div class="stats-row"><span>Propagation</span><span id="id-propagation">--</span></div>
+          <div class="stats-row"><span>Location</span><span id="id-location">--</span></div>
+        </div>
+        <div class="id-section">
+          <div class="id-section-title">Lifecycle Transitions</div>
+          <div id="id-transitions"></div>
+        </div>
+        <div class="id-section">
+          <div class="id-section-title">State History</div>
+          <div id="id-state-history"></div>
+        </div>
+        <div class="id-section">
+          <div class="id-section-title">Provenance</div>
+          <div class="stats-row"><span>Events with chain</span><span id="id-prov-count">--</span></div>
+          <div class="stats-row"><span>Integrity</span><span id="id-integrity">--</span></div>
+        </div>
+        <div class="id-section">
+          <button id="btn-export-identity" class="btn-small">Export Identity</button>
         </div>
       </div>
 
@@ -240,6 +276,8 @@
 <script src="js/hal.js"></script>
 <script src="js/calibration.js"></script>
 <script src="js/species.js"></script>
+<script src="js/local-db.js"></script>
+<script src="js/identity.js"></script>
 <script src="js/twin.js"></script>
 <script src="js/context.js"></script>
 <script src="js/meaning.js"></script>

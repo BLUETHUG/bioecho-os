@@ -1,4 +1,4 @@
-// BioEcho OS — Main Application Controller (10 Engines)
+// BioEcho OS — Main Application Controller (11 Engines)
 
 // ============================================================
 // ENGINE INSTANCES
@@ -6,12 +6,13 @@
 const hal = new HardwareAbstractionLayer();
 const calibration = new CalibrationEngine();
 const speciesDB = new SpeciesDB();
-const twinEngine = new DigitalTwinEngine();
+const localDB = new LocalDB();
+const identityLayer = new LivingIdentityLayer(localDB);
+const twinEngine = new DigitalTwinEngine(localDB, identityLayer);
 const contextEngine = new ContextEngine(twinEngine, speciesDB);
 const meaningEngine = new MeaningEngine(speciesDB);
 const experimentLog = new ExperimentLog();
 const evidenceValidator = new EvidenceValidator();
-const localDB = new LocalDB();
 const environmentEngine = new EnvironmentEngine();
 const relationshipEngine = new RelationshipEngine();
 
@@ -24,6 +25,7 @@ let sampleCount = 0, spikeCount = 0, connectTime = 0;
 let recentWindow = [], lastUIUpdate = 0;
 let activeOrganismId = null;
 let calibrationResult = null;
+let activeSource = null;
 const UI_FPS = 30;
 
 // ============================================================
@@ -36,9 +38,10 @@ function init() {
   pipeline = new DspPipeline(250);
   chat = new ChatEngine('chat-messages');
 
-  // Initialize local database
-  localDB.init().then(() => {
-    log('Local database initialized');
+  // Initialize local database and identity layer
+  localDB.init().then(async () => {
+    await identityLayer.init();
+    log('Local database + identity layer initialized');
     updateDBStats();
   }).catch(() => log('LocalDB init failed'));
 
@@ -95,6 +98,7 @@ async function connectDevice(sourceId) {
   try {
     const source = await hal.connect(sourceId);
     isConnected = true;
+    activeSource = source;
     pipeline = new DspPipeline(source.sampleRate);
     document.getElementById('sample-rate-label').textContent = source.sampleRate + ' Hz';
 
@@ -171,6 +175,7 @@ function startMonitoring() {
 
   // Start experiment
   const source = hal.getActive();
+  activeSource = source;
   experimentLog.startSession(activeOrganismId, {
     species: twinEngine.getTwin(activeOrganismId)?.species || '',
     sensorType: source?.type || 'unknown',
@@ -299,6 +304,21 @@ function handleSample(raw) {
     };
     twinEngine.recordEvent(activeOrganismId, event);
     twinEngine.updateBaseline(activeOrganismId, features.amplitude, features.dominantFreq, result.spike.noiseFloor);
+
+    // 9b. Living Identity — provenance chain
+    const provenance = identityLayer.createProvenance(
+      event.time,
+      activeSource?.name || 'unknown',
+      calibrationResult,
+      { filterSettings: pipeline.filtersOn ? 'enabled' : 'disabled', threshold: pipeline.detector.thresholdMult + 'x MAD' },
+      evidenceResult,
+      'classifier-v1'
+    );
+    provenance.organismId = activeOrganismId;
+    localDB.saveProvenance(provenance).catch(() => {});
+
+    // 9c. Living Identity — periodic state snapshot
+    identityLayer.recordSnapshot(activeOrganismId, twinEngine._buildSnapshot(twinEngine.getTwin(activeOrganismId)));
 
     // 10. Experiment Log — record
     experimentLog.recordEvent(event);
@@ -610,6 +630,23 @@ function setupNewTabs() {
   updateEnvironmentUI();
   updateRelationshipsUI();
   updateEvidenceUI(null);
+  updateIdentityUI();
+
+  // Export identity button
+  document.getElementById('btn-export-identity')?.addEventListener('click', async () => {
+    if (!activeOrganismId) return;
+    const data = await identityLayer.exportIdentity(activeOrganismId);
+    if (!data) return;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `bioecho-identity-${activeOrganismId}.json`;
+    a.click();
+    log('Identity exported');
+  });
+
+  // Update identity UI periodically
+  setInterval(updateIdentityUI, 5000);
 }
 
 // ============================================================
@@ -742,6 +779,75 @@ async function updateDBStats() {
     const stats = await localDB.getStats();
     document.getElementById('s-samples').textContent = stats.events ? stats.events.toLocaleString() : '0';
   } catch {}
+}
+
+// ============================================================
+// IDENTITY UI
+// ============================================================
+function updateIdentityUI() {
+  if (!activeOrganismId) return;
+  const identity = twinEngine.getOrganismIdentity(activeOrganismId);
+  const twin = twinEngine.getTwin(activeOrganismId);
+
+  if (!identity) return;
+
+  document.getElementById('id-name').textContent = identity.name || activeOrganismId;
+
+  // Lifecycle stage chip
+  const stage = identity.lifecycle?.lifecycleStage || 'unknown';
+  const stageEl = document.getElementById('id-stage');
+  stageEl.textContent = stage;
+  stageEl.className = 'id-chip id-stage-' + stage;
+
+  // Identity fields
+  document.getElementById('id-version').textContent = identity.identityVersion || '1';
+  document.getElementById('id-species').textContent = identity.species || '--';
+  document.getElementById('id-age').textContent = identity.createdAt
+    ? Math.floor((Date.now() - identity.createdAt) / 86400000) + ' days'
+    : '--';
+  document.getElementById('id-acquired').textContent = identity.lifecycle?.acquisitionDate
+    ? new Date(identity.lifecycle.acquisitionDate).toLocaleDateString()
+    : '--';
+  document.getElementById('id-parent').textContent = identity.lifecycle?.parentOrganismId || 'None';
+  document.getElementById('id-propagation').textContent = identity.lifecycle?.propagationMethod || 'Unknown';
+  document.getElementById('id-location').textContent = identity.location?.latitude
+    ? `${identity.location.latitude.toFixed(4)}, ${identity.location.longitude.toFixed(4)}`
+    : 'No location set';
+
+  // Lifecycle transitions
+  const transitions = twinEngine.getStageHistory(activeOrganismId);
+  const transEl = document.getElementById('id-transitions');
+  if (transitions.length === 0) {
+    transEl.innerHTML = '<div style="font-size:11px;color:var(--text3)">No transitions yet</div>';
+  } else {
+    transEl.innerHTML = transitions.slice(-10).reverse().map(t =>
+      `<div class="rel-activity-item"><span class="rel-activity-type">${t.from || 'init'} → ${t.stage}</span><span class="rel-activity-time">${new Date(t.time).toLocaleString()}</span></div>`
+    ).join('');
+  }
+
+  // State history (last 10 snapshots from localDB)
+  const stateHistoryEl = document.getElementById('id-state-history');
+  if (identity.state) {
+    stateHistoryEl.innerHTML = `
+      <div class="stats-row"><span>Health</span><span>${identity.state.healthScore?.toFixed(2) || '--'}</span></div>
+      <div class="stats-row"><span>Stress</span><span>${identity.state.stressIndex?.toFixed(2) || '--'}</span></div>
+      <div class="stats-row"><span>Spike Rate</span><span>${identity.state.spikeRate?.toFixed(1) || '--'}/min</span></div>
+      <div class="stats-row"><span>Growth Rate</span><span>${identity.state.growthRate?.toFixed(3) || '0.000'}</span></div>
+      <div class="stats-row"><span>Energy Balance</span><span>${identity.state.energyBalance?.toFixed(1) || '100.0'}</span></div>
+    `;
+  }
+
+  // Provenance count
+  localDB.getProvenanceByOrganism(activeOrganismId, 10000).then(prov => {
+    document.getElementById('id-prov-count').textContent = prov.length || '0';
+    document.getElementById('id-integrity').textContent = prov.length > 0 ? 'Chained' : 'No provenance yet';
+  }).catch(() => {});
+
+  // Life events count
+  document.getElementById('id-state-history').innerHTML += `
+    <div class="stats-row" style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px"><span>Events Recorded</span><span>${identity.eventsCount || 0}</span></div>
+    <div class="stats-row"><span>Life Events</span><span>${identity.lifeEventsCount || 0}</span></div>
+  `;
 }
 
 document.addEventListener('DOMContentLoaded', init);

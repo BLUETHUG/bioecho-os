@@ -4,7 +4,7 @@
 class LocalDB {
   constructor() {
     this.dbName = 'bioecho-db';
-    this.dbVersion = 1;
+    this.dbVersion = 2;
     this.db = null;
   }
 
@@ -20,6 +20,9 @@ class LocalDB {
           const org = db.createObjectStore('organisms', { keyPath: 'id' });
           org.createIndex('species', 'species', { unique: false });
           org.createIndex('type', 'type', { unique: false });
+          org.createIndex('biosignature', 'biosignature', { unique: false });
+          org.createIndex('energyType', 'energyType', { unique: false });
+          org.createIndex('species_type', ['species', 'type'], { unique: false });
         }
 
         // Events store (spike events, classifications)
@@ -29,6 +32,7 @@ class LocalDB {
           ev.createIndex('time', 'time', { unique: false });
           ev.createIndex('classification', 'classification', { unique: false });
           ev.createIndex('organismId_time', ['organismId', 'time'], { unique: false });
+          ev.createIndex('provenanceId', 'provenanceId', { unique: false });
         }
 
         // Experiments store
@@ -70,6 +74,27 @@ class LocalDB {
           const rel = db.createObjectStore('relationships', { keyPath: 'id' });
           rel.createIndex('userId', 'userId', { unique: false });
           rel.createIndex('organismId', 'organismId', { unique: false });
+        }
+
+        // State snapshots (periodic health/stress snapshots for Living Identity Layer)
+        if (!db.objectStoreNames.contains('state_snapshots')) {
+          const ss = db.createObjectStore('state_snapshots', { keyPath: 'id', autoIncrement: true });
+          ss.createIndex('organismId', 'organismId', { unique: false });
+          ss.createIndex('timestamp', 'timestamp', { unique: false });
+          ss.createIndex('organismId_timestamp', ['organismId', 'timestamp'], { unique: false });
+        }
+
+        // Provenance (event-level cryptographically-verifiable identity chain)
+        if (!db.objectStoreNames.contains('provenance')) {
+          const prov = db.createObjectStore('provenance', { keyPath: 'id' });
+          prov.createIndex('eventId', 'eventId', { unique: false });
+          prov.createIndex('organismId', 'organismId', { unique: false });
+          prov.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+
+        // Identity checksums (per-organism identity integrity hash)
+        if (!db.objectStoreNames.contains('identity_checksums')) {
+          const ics = db.createObjectStore('identity_checksums', { keyPath: 'organismId' });
         }
       };
 
@@ -129,6 +154,16 @@ class LocalDB {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction(store, 'readonly');
       const req = tx.objectStore(store).count();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  async _getAllByCompositeIndex(store, indexName, range) {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(store, 'readonly');
+      const idx = tx.objectStore(store).index(indexName);
+      const req = idx.getAll(range);
       req.onsuccess = () => resolve(req.result);
       req.onerror = (e) => reject(e.target.error);
     });
@@ -229,6 +264,62 @@ class LocalDB {
   async getRelationshipsByUser(userId) { return this._getAllByIndex('relationships', 'userId', userId); }
   async getRelationshipsByOrganism(organismId) { return this._getAllByIndex('relationships', 'organismId', organismId); }
 
+  // ─── State Snapshots ─────────────────────────────────────
+
+  async saveStateSnapshot(snapshot) {
+    const data = { ...snapshot, id: snapshot.id || `ss-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` };
+    await this._put('state_snapshots', data);
+    return data;
+  }
+
+  async getStateSnapshotsByOrganism(organismId, limit = 100) {
+    const snapshots = await this._getAllByIndex('state_snapshots', 'organismId', organismId);
+    return snapshots.sort((a, b) => b.timestamp - a.timestamp).slice(0, limit);
+  }
+
+  async getStateSnapshotsByTimeRange(organismId, startTime, endTime) {
+    const snapshots = await this._getAllByIndex('state_snapshots', 'organismId', organismId);
+    return snapshots.filter(s => s.timestamp >= startTime && s.timestamp <= endTime)
+      .sort((a, b) => a.timestamp - b.timestamp);
+  }
+
+  async getLatestStateSnapshot(organismId) {
+    const snapshots = await this._getAllByIndex('state_snapshots', 'organismId', organismId);
+    return snapshots.sort((a, b) => b.timestamp - a.timestamp)[0] || null;
+  }
+
+  // ─── Provenance ──────────────────────────────────────────
+
+  async saveProvenance(provenance) {
+    const data = {
+      ...provenance,
+      id: provenance.id || `prov-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    };
+    await this._put('provenance', data);
+    return data;
+  }
+
+  async getProvenance(eventId) {
+    return this._getAllByIndex('provenance', 'eventId', eventId);
+  }
+
+  async getProvenanceByOrganism(organismId, limit = 100) {
+    const records = await this._getAllByIndex('provenance', 'organismId', organismId);
+    return records.sort((a, b) => b.timestamp - a.timestamp).slice(0, limit);
+  }
+
+  // ─── Identity Checksums ──────────────────────────────────
+
+  async saveIdentityChecksum(organismId, checksum, version) {
+    const data = { organismId, checksum, version, timestamp: Date.now() };
+    await this._put('identity_checksums', data);
+    return data;
+  }
+
+  async getIdentityChecksum(organismId) {
+    return this._get('identity_checksums', organismId);
+  }
+
   // ─── Export ─────────────────────────────────────────────
 
   async exportOrganismData(organismId) {
@@ -238,6 +329,9 @@ class LocalDB {
     const experiments = await this.getExperimentsByOrganism(organismId);
     const photos = await this.getPhotosByOrganism(organismId);
     const conversations = await this.getConversationHistory(organismId, 1000);
+    const stateSnapshots = await this.getStateSnapshotsByOrganism(organismId, 10000);
+    const provenance = await this.getProvenanceByOrganism(organismId, 10000);
+    const identityChecksum = await this.getIdentityChecksum(organismId);
 
     return {
       exportDate: new Date().toISOString(),
@@ -247,12 +341,17 @@ class LocalDB {
       experiments,
       photos,
       conversations,
+      stateSnapshots,
+      provenance,
+      identityChecksum,
       stats: {
         totalEvents: events.length,
         totalLifeEvents: lifeEvents.length,
         totalExperiments: experiments.length,
         totalPhotos: photos.length,
-        totalMessages: conversations.length
+        totalMessages: conversations.length,
+        totalStateSnapshots: stateSnapshots.length,
+        totalProvenanceRecords: provenance.length
       }
     };
   }
@@ -268,7 +367,10 @@ class LocalDB {
       environment: await this._count('environment'),
       conversations: await this._count('conversations'),
       photos: await this._count('photos'),
-      relationships: await this._count('relationships')
+      relationships: await this._count('relationships'),
+      stateSnapshots: await this._count('state_snapshots'),
+      provenance: await this._count('provenance'),
+      identityChecksums: await this._count('identity_checksums')
     };
   }
 }
