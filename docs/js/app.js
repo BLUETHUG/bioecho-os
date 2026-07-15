@@ -2,9 +2,11 @@
 
 const world = new WorldV4(document.getElementById('world-canvas'));
 const tree = new LivingTree(world);
+const sound = new SoundEngine();
 let experienceReady = false;
 let lastFrame = 0;
 let activeView = 'home';
+let ambientInterval = null;
 
 function initLanding() {
   const landing = document.getElementById('landing');
@@ -17,8 +19,14 @@ function initLanding() {
 
   const seq = new LandingSequence(seedCanvas, worldCanvas);
 
-  landing.addEventListener('click', () => {
+  landing.addEventListener('click', async () => {
     landing.style.pointerEvents = 'none';
+
+    // Start sound on first interaction
+    await sound.initialize();
+    await sound.resume();
+    sound.playPulse();
+
     world.initialize();
 
     seq.start(() => {
@@ -26,19 +34,21 @@ function initLanding() {
       experienceReady = true;
       uiLayer.style.display = 'block';
 
-      // Start tree growth from center
+      // Tree grows
       tree.initialize();
+      sound.playGrowth();
       requestAnimationFrame(renderLoop);
 
-      // Fade in tree orbs after a moment
+      // Orbs reveal
       setTimeout(() => {
         tree._revealFeatures();
         enableTreeInteraction();
+        startAmbient();
       }, 2000);
     });
   }, { once: true });
 
-  // Draw initial seed pulse
+  // Idle seed pulse
   const seedCtx = seedCanvas.getContext('2d');
   let pt = 0;
   const drawIdle = () => {
@@ -76,6 +86,19 @@ function initLanding() {
   requestAnimationFrame(drawIdle);
 }
 
+function startAmbient() {
+  const setAmbient = () => {
+    const hour = new Date().getHours();
+    sound.stopAmbient();
+    if (hour >= 5 && hour < 10) sound.startAmbient('birds');
+    else if (hour >= 10 && hour < 17) sound.startAmbient('water');
+    else if (hour >= 17 && hour < 21) sound.startAmbient('birds');
+    else sound.startAmbient('crickets');
+  };
+  setAmbient();
+  ambientInterval = setInterval(setAmbient, 600000);
+}
+
 function enableTreeInteraction() {
   const worldCanvas = document.getElementById('world-canvas');
 
@@ -83,6 +106,7 @@ function enableTreeInteraction() {
     if (!experienceReady) return;
     const idx = tree.hitTest(e.clientX, e.clientY);
     if (idx >= 0) {
+      sound.playWaterDrop();
       openFeature(idx);
     }
   });
@@ -125,6 +149,11 @@ function showView(name) {
   overlay.classList.add('visible');
 }
 
+document.getElementById('overlay-close')?.addEventListener('click', () => {
+  document.getElementById('content-overlay').classList.remove('visible');
+  sound.playLeafRustle();
+});
+
 function renderLoop(timestamp) {
   if (!experienceReady) return;
   const dt = Math.min((timestamp - lastFrame) / 1000, 0.05);
@@ -136,7 +165,6 @@ function renderLoop(timestamp) {
   world.update(dt, LDL.currentTime);
   world.render(LDL.currentTime, LDL.currentSeason || 'spring');
 
-  // Tree renders ON TOP of world
   const ctx = document.getElementById('world-canvas').getContext('2d');
   tree.update(dt);
   tree.render(ctx, LDL.currentTime);
