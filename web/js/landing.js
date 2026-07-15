@@ -28,6 +28,12 @@ class LandingSequence {
     this.zoom = 1;
     this.offsetY = 0;
 
+    // Canvas dimensions for dynamic scaling
+    this.sw = this.seed?.width || 200;
+    this.sh = this.seed?.height || 200;
+    this.cx = this.sw / 2;
+    this.cy = this.sh / 2 + 10 * (this.sh / 200);
+
     // Forest state
     this.forestTrees = [];
     this.forestGrass = [];
@@ -121,45 +127,46 @@ class LandingSequence {
 
   _drawPulse() {
     const ctx = this.seedCtx;
-    const W = 200, H = 200;
-    const cx = W / 2, cy = H / 2 + 10;
+    const s = this.sw / 200; // scale factor
+    const W = this.sw, H = this.sh;
+    const cx = this.cx, cy = this.cy;
     ctx.clearRect(0, 0, W, H);
 
     const pulse = Math.sin(this.pulseTime * 1.5) * 0.15 + 1;
     const breathe = Math.sin(this.pulseTime * 0.8) * 0.05 + 1;
 
     // Outer glow — breathing
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 65 * breathe);
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 65 * s * breathe);
     g.addColorStop(0, 'rgba(111,163,111,0.1)');
     g.addColorStop(0.5, 'rgba(111,163,111,0.04)');
     g.addColorStop(1, 'transparent');
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(cx, cy, 65 * breathe, 0, 6.28); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, 65 * s * breathe, 0, 6.28); ctx.fill();
 
     // Seed body
     ctx.fillStyle = '#8A6A4A';
     ctx.beginPath();
-    ctx.ellipse(cx, cy, 11 * pulse, 16 * pulse, 0, 0, 6.28);
+    ctx.ellipse(cx, cy, 11 * s * pulse, 16 * s * pulse, 0, 0, 6.28);
     ctx.fill();
 
     // Seed highlight
     ctx.fillStyle = 'rgba(245,240,232,0.12)';
     ctx.beginPath();
-    ctx.ellipse(cx - 2, cy - 3, 4 * pulse, 7 * pulse, -0.2, 0, 6.28);
+    ctx.ellipse(cx - 2 * s, cy - 3 * s, 4 * s * pulse, 7 * s * pulse, -0.2, 0, 6.28);
     ctx.fill();
 
     // Tiny sprout
     ctx.strokeStyle = 'rgba(111,163,111,0.6)';
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.2 * s;
     ctx.beginPath();
-    ctx.moveTo(cx, cy - 16 * pulse);
-    ctx.quadraticCurveTo(cx + 3, cy - 24 * pulse, cx, cy - 32 * pulse);
+    ctx.moveTo(cx, cy - 16 * s * pulse);
+    ctx.quadraticCurveTo(cx + 3 * s, cy - 24 * s * pulse, cx, cy - 32 * s * pulse);
     ctx.stroke();
 
     // Leaf
     ctx.fillStyle = 'rgba(111,163,111,0.35)';
     ctx.beginPath();
-    ctx.ellipse(cx + 3, cy - 27 * pulse, 3.5 * pulse, 1.8 * pulse, 0.3, 0, 6.28);
+    ctx.ellipse(cx + 3 * s, cy - 27 * s * pulse, 3.5 * s * pulse, 1.8 * s * pulse, 0.3, 0, 6.28);
     ctx.fill();
   }
 

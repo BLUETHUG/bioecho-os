@@ -112,9 +112,54 @@ function enableTreeInteraction() {
   });
 }
 
+const featureContent = {
+  lens: {
+    title: 'BioEcho Lens', icon: 'lens',
+    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
+      <p style="opacity:0.8">See the invisible. The Lens reveals the hidden signals that plants and ecosystems emit — electrical pulses, chemical signatures, stress patterns.</p>
+      <p style="opacity:0.5;font-size:12px;margin-top:12px">Connect a device to activate sensing.</p>
+    </div>`
+  },
+  care: {
+    title: 'Living Care', icon: 'sprout',
+    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
+      <p style="opacity:0.8">Your ecosystem's health timeline. Track vitality, detect early warning signs, and nurture what matters.</p>
+      <p style="opacity:0.5;font-size:12px;margin-top:12px">Each organism you monitor appears here as it grows.</p>
+    </div>`
+  },
+  earth: {
+    title: 'Living Earth', icon: 'seed',
+    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
+      <p style="opacity:0.8">Every observation connects to a global living map. See what others are discovering — from old-growth forests to your own backyard.</p>
+      <p style="opacity:0.5;font-size:12px;margin-top:12px">Community observations, biodiversity hotspots, and local discoveries.</p>
+    </div>`
+  },
+  research: {
+    title: 'Living Research', icon: 'rings',
+    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
+      <p style="opacity:0.8">Explore the knowledge graph of life — species relationships, ecological networks, and evolutionary lineages interconnected like a vast root system.</p>
+      <p style="opacity:0.5;font-size:12px;margin-top:12px">Powered by citizen science data and peer-reviewed research.</p>
+    </div>`
+  },
+  community: {
+    title: 'Living Community', icon: 'flock',
+    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
+      <p style="opacity:0.8">You're not alone. Join a flock of citizen scientists, naturalists, and caretakers working together to understand and protect the living world.</p>
+      <p style="opacity:0.5;font-size:12px;margin-top:12px">Share observations, verify findings, and contribute to real research.</p>
+    </div>`
+  },
+  story: {
+    title: 'Living Story', icon: 'vine',
+    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
+      <p style="opacity:0.8">Travel through time. See the deep history of your ecosystem — from ancient forests to restoration stories — and peer into what's coming next.</p>
+      <p style="opacity:0.5;font-size:12px;margin-top:12px">Your personal ecosystem timeline, from past to future.</p>
+    </div>`
+  }
+};
+
 function openFeature(index, originX, originY) {
-  const featureNames = ['lens', 'care', 'earth', 'research', 'community', 'story'];
-  const name = featureNames[index] || 'home';
+  const names = ['lens', 'care', 'earth', 'research', 'community', 'story'];
+  const name = names[index] || 'home';
   showView(name, originX, originY);
 }
 
@@ -124,6 +169,7 @@ function showView(name, ox, oy) {
   const card = overlay.querySelector('.content-card');
   const title = document.getElementById('overlay-title');
   const body = document.getElementById('overlay-body');
+  const closeBtn = document.getElementById('overlay-close');
 
   if (name === 'home') {
     if (activeUnfurl) { activeUnfurl.close(); activeUnfurl = null; }
@@ -131,19 +177,12 @@ function showView(name, ox, oy) {
     return;
   }
 
-  const icons = { lens: '💧', care: '🌿', earth: '🌍', research: '🌳', community: '🕊', story: '📖' };
-  title.textContent = name.charAt(0).toUpperCase() + name.slice(1);
-  title.dataset.icon = icons[name] || '';
-
-  body.innerHTML = `
-    <div style="padding:16px;color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
-      <p style="margin:0 0 12px;opacity:0.7">Connect a device to begin exploring ${name}.</p>
-      <p style="margin:0;opacity:0.5">This view emerges from BioEcho's living interface.</p>
-    </div>`;
-
+  const content = featureContent[name] || featureContent.lens;
+  title.innerHTML = `<span style="display:flex;align-items:center;gap:8px">${bioechoIcon(content.icon, 18)}<span style="font-size:14px;font-weight:400;color:#F5F0E8;font-family:Inter,sans-serif">${content.title}</span></span>`;
+  closeBtn.innerHTML = bioechoIcon('close', 14);
+  body.innerHTML = content.body;
   overlay.classList.add('visible');
 
-  // Unfurl from origin point
   if (activeUnfurl) activeUnfurl.close();
   const canvas = document.getElementById('vine-canvas');
   if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }

@@ -54,8 +54,17 @@ html, body {
 }
 
 #seed-canvas {
-  width: 200px;
-  height: 200px;
+  width: min(320px, 80vw);
+  height: min(320px, 80vw);
+  transition: transform 0.6s ease, opacity 0.6s ease;
+}
+
+#landing #seed-canvas {
+  transform: scale(1);
+}
+
+#landing:hover #seed-canvas {
+  transform: scale(1.05);
 }
 
 #ui-layer {
@@ -294,7 +303,7 @@ html, body {
   margin-bottom: 20px;
 }
 
-.content-card-title { font-size: 0; color: transparent; }
+.content-card-title { font-size: 14px; font-weight: 400; color: var(--cream); }
 
 .content-card-close {
   width: 28px;
