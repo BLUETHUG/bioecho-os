@@ -1,5 +1,7 @@
 // BioEcho OS v4 — Living World Experience
 
+BarkPanel.init();
+
 const world = new WorldV4(document.getElementById('world-canvas'));
 const tree = new LivingTree(world);
 const sound = new SoundEngine();
@@ -7,6 +9,7 @@ let experienceReady = false;
 let lastFrame = 0;
 let activeView = 'home';
 let ambientInterval = null;
+let activeUnfurl = null;
 
 function initLanding() {
   const landing = document.getElementById('landing');
@@ -22,7 +25,6 @@ function initLanding() {
   landing.addEventListener('click', async () => {
     landing.style.pointerEvents = 'none';
 
-    // Start sound on first interaction
     await sound.initialize();
     await sound.resume();
     sound.playPulse();
@@ -34,12 +36,10 @@ function initLanding() {
       experienceReady = true;
       uiLayer.style.display = 'block';
 
-      // Tree grows
       tree.initialize();
       sound.playGrowth();
       requestAnimationFrame(renderLoop);
 
-      // Orbs reveal
       setTimeout(() => {
         tree._revealFeatures();
         enableTreeInteraction();
@@ -48,7 +48,6 @@ function initLanding() {
     });
   }, { once: true });
 
-  // Idle seed pulse
   const seedCtx = seedCanvas.getContext('2d');
   let pt = 0;
   const drawIdle = () => {
@@ -58,29 +57,23 @@ function initLanding() {
     const cx = 100, cy = 105;
     const p = Math.sin(pt * 1.5) * 0.12 + 1;
     const b = Math.sin(pt * 0.8) * 0.04 + 1;
-
     const g = seedCtx.createRadialGradient(cx, cy, 0, cx, cy, 60 * b);
     g.addColorStop(0, 'rgba(111,163,111,0.08)');
     g.addColorStop(1, 'transparent');
     seedCtx.fillStyle = g;
     seedCtx.beginPath(); seedCtx.arc(cx, cy, 60 * b, 0, 6.28); seedCtx.fill();
-
     seedCtx.fillStyle = '#8A6A4A';
     seedCtx.beginPath(); seedCtx.ellipse(cx, cy, 10 * p, 15 * p, 0, 0, 6.28); seedCtx.fill();
-
     seedCtx.fillStyle = 'rgba(245,240,232,0.1)';
     seedCtx.beginPath(); seedCtx.ellipse(cx - 2, cy - 3, 4 * p, 6 * p, -0.2, 0, 6.28); seedCtx.fill();
-
     seedCtx.strokeStyle = 'rgba(111,163,111,0.5)';
     seedCtx.lineWidth = 1;
     seedCtx.beginPath();
     seedCtx.moveTo(cx, cy - 15 * p);
     seedCtx.quadraticCurveTo(cx + 3, cy - 22 * p, cx, cy - 30 * p);
     seedCtx.stroke();
-
     seedCtx.fillStyle = 'rgba(111,163,111,0.3)';
     seedCtx.beginPath(); seedCtx.ellipse(cx + 3, cy - 25 * p, 3 * p, 1.5 * p, 0.3, 0, 6.28); seedCtx.fill();
-
     if (!landing.classList.contains('hidden')) requestAnimationFrame(drawIdle);
   };
   requestAnimationFrame(drawIdle);
@@ -107,7 +100,7 @@ function enableTreeInteraction() {
     const idx = tree.hitTest(e.clientX, e.clientY);
     if (idx >= 0) {
       sound.playWaterDrop();
-      openFeature(idx);
+      openFeature(idx, e.clientX, e.clientY);
     }
   });
 
@@ -119,19 +112,21 @@ function enableTreeInteraction() {
   });
 }
 
-function openFeature(index) {
+function openFeature(index, originX, originY) {
   const featureNames = ['lens', 'care', 'earth', 'research', 'community', 'story'];
   const name = featureNames[index] || 'home';
-  showView(name);
+  showView(name, originX, originY);
 }
 
-function showView(name) {
+function showView(name, ox, oy) {
   activeView = name;
   const overlay = document.getElementById('content-overlay');
+  const card = overlay.querySelector('.content-card');
   const title = document.getElementById('overlay-title');
   const body = document.getElementById('overlay-body');
 
   if (name === 'home') {
+    if (activeUnfurl) { activeUnfurl.close(); activeUnfurl = null; }
     overlay.classList.remove('visible');
     return;
   }
@@ -143,13 +138,21 @@ function showView(name) {
   body.innerHTML = `
     <div style="padding:16px;color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
       <p style="margin:0 0 12px;opacity:0.7">Connect a device to begin exploring ${name}.</p>
-      <p style="margin:0;opacity:0.5">This view is part of BioEcho's living interface.</p>
+      <p style="margin:0;opacity:0.5">This view emerges from BioEcho's living interface.</p>
     </div>`;
 
   overlay.classList.add('visible');
+
+  // Unfurl from origin point
+  if (activeUnfurl) activeUnfurl.close();
+  const canvas = document.getElementById('vine-canvas');
+  if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  activeUnfurl = new PanelUnfurl(card, ox || window.innerWidth / 2, oy || window.innerHeight * 0.72);
+  activeUnfurl.open();
 }
 
 document.getElementById('overlay-close')?.addEventListener('click', () => {
+  if (activeUnfurl) { activeUnfurl.close(); activeUnfurl = null; }
   document.getElementById('content-overlay').classList.remove('visible');
   sound.playLeafRustle();
 });
