@@ -24,23 +24,24 @@ function initLanding() {
 
   const seq = new LandingSequence(seedCanvas, worldCanvas);
 
-  landing.addEventListener('click', async () => {
-    landing.style.pointerEvents = 'none';
+landing.addEventListener('click', async () => {
+    try {
+      landing.style.pointerEvents = 'none';
 
-    await sound.initialize();
-    await sound.resume();
-    sound.playPulse();
+      await sound.initialize();
+      await sound.resume();
+      sound.playPulse();
 
-    world.initialize();
+      world.initialize();
 
-    seq.start(() => {
-      landing.classList.add('hidden');
-      experienceReady = true;
-      uiLayer.style.display = 'block';
+      seq.start(() => {
+        landing.classList.add('hidden');
+        experienceReady = true;
+        uiLayer.style.display = 'block';
 
-      tree.initialize();
-      sound.playGrowth();
-      requestAnimationFrame(renderLoop);
+        tree.initialize();
+        sound.playGrowth();
+        requestAnimationFrame(renderLoop);
 
       setTimeout(() => {
         tree._revealFeatures();
@@ -48,7 +49,11 @@ function initLanding() {
         startAmbient();
       }, 2000);
     });
-  }, { once: true });
+  } catch (e) {
+    console.error('Click handler error:', e);
+    landing.style.pointerEvents = 'auto';
+  }
+}, { once: true });
 
   const seedCtx = seedCanvas.getContext('2d');
   const sw = seedCanvas.width, sh = seedCanvas.height;
@@ -203,14 +208,15 @@ document.getElementById('overlay-close')?.addEventListener('click', () => {
 
 function renderLoop(timestamp) {
   if (!experienceReady) return;
-  const dt = Math.min((timestamp - lastFrame) / 1000, 0.05);
-  lastFrame = timestamp;
+  try {
+    const dt = Math.min((timestamp - lastFrame) / 1000, 0.05);
+    lastFrame = timestamp;
 
-  LDL.currentHour = new Date().getHours() + new Date().getMinutes() / 60;
-  LDL.currentTime = LDL.getTimeOfDay(LDL.currentHour);
+    LDL.currentHour = new Date().getHours() + new Date().getMinutes() / 60;
+    LDL.currentTime = LDL.getTimeOfDay(LDL.currentHour);
 
-  world.update(dt, LDL.currentTime);
-  world.render(LDL.currentTime, LDL.currentSeason || 'spring');
+    world.update(dt, LDL.currentTime);
+    world.render(LDL.currentTime, LDL.currentSeason || 'spring');
 
   const ctx = document.getElementById('world-canvas').getContext('2d');
   tree.update(dt);

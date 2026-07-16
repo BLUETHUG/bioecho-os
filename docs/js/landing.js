@@ -102,15 +102,19 @@ class LandingSequence {
   _loop() {
     if (this.done) return;
 
-    const dt = 0.016;
-    this.t += dt;
+    try {
+      const dt = 0.016;
+      this.t += dt;
 
-    if (this.phase === 'pulse') this._updatePulse(dt);
-    else if (this.phase === 'root') this._updateRoot(dt);
-    else if (this.phase === 'crack') this._updateCrack(dt);
-    else if (this.phase === 'sapling') this._updateSapling(dt);
-    else if (this.phase === 'zoomout') this._updateZoom(dt);
-    else if (this.phase === 'forest') this._updateForest(dt);
+      if (this.phase === 'pulse') this._updatePulse(dt);
+      else if (this.phase === 'root') this._updateRoot(dt);
+      else if (this.phase === 'crack') this._updateCrack(dt);
+      else if (this.phase === 'sapling') this._updateSapling(dt);
+      else if (this.phase === 'zoomout') this._updateZoom(dt);
+      else if (this.phase === 'forest') this._updateForest(dt);
+    } catch (e) {
+      console.error('Landing sequence error:', e);
+    }
 
     requestAnimationFrame(() => this._loop());
   }
