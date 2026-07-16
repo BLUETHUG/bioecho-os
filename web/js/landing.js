@@ -173,25 +173,25 @@ class LandingSequence {
   _updateRoot(dt) {
     this.t += dt * 0.8;
     const progress = Math.min(1, this.t / 2);
+    const s = this.sw / 200;
 
     this._drawPulse();
 
     const ctx = this.seedCtx;
-    const cx = 100, cy = 110;
+    const cx = this.cx, cy = this.cy;
 
-    // Draw roots growing
     ctx.strokeStyle = 'rgba(110,88,67,0.5)';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 * s;
     for (const root of this.roots) {
       root.progress = progress;
-      const len = root.len * progress;
+      const len = root.len * s * progress;
       const endX = cx + Math.sin(root.angle) * len;
-      const endY = cy + Math.cos(root.angle) * len * 0.5 + 5;
+      const endY = cy + Math.cos(root.angle) * len * 0.5 + 5 * s;
       ctx.beginPath();
-      ctx.moveTo(cx, cy + 12);
+      ctx.moveTo(cx, cy + 12 * s);
       ctx.quadraticCurveTo(
-        cx + Math.sin(root.angle) * len * 0.4 + root.curve * 0.3,
-        cy + 12 + len * 0.3,
+        cx + Math.sin(root.angle) * len * 0.4 + root.curve * s * 0.3,
+        cy + 12 * s + len * 0.3,
         endX, endY
       );
       ctx.stroke();
@@ -211,42 +211,43 @@ class LandingSequence {
 
     // Draw roots (static)
     const ctx = this.seedCtx;
-    const cx = 100, cy = 110;
+    const s = this.sw / 200;
+    const cx = this.cx, cy = this.cy;
     ctx.strokeStyle = 'rgba(110,88,67,0.5)';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 * s;
     for (const root of this.roots) {
-      const len = root.len;
+      const len = root.len * s;
       ctx.beginPath();
-      ctx.moveTo(cx, cy + 12);
+      ctx.moveTo(cx, cy + 12 * s);
       ctx.quadraticCurveTo(
-        cx + Math.sin(root.angle) * len * 0.4 + root.curve * 0.3,
-        cy + 12 + len * 0.3,
+        cx + Math.sin(root.angle) * len * 0.4 + root.curve * s * 0.3,
+        cy + 12 * s + len * 0.3,
         cx + Math.sin(root.angle) * len,
-        cy + 12 + Math.cos(root.angle) * len * 0.5 + 5
+        cy + 12 * s + Math.cos(root.angle) * len * 0.5 + 5 * s
       );
       ctx.stroke();
     }
 
     // Ground cracks
     ctx.strokeStyle = `rgba(138,106,74,${progress * 0.6})`;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 * s;
     for (const crack of this.cracks) {
       crack.progress = progress;
-      const len = crack.len * progress;
+      const len = crack.len * s * progress;
       ctx.beginPath();
-      ctx.moveTo(cx + crack.x, cy + 18);
+      ctx.moveTo(cx + crack.x * s, cy + 18 * s);
       ctx.lineTo(
-        cx + crack.x + Math.cos(crack.angle) * len,
-        cy + 18 + Math.sin(crack.angle) * len
+        cx + crack.x * s + Math.cos(crack.angle) * len,
+        cy + 18 * s + Math.sin(crack.angle) * len
       );
       ctx.stroke();
     }
 
     // Ground lifts slightly
     if (progress > 0.5) {
-      const lift = (progress - 0.5) * 2 * 3;
+      const lift = (progress - 0.5) * 2 * 3 * s;
       ctx.fillStyle = `rgba(138,106,74,${(progress - 0.5) * 0.3})`;
-      ctx.fillRect(cx - 30, cy + 15 - lift, 60, 5);
+      ctx.fillRect(cx - 30 * s, cy + 15 * s - lift, 60 * s, 5 * s);
     }
 
     if (progress >= 1) {
@@ -258,21 +259,22 @@ class LandingSequence {
   _updateSapling(dt) {
     this.t += dt;
     const progress = Math.min(1, this.t / 2.5);
+    const s = this.sw / 200;
 
-    // Fade out seed
     const ctx = this.seedCtx;
-    ctx.clearRect(0, 0, 200, 200);
+    ctx.clearRect(0, 0, this.sw, this.sh);
 
     // Ground
+    const baseY = this.sh * 0.65;
     ctx.fillStyle = 'rgba(138,106,74,0.3)';
-    ctx.fillRect(0, 130, 200, 70);
+    ctx.fillRect(0, baseY, this.sw, this.sh * 0.35);
 
     // Sapling trunk grows
-    this.saplingH = 60 * progress;
-    const cx = 100, baseY = 128;
+    this.saplingH = 60 * s * progress;
+    const cx = this.cx;
 
     ctx.strokeStyle = '#2A1A0A';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.5 * s;
     ctx.beginPath();
     ctx.moveTo(cx, baseY);
     ctx.lineTo(cx, baseY - this.saplingH);
@@ -282,37 +284,34 @@ class LandingSequence {
     if (progress > 0.3) {
       const leafP = (progress - 0.3) / 0.7;
 
-      // Left branch + leaf
       ctx.strokeStyle = 'rgba(62,107,72,0.6)';
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.2 * s;
       ctx.beginPath();
       ctx.moveTo(cx, baseY - this.saplingH * 0.6);
-      ctx.quadraticCurveTo(cx - 12 * leafP, baseY - this.saplingH * 0.65, cx - 18 * leafP, baseY - this.saplingH * 0.7);
+      ctx.quadraticCurveTo(cx - 12 * s * leafP, baseY - this.saplingH * 0.65, cx - 18 * s * leafP, baseY - this.saplingH * 0.7);
       ctx.stroke();
 
       ctx.fillStyle = 'rgba(111,163,111,0.25)';
       ctx.beginPath();
-      ctx.ellipse(cx - 16 * leafP, baseY - this.saplingH * 0.68, 7 * leafP, 3.5 * leafP, -0.3, 0, 6.28);
+      ctx.ellipse(cx - 16 * s * leafP, baseY - this.saplingH * 0.68, 7 * s * leafP, 3.5 * s * leafP, -0.3, 0, 6.28);
       ctx.fill();
 
-      // Right branch + leaf
       ctx.strokeStyle = 'rgba(62,107,72,0.6)';
       ctx.beginPath();
       ctx.moveTo(cx, baseY - this.saplingH * 0.75);
-      ctx.quadraticCurveTo(cx + 10 * leafP, baseY - this.saplingH * 0.78, cx + 16 * leafP, baseY - this.saplingH * 0.82);
+      ctx.quadraticCurveTo(cx + 10 * s * leafP, baseY - this.saplingH * 0.78, cx + 16 * s * leafP, baseY - this.saplingH * 0.82);
       ctx.stroke();
 
       ctx.fillStyle = 'rgba(111,163,111,0.25)';
       ctx.beginPath();
-      ctx.ellipse(cx + 14 * leafP, baseY - this.saplingH * 0.8, 6 * leafP, 3 * leafP, 0.3, 0, 6.28);
+      ctx.ellipse(cx + 14 * s * leafP, baseY - this.saplingH * 0.8, 6 * s * leafP, 3 * s * leafP, 0.3, 0, 6.28);
       ctx.fill();
 
-      // Top leaf cluster
       if (progress > 0.6) {
         const topP = (progress - 0.6) / 0.4;
         ctx.fillStyle = `rgba(111,163,111,${0.2 * topP})`;
         ctx.beginPath();
-        ctx.arc(cx, baseY - this.saplingH - 5, 8 * topP, 0, 6.28);
+        ctx.arc(cx, baseY - this.saplingH - 5 * s, 8 * s * topP, 0, 6.28);
         ctx.fill();
       }
     }
@@ -326,48 +325,50 @@ class LandingSequence {
   _updateZoom(dt) {
     this.t += dt;
     const progress = Math.min(1, this.t / 3);
+    const s = this.sw / 200;
 
-    // Camera pulls back
     this.zoom = 1 + progress * 4;
-    this.offsetY = progress * 80;
+    this.offsetY = progress * 80 * s;
 
     const ctx = this.seedCtx;
-    ctx.clearRect(0, 0, 200, 200);
+    ctx.clearRect(0, 0, this.sw, this.sh);
     ctx.save();
-    ctx.translate(100, 140);
+    const pivotX = this.cx, pivotY = this.sh * 0.7;
+    ctx.translate(pivotX, pivotY);
     ctx.scale(this.zoom, this.zoom);
-    ctx.translate(-100, -140 + this.offsetY);
+    ctx.translate(-pivotX, -pivotY + this.offsetY);
 
     // Ground
+    const baseY = this.sh * 0.65;
     ctx.fillStyle = 'rgba(138,106,74,0.3)';
-    ctx.fillRect(-50, 130, 300, 70);
+    ctx.fillRect(-50 * s, baseY, this.sw + 100 * s, this.sh * 0.35);
 
-    // Sapling (static)
-    const cx = 100, baseY = 128;
+    // Sapling
+    const cx = this.cx;
     ctx.strokeStyle = '#2A1A0A';
-    ctx.lineWidth = 2.5 / this.zoom;
+    ctx.lineWidth = 2.5 * s / this.zoom;
     ctx.beginPath();
     ctx.moveTo(cx, baseY);
-    ctx.lineTo(cx, baseY - 60);
+    ctx.lineTo(cx, baseY - 60 * s);
     ctx.stroke();
 
     // Leaves
     ctx.fillStyle = 'rgba(111,163,111,0.25)';
-    ctx.beginPath(); ctx.ellipse(cx - 16, baseY - 42, 7, 3.5, -0.3, 0, 6.28); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(cx + 14, baseY - 48, 6, 3, 0.3, 0, 6.28); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx, baseY - 65, 8, 0, 6.28); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx - 16 * s, baseY - 42 * s, 7 * s, 3.5 * s, -0.3, 0, 6.28); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + 14 * s, baseY - 48 * s, 6 * s, 3 * s, 0.3, 0, 6.28); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, baseY - 65 * s, 8 * s, 0, 6.28); ctx.fill();
 
-    // Background trees appear as we zoom out
+    // Background trees
     if (progress > 0.3) {
       const treeAlpha = (progress - 0.3) / 0.7;
       ctx.globalAlpha = treeAlpha * 0.3;
       for (let i = 0; i < 8; i++) {
-        const tx = -40 + i * 30 + Math.sin(i * 1.5) * 15;
-        const th = 30 + Math.random() * 20;
+        const tx = -40 * s + i * 30 * s + Math.sin(i * 1.5) * 15 * s;
+        const th = (30 + Math.random() * 20) * s;
         ctx.fillStyle = '#1A4A2A';
-        ctx.fillRect(tx - 2, baseY + 5 - th, 4, th);
+        ctx.fillRect(tx - 2 * s, baseY + 5 * s - th, 4 * s, th);
         ctx.beginPath();
-        ctx.arc(tx, baseY + 5 - th - 8, 10, 0, 6.28);
+        ctx.arc(tx, baseY + 5 * s - th - 8 * s, 10 * s, 0, 6.28);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
