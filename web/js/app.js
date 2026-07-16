@@ -65,25 +65,37 @@ landing.addEventListener('click', async () => {
     pt += 0.015;
     seedCtx.clearRect(0, 0, sw, sh);
     const cx = scx, cy = scy;
-    const p = Math.sin(pt * 1.5) * 0.12 + 1;
-    const b = Math.sin(pt * 0.8) * 0.04 + 1;
-    const g = seedCtx.createRadialGradient(cx, cy, 0, cx, cy, 60 * s * b);
-    g.addColorStop(0, 'rgba(111,163,111,0.08)');
+    const p = Math.sin(pt * 1.5) * 0.15 + 1;
+    const b = Math.sin(pt * 0.8) * 0.08 + 1;
+
+    // Strong outer glow — very visible
+    const g = seedCtx.createRadialGradient(cx, cy, 0, cx, cy, 100 * s * b);
+    g.addColorStop(0, 'rgba(245,240,232,0.25)');
+    g.addColorStop(0.4, 'rgba(111,163,111,0.15)');
     g.addColorStop(1, 'transparent');
     seedCtx.fillStyle = g;
-    seedCtx.beginPath(); seedCtx.arc(cx, cy, 60 * s * b, 0, 6.28); seedCtx.fill();
-    seedCtx.fillStyle = '#8A6A4A';
-    seedCtx.beginPath(); seedCtx.ellipse(cx, cy, 10 * s * p, 15 * s * p, 0, 0, 6.28); seedCtx.fill();
-    seedCtx.fillStyle = 'rgba(245,240,232,0.1)';
-    seedCtx.beginPath(); seedCtx.ellipse(cx - 2 * s, cy - 3 * s, 4 * s * p, 6 * s * p, -0.2, 0, 6.28); seedCtx.fill();
-    seedCtx.strokeStyle = 'rgba(111,163,111,0.5)';
-    seedCtx.lineWidth = 1 * s;
+    seedCtx.beginPath(); seedCtx.arc(cx, cy, 100 * s * b, 0, 6.28); seedCtx.fill();
+
+    // Bright seed body — cream color, large
+    seedCtx.fillStyle = '#F5F0E8';
+    seedCtx.beginPath(); seedCtx.ellipse(cx, cy, 28 * s * p, 42 * s * p, 0, 0, 6.28); seedCtx.fill();
+
+    // Inner highlight
+    seedCtx.fillStyle = 'rgba(255,255,255,0.4)';
+    seedCtx.beginPath(); seedCtx.ellipse(cx - 4 * s, cy - 6 * s, 10 * s * p, 16 * s * p, -0.2, 0, 6.28); seedCtx.fill();
+
+    // Prominent sprout
+    seedCtx.strokeStyle = '#6FA36F';
+    seedCtx.lineWidth = 3 * s;
     seedCtx.beginPath();
-    seedCtx.moveTo(cx, cy - 15 * s * p);
-    seedCtx.quadraticCurveTo(cx + 3 * s, cy - 22 * s * p, cx, cy - 30 * s * p);
+    seedCtx.moveTo(cx, cy - 42 * s * p);
+    seedCtx.quadraticCurveTo(cx + 6 * s, cy - 60 * s * p, cx, cy - 80 * s * p);
     seedCtx.stroke();
-    seedCtx.fillStyle = 'rgba(111,163,111,0.3)';
-    seedCtx.beginPath(); seedCtx.ellipse(cx + 3 * s, cy - 25 * s * p, 3 * s * p, 1.5 * s * p, 0.3, 0, 6.28); seedCtx.fill();
+
+    // Clear leaf
+    seedCtx.fillStyle = 'rgba(111,163,111,0.6)';
+    seedCtx.beginPath(); seedCtx.ellipse(cx + 6 * s, cy - 70 * s * p, 8 * s * p, 4 * s * p, 0.3, 0, 6.28); seedCtx.fill();
+
     if (!landing.classList.contains('hidden')) requestAnimationFrame(drawIdle);
   };
   requestAnimationFrame(drawIdle);
