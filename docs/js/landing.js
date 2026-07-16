@@ -79,7 +79,7 @@ class LandingSequence {
   }
 
   _initForest() {
-    const W = this.world.width, H = this.world.height;
+    const W = this.world.w || this.world.width, H = this.world.h || this.world.height;
     this.forestTrees = Array.from({ length: 30 }, () => ({
       x: Math.random() * W, h: 40 + Math.random() * 80,
       w: 4 + Math.random() * 6, canopyR: 12 + Math.random() * 20,
@@ -388,7 +388,7 @@ class LandingSequence {
     const progress = Math.min(1, this.t / 2);
 
     const ctx = this.worldCtx;
-    const W = this.world.width, H = this.world.height;
+    const W = this.world.w || this.world.width, H = this.world.h || this.world.height;
     ctx.clearRect(0, 0, W, H);
 
     // Sky gradient fades in
