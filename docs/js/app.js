@@ -218,10 +218,12 @@ function renderLoop(timestamp) {
     world.update(dt, LDL.currentTime);
     world.render(LDL.currentTime, LDL.currentSeason || 'spring');
 
-  const ctx = document.getElementById('world-canvas').getContext('2d');
-  tree.update(dt);
-  tree.render(ctx, LDL.currentTime);
-
+    const ctx = document.getElementById('world-canvas').getContext('2d');
+    tree.update(dt);
+    tree.render(ctx, LDL.currentTime);
+  } catch (e) {
+    console.error('Render loop error:', e);
+  }
   requestAnimationFrame(renderLoop);
 }
 
