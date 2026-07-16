@@ -1,7 +1,5 @@
 // BioEcho OS v4 — Living World Experience
 
-BarkPanel.init();
-
 const world = new WorldV4(document.getElementById('world-canvas'));
 const tree = new LivingTree(world);
 const sound = new SoundEngine();
@@ -12,6 +10,7 @@ let ambientInterval = null;
 let activeUnfurl = null;
 
 function initLanding() {
+  BarkPanel.init();
   const landing = document.getElementById('landing');
   const seedCanvas = document.getElementById('seed-canvas');
   const worldCanvas = document.getElementById('world-canvas');
