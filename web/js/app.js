@@ -49,6 +49,7 @@ landing.addEventListener('click', async () => {
         tree._revealFeatures();
         enableTreeInteraction();
         startAmbient();
+        showMovementHint();
       }, 2000);
     });
   } catch (e) {
@@ -114,6 +115,19 @@ function startAmbient() {
   };
   setAmbient();
   ambientInterval = setInterval(setAmbient, 600000);
+}
+
+function showMovementHint() {
+  const hint = document.getElementById('movement-hint');
+  if (!hint) return;
+  setTimeout(() => hint.classList.add('visible'), 1500);
+  const fade = () => {
+    hint.classList.add('fade-out');
+    setTimeout(() => hint.classList.remove('visible'), 1500);
+  };
+  window.addEventListener('keydown', fade, { once: true });
+  document.getElementById('world-canvas').addEventListener('mousedown', fade, { once: true });
+  setTimeout(fade, 12000);
 }
 
 function enableTreeInteraction() {
@@ -220,6 +234,9 @@ document.getElementById('overlay-close')?.addEventListener('click', () => {
   sound.playLeafRustle();
 });
 
+let lastGustSound = 0;
+let lastFootstep = 0;
+
 function renderLoop(timestamp) {
   if (!experienceReady) return;
   try {
@@ -242,6 +259,15 @@ function renderLoop(timestamp) {
     const ctx = document.getElementById('world-canvas').getContext('2d');
     tree.update(dt);
     tree.render(ctx, LDL.currentTime, camera);
+
+    if (world.wind.gust > 0.6 && timestamp - lastGustSound > 4000) {
+      sound.playWindGust();
+      lastGustSound = timestamp;
+    }
+    if (camera.isMoving && timestamp - lastFootstep > 350) {
+      sound.playFootstep();
+      lastFootstep = timestamp;
+    }
   } catch (e) {
     console.error('Render loop error:', e);
   }

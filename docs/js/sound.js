@@ -145,5 +145,46 @@ class SoundEngine {
 
   stopAmbient() { if (this.currentAmbient) { clearInterval(this.currentAmbient); this.currentAmbient = null; } }
 
+  playWindGust() {
+    if (!this.enabled) return;
+    const bufferSize = this.ctx.sampleRate * 0.8;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.sin(i / bufferSize * Math.PI) * 0.3;
+    }
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 400;
+    filter.Q.value = 0.5;
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0.04;
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+    source.start();
+  }
+
+  playFootstep() {
+    if (!this.enabled) return;
+    const bufferSize = this.ctx.sampleRate * 0.08;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 600 + Math.random() * 400;
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0.03 + Math.random() * 0.02;
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+    source.start();
+  }
+
   getStats() { return { enabled: this.enabled, volume: this.volume, ambient: !!this.currentAmbient }; }
 }
