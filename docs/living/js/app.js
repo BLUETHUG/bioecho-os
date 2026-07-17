@@ -41,6 +41,24 @@ let W, H;
 function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize); resize();
 
+// roundRect polyfill for older browsers
+if (!ctx.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (r > w / 2) r = w / 2;
+    if (r > h / 2) r = h / 2;
+    this.moveTo(x + r, y);
+    this.lineTo(x + w - r, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r);
+    this.lineTo(x + w, y + h - r);
+    this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    this.lineTo(x + r, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r);
+    this.lineTo(x, y + r);
+    this.quadraticCurveTo(x, y, x + r, y);
+    this.closePath();
+  };
+}
+
 // ============================================================
 //  WORLD
 // ============================================================
@@ -210,7 +228,7 @@ canvas.addEventListener('touchmove', (e) => {
   WORLD.cursor.influence = Math.min(1, WORLD.cursor.influence + 0.05);
   WORLD.cursorMemory = 1;
 }, { passive: true });
-canvas.addEventListener('touchend', () => { WORLD.cursor.active = 0; });
+document.addEventListener('touchend', () => { WORLD.cursor.active = 0; });
 
 // ============================================================
 //  UPDATE
@@ -388,7 +406,6 @@ function updateTimeline(dt) {
 //  RENDER
 // ============================================================
 function render() {
-  const moodMultiplier = { calm: 0.8, alert: 1.2, learning: 1, exploring: 1.1, sleeping: 0.5, synchronizing: 0.9 }[WORLD.mood] || 1;
   ctx.clearRect(0, 0, W, H);
 
   // Background
@@ -626,11 +643,7 @@ function renderGrid(ctx, alpha) {
         ctx.fill();
       }
 
-      // Micro rotation
-      const rot = n(idx * 3, WORLD.time * 0.02) * 0.01;
-      if (Math.abs(rot) > 0.001) {
-        // Already handled by visual appearance
-      }
+
     }
   }
 
