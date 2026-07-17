@@ -9,16 +9,21 @@ let ambientInterval = null;
 let activeUnfurl = null;
 
 function initLanding() {
-  BarkPanel.init();
+  try { BarkPanel.init(); } catch(e) { console.warn('BarkPanel:', e); }
 
   const worldCanvas = document.getElementById('world-canvas');
-  worldCanvas.width = window.innerWidth;
-  worldCanvas.height = window.innerHeight;
+  if (worldCanvas) {
+    worldCanvas.width = window.innerWidth;
+    worldCanvas.height = window.innerHeight;
+  }
 
-  scene3d = new BioEchoScene();
+  try { scene3d = new BioEchoScene(); } catch(e) { console.warn('BioEchoScene:', e); }
+
   const landing = document.getElementById('landing');
   const seedCanvas = document.getElementById('seed-canvas');
   const uiLayer = document.getElementById('ui-layer');
+
+  if (!landing || !seedCanvas) { console.error('Missing landing elements'); return; }
 
   const seq = new LandingSequence(seedCanvas, worldCanvas);
 
@@ -26,22 +31,29 @@ function initLanding() {
     try {
       landing.style.pointerEvents = 'none';
 
-      await sound.initialize();
-      await sound.resume();
-      sound.playPulse();
+      try {
+        await sound.initialize();
+        await sound.resume();
+        sound.playPulse();
+      } catch(e) { console.warn('Sound init:', e); }
 
       seq.start(() => {
         landing.classList.add('hidden');
         experienceReady = true;
         uiLayer.style.display = 'block';
 
-        scene3d.init(worldCanvas);
-        scene3d.setTimeOfDay(LDL.currentTime || 'noon');
-        sound.playGrowth();
+        try {
+          scene3d.init(worldCanvas);
+          scene3d.setTimeOfDay(LDL.currentTime || 'noon');
+        } catch(e) {
+          console.error('3D scene init error:', e);
+        }
+
+        try { sound.playGrowth(); } catch(e) {}
         requestAnimationFrame(renderLoop);
 
         setTimeout(() => {
-          enableTreeInteraction();
+          try { enableTreeInteraction(); } catch(e) {}
           startAmbient();
           showMovementHint();
         }, 2000);
@@ -115,12 +127,13 @@ function showMovementHint() {
     setTimeout(() => hint.classList.remove('visible'), 1500);
   };
   window.addEventListener('keydown', fade, { once: true });
-  document.getElementById('world-canvas').addEventListener('mousedown', fade, { once: true });
+  document.getElementById('world-canvas')?.addEventListener('mousedown', fade, { once: true });
   setTimeout(fade, 12000);
 }
 
 function enableTreeInteraction() {
   const canvas = document.getElementById('world-canvas');
+  if (!canvas || !scene3d?.orbs) return;
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
@@ -194,34 +207,36 @@ function openFeature(index, originX, originY) {
 function showView(name, ox, oy) {
   activeView = name;
   const overlay = document.getElementById('content-overlay');
-  const card = overlay.querySelector('.content-card');
+  const card = overlay?.querySelector('.content-card');
   const title = document.getElementById('overlay-title');
   const body = document.getElementById('overlay-body');
   const closeBtn = document.getElementById('overlay-close');
 
   if (name === 'home') {
     if (activeUnfurl) { activeUnfurl.close(); activeUnfurl = null; }
-    overlay.classList.remove('visible');
+    overlay?.classList.remove('visible');
     return;
   }
 
   const content = featureContent[name] || featureContent.lens;
-  title.innerHTML = `<span style="display:flex;align-items:center;gap:8px">${bioechoIcon(content.icon, 18)}<span style="font-size:14px;font-weight:400;color:#F5F0E8;font-family:Inter,sans-serif">${content.title}</span></span>`;
-  closeBtn.innerHTML = bioechoIcon('close', 14);
-  body.innerHTML = content.body;
-  overlay.classList.add('visible');
+  if (title) title.innerHTML = `<span style="display:flex;align-items:center;gap:8px">${bioechoIcon(content.icon, 18)}<span style="font-size:14px;font-weight:400;color:#F5F0E8;font-family:Inter,sans-serif">${content.title}</span></span>`;
+  if (closeBtn) closeBtn.innerHTML = bioechoIcon('close', 14);
+  if (body) body.innerHTML = content.body;
+  overlay?.classList.add('visible');
 
   if (activeUnfurl) activeUnfurl.close();
-  const canvas = document.getElementById('vine-canvas');
-  if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-  activeUnfurl = new PanelUnfurl(card, ox || window.innerWidth / 2, oy || window.innerHeight * 0.72);
-  activeUnfurl.open();
+  const vineCanvas = document.getElementById('vine-canvas');
+  if (vineCanvas) { vineCanvas.width = window.innerWidth; vineCanvas.height = window.innerHeight; }
+  if (card) {
+    activeUnfurl = new PanelUnfurl(card, ox || window.innerWidth / 2, oy || window.innerHeight * 0.72);
+    activeUnfurl.open();
+  }
 }
 
 document.getElementById('overlay-close')?.addEventListener('click', () => {
   if (activeUnfurl) { activeUnfurl.close(); activeUnfurl = null; }
-  document.getElementById('content-overlay').classList.remove('visible');
-  sound.playLeafRustle();
+  document.getElementById('content-overlay')?.classList.remove('visible');
+  try { sound.playLeafRustle(); } catch(e) {}
 });
 
 let lastGustSound = 0;
@@ -236,14 +251,16 @@ function renderLoop(timestamp) {
     LDL.currentHour = new Date().getHours() + new Date().getMinutes() / 60;
     LDL.currentTime = LDL.getTimeOfDay(LDL.currentHour);
 
-    scene3d.update(dt);
-    scene3d.render();
+    if (scene3d) {
+      scene3d.update(dt);
+      scene3d.render();
+    }
 
-    if (scene3d.wind.strength > 0.6 && timestamp - lastGustSound > 4000) {
+    if (scene3d?.wind?.strength > 0.6 && timestamp - lastGustSound > 4000) {
       sound.playWindGust();
       lastGustSound = timestamp;
     }
-    if (scene3d.isMoving && timestamp - lastFootstep > 350) {
+    if (scene3d?.isMoving && timestamp - lastFootstep > 350) {
       sound.playFootstep();
       lastFootstep = timestamp;
     }
