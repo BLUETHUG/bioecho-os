@@ -42,8 +42,8 @@ class BioEchoScene {
     this.noise = null;
     this.worldSize = 500;
     this.chunks = {};
-    this.chunkSize = 40;
-    this.renderDist = 5;
+    this.chunkSize = 50;
+    this.renderDist = 3;
     this.treeWorldX = 0;
     this.treeWorldZ = 0;
     this.livingTree = null;
@@ -62,9 +62,9 @@ class BioEchoScene {
     this.camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 800);
     this.camera.position.set(0, 60, 80);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -141,8 +141,8 @@ class BioEchoScene {
     this.sun = new THREE.DirectionalLight(0xFFF0D0, 1.5);
     this.sun.position.set(60, 100, 40);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.width = 4096;
-    this.sun.shadow.mapSize.height = 4096;
+    this.sun.shadow.mapSize.width = 2048;
+    this.sun.shadow.mapSize.height = 2048;
     this.sun.shadow.camera.near = 1;
     this.sun.shadow.camera.far = 250;
     const d = 100;
@@ -203,7 +203,7 @@ class BioEchoScene {
 
   _setupTerrain() {
     const size = this.worldSize;
-    const seg = 160;
+    const seg = 80;
     const geo = new THREE.PlaneGeometry(size, size, seg, seg);
     geo.rotateX(-Math.PI / 2);
 
@@ -325,7 +325,7 @@ class BioEchoScene {
     const seed = sx * 7919 + sz * 104729;
     const hash = (n) => { n = ((n >> 13) ^ n) * 1274126177; return ((n >> 16) ^ n) / 2147483648; };
 
-    const treeCount = 6 + Math.floor(hash(seed) * 6);
+    const treeCount = 4 + Math.floor(hash(seed) * 4);
     for (let i = 0; i < treeCount; i++) {
       const x = sx + hash(seed + i * 31) * this.chunkSize;
       const z = sz + hash(seed + i * 47 + 100) * this.chunkSize;
@@ -339,7 +339,7 @@ class BioEchoScene {
       this._addTree(x, h, z, scale, species);
     }
 
-    const grassCount = 40 + Math.floor(hash(seed + 500) * 40);
+    const grassCount = 15 + Math.floor(hash(seed + 500) * 15);
     for (let i = 0; i < grassCount; i++) {
       const x = sx + hash(seed + i * 131) * this.chunkSize;
       const z = sz + hash(seed + i * 139) * this.chunkSize;
@@ -461,7 +461,7 @@ class BioEchoScene {
   }
 
   _setupGrass() {
-    const count = 8000;
+    const count = 3000;
     const geo = new THREE.PlaneGeometry(0.15, 0.6);
     geo.translate(0, 0.3, 0);
     const mat = new THREE.MeshStandardMaterial({
@@ -475,7 +475,7 @@ class BioEchoScene {
   }
 
   _addGrassInstance(x, y, z) {
-    if (this.grassCount >= 8000) return;
+    if (this.grassCount >= 3000) return;
     const m = new THREE.Matrix4();
     const s = 0.6 + Math.random() * 0.8;
     m.makeRotationY(Math.random() * Math.PI);
@@ -608,7 +608,7 @@ class BioEchoScene {
   }
 
   _setupDustMotes() {
-    const count = 300;
+    const count = 100;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
@@ -628,7 +628,7 @@ class BioEchoScene {
   }
 
   _setupFireflies() {
-    const count = 60;
+    const count = 30;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
@@ -678,7 +678,7 @@ class BioEchoScene {
   }
 
   _setupRain() {
-    const count = 5000;
+    const count = 2000;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
     this.rainVelocities = new Float32Array(count);
