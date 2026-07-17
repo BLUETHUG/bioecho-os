@@ -25,7 +25,7 @@ function initLanding() {
 
   if (!landing || !seedCanvas) { console.error('Missing landing elements'); return; }
 
-  const seq = new LandingSequence(seedCanvas, worldCanvas);
+  const seq = new LandingSequence(seedCanvas);
 
   landing.addEventListener('click', async () => {
     try {

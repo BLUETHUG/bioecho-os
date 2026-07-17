@@ -1,11 +1,9 @@
 // BioEcho Landing v4 — The Journey: Seed → Root → Crack → Sapling → Forest → Reveal
 
 class LandingSequence {
-  constructor(seedCanvas, worldCanvas) {
+  constructor(seedCanvas) {
     this.seed = seedCanvas;
     this.seedCtx = seedCanvas?.getContext('2d');
-    this.world = worldCanvas;
-    this.worldCtx = worldCanvas?.getContext('2d');
     this.phase = 'pulse'; // pulse → root → crack → sapling → zoomout → forest → done
     this.t = 0;
     this.done = false;
@@ -79,7 +77,7 @@ class LandingSequence {
   }
 
   _initForest() {
-    const W = this.world.w || this.world.width, H = this.world.h || this.world.height;
+    const W = window.innerWidth, H = window.innerHeight;
     this.forestTrees = Array.from({ length: 30 }, () => ({
       x: Math.random() * W, h: 40 + Math.random() * 80,
       w: 4 + Math.random() * 6, canopyR: 12 + Math.random() * 20,
