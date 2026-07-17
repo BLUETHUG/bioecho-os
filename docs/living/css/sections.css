@@ -1,0 +1,578 @@
+/* ============================================
+   BioEcho Section Styles
+   Arrival · Forest · Lens · Animals · Earth · Lab · Legacy
+   ============================================ */
+
+/* ---------- ARRIVAL ---------- */
+.section-arrival {
+    background: var(--dark);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    position: relative;
+}
+
+.arrival-particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: var(--fern);
+    border-radius: 50%;
+    opacity: 0;
+    animation: particle-drift linear infinite;
+}
+
+@keyframes particle-drift {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    20% { opacity: 0.6; }
+    80% { opacity: 0.3; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+.arrival-logo {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: breathe 4s ease-in-out infinite;
+}
+
+.arrival-title {
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 200;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cream);
+    margin-bottom: 1rem;
+}
+
+.arrival-tagline {
+    font-size: 1rem;
+    color: rgba(245,240,232,0.4);
+    font-family: var(--font-mono);
+    letter-spacing: 0.05em;
+    margin-bottom: 2rem;
+}
+
+.arrival-enter {
+    opacity: 0;
+    animation: fadeIn 0.8s ease 1.5s forwards;
+}
+
+/* ---------- THE SEED (transition) ---------- */
+.section-seed {
+    background: linear-gradient(180deg, var(--dark), var(--forest-dark));
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 60vh;
+}
+
+.seed-symbol {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: var(--transition-spring);
+}
+
+.seed-symbol:hover {
+    transform: scale(1.2);
+}
+
+/* ---------- LIVING FOREST ---------- */
+.section-forest {
+    background: linear-gradient(180deg, var(--forest-dark), var(--forest), var(--moss));
+    position: relative;
+}
+
+.forest-canopy {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 30%;
+    background: linear-gradient(180deg, rgba(10,43,32,0.8), transparent);
+    pointer-events: none;
+}
+
+.forest-ground {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 20%;
+    background: linear-gradient(0deg, rgba(62,107,72,0.6), transparent);
+    pointer-events: none;
+}
+
+.forest-stat {
+    transition: var(--transition-base);
+}
+
+.forest-stat:hover {
+    transform: translateY(-4px);
+}
+
+.forest-stat-value {
+    font-size: 2.5rem;
+    font-weight: 200;
+    font-family: var(--font-mono);
+    color: var(--fern);
+}
+
+.forest-stat-label {
+    font-size: 0.8rem;
+    color: rgba(245,240,232,0.5);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.forest-creature {
+    position: absolute;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    animation: creature-wander 20s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes creature-wander {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(30px, -20px) rotate(5deg); }
+    50% { transform: translate(60px, 10px) rotate(-3deg); }
+    75% { transform: translate(20px, 30px) rotate(2deg); }
+}
+
+/* ---------- LENS ---------- */
+.section-lens {
+    background: var(--dark);
+    position: relative;
+}
+
+.lens-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.lens-ring {
+    position: absolute;
+    border: 1px solid rgba(95, 168, 211, 0.2);
+    border-radius: 50%;
+    animation: lens-pulse 4s ease-in-out infinite;
+}
+
+@keyframes lens-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.1); opacity: 0.6; }
+}
+
+.lens-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.lens-item {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    transition: var(--transition-base);
+    text-align: center;
+}
+
+.lens-item:hover {
+    background: rgba(95, 168, 211, 0.08);
+    border-color: rgba(95, 168, 211, 0.2);
+    transform: translateY(-2px);
+}
+
+.lens-item-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.lens-item-label { font-size: 0.85rem; font-weight: 500; color: var(--cream); }
+.lens-item-desc { font-size: 0.75rem; color: rgba(245,240,232,0.4); margin-top: 0.25rem; }
+
+/* ---------- ANIMALS (Companion Journal) ---------- */
+.section-animals {
+    background: linear-gradient(180deg, var(--moss), var(--forest), var(--bark));
+}
+
+.companion-header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.companion-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    background: var(--glass-bg);
+    border: 2px solid var(--glass-border);
+    flex-shrink: 0;
+}
+
+.companion-name {
+    font-size: 1.8rem;
+    font-weight: 300;
+    color: var(--cream);
+}
+
+.companion-species {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--fern);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.companion-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.companion-stat {
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.companion-stat-value {
+    font-size: 1.5rem;
+    font-weight: 300;
+    font-family: var(--font-mono);
+}
+
+.companion-stat-label {
+    font-size: 0.7rem;
+    color: rgba(245,240,232,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+}
+
+.memory-timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.memory-timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--fern), transparent);
+}
+
+.memory-item {
+    position: relative;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: var(--transition-base);
+}
+
+.memory-item:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+.memory-item::before {
+    content: '';
+    position: absolute;
+    left: -1.65rem;
+    top: 1.25rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--fern);
+    border: 2px solid var(--forest);
+}
+
+.memory-date {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: rgba(245,240,232,0.3);
+    margin-bottom: 0.25rem;
+}
+
+.memory-title {
+    font-weight: 500;
+    color: var(--cream);
+    margin-bottom: 0.25rem;
+}
+
+.memory-desc {
+    font-size: 0.85rem;
+    color: rgba(245,240,232,0.5);
+}
+
+/* ---------- LIVING EARTH ---------- */
+.section-earth {
+    background: linear-gradient(180deg, var(--dark), var(--forest-dark));
+    position: relative;
+    overflow: hidden;
+}
+
+.earth-globe {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--river), var(--forest-dark));
+    box-shadow: 0 0 60px rgba(95, 168, 211, 0.2), inset 0 0 60px rgba(0,0,0,0.3);
+    margin: 0 auto 2rem;
+    position: relative;
+    animation: globe-rotate 30s linear infinite;
+}
+
+@keyframes globe-rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.earth-globe::before {
+    content: '';
+    position: absolute;
+    inset: 10%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 40%, var(--fern), transparent 60%);
+    opacity: 0.4;
+}
+
+.earth-globe::after {
+    content: '';
+    position: absolute;
+    inset: 20%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 60% 50%, var(--moss), transparent 50%);
+    opacity: 0.3;
+}
+
+.earth-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.earth-stat {
+    text-align: center;
+}
+
+.earth-stat-value {
+    font-size: 2rem;
+    font-family: var(--font-mono);
+    color: var(--river);
+}
+
+.earth-stat-label {
+    font-size: 0.7rem;
+    color: rgba(245,240,232,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+}
+
+.mission-card {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: var(--transition-base);
+    cursor: pointer;
+}
+
+.mission-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--fern);
+    background: rgba(111,163,111,0.05);
+}
+
+.mission-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
+    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.mission-badge.active { background: var(--fern); color: var(--dark); }
+.mission-badge.upcoming { background: rgba(255,255,255,0.06); color: rgba(245,240,232,0.4); }
+.mission-badge.completed { background: var(--river); color: var(--dark); }
+
+/* ---------- RESEARCH LAB ---------- */
+.section-lab {
+    background: linear-gradient(180deg, var(--dark), var(--dark-light));
+}
+
+.lab-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.signal-visualizer {
+    height: 160px;
+    position: relative;
+    border-radius: var(--radius-md);
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.signal-visualizer canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.experiment-card {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: var(--transition-base);
+}
+
+.experiment-card:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.experiment-status {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
+    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+}
+
+.experiment-status.running { background: var(--fern); color: var(--dark); }
+.experiment-status.paused { background: var(--sunset); color: var(--dark); }
+.experiment-status.completed { background: var(--river); color: var(--dark); }
+
+/* ---------- LEGACY ---------- */
+.section-legacy {
+    background: linear-gradient(180deg, var(--bark), var(--soil), var(--forest-dark));
+}
+
+.legacy-timeline {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.legacy-timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--fern), var(--sunset), transparent);
+}
+
+.legacy-milestone {
+    position: relative;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    max-width: 400px;
+    transition: var(--transition-base);
+}
+
+.legacy-milestone:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+.legacy-milestone:nth-child(odd) {
+    margin-left: auto;
+}
+
+.legacy-milestone::before {
+    content: '';
+    position: absolute;
+    top: 1.5rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--fern);
+    box-shadow: 0 0 15px rgba(111,163,111,0.4);
+}
+
+.legacy-milestone:nth-child(odd)::before { left: -3.5rem; }
+.legacy-milestone:nth-child(even)::before { right: -3.5rem; }
+
+.legacy-date {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--sunset);
+    margin-bottom: 0.5rem;
+}
+
+.legacy-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--cream);
+    margin-bottom: 0.5rem;
+}
+
+.legacy-desc {
+    font-size: 0.85rem;
+    color: rgba(245,240,232,0.5);
+}
+
+.legacy-impact {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 3rem;
+}
+
+.legacy-impact-stat {
+    text-align: center;
+}
+
+.legacy-impact-value {
+    font-size: 2.5rem;
+    font-family: var(--font-mono);
+    color: var(--sunset);
+}
+
+.legacy-impact-label {
+    font-size: 0.75rem;
+    color: rgba(245,240,232,0.4);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+@media (max-width: 768px) {
+    .legacy-timeline::before { left: 1rem; }
+    .legacy-milestone { max-width: 100%; margin-left: 2rem !important; }
+    .legacy-milestone::before { left: -2rem !important; right: auto !important; }
+    .earth-globe { width: 200px; height: 200px; }
+    .companion-header { gap: 1rem; }
+}

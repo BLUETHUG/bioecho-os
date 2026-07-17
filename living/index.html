@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>BioEcho — Where Nature Meets Intelligence</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta content="bioecho, living ecosystem, virtual companions, nature" name="keywords" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🌿</text></svg>">
+    <link href="css/base.css" rel="stylesheet" />
+    <link href="css/components.css" rel="stylesheet" />
+    <link href="css/sections.css" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ====== ARRIVAL ====== -->
+<section class="section section-arrival" id="arrival">
+    <div class="arrival-logo">🌿</div>
+    <h1 class="arrival-title">BioEcho</h1>
+    <p class="arrival-tagline">Where Nature Meets Intelligence</p>
+    <div class="arrival-enter">
+        <a href="#seed" data-nav="seed" class="bio-btn bio-btn-glow bio-btn-lg">Enter the Forest</a>
+    </div>
+    <div class="scroll-indicator">
+        <span>Begin</span>
+        <div class="line"></div>
+    </div>
+</section>
+
+<!-- ====== THE SEED ====== -->
+<section class="section section-seed" id="seed">
+    <div class="container-narrow" style="text-align:center">
+        <div class="section-label">Chapter I</div>
+        <h2 class="section-title" style="margin:0 auto 1rem">The Seed</h2>
+        <p class="section-subtitle" style="margin:0 auto 2rem;color:rgba(245,240,232,0.6)">
+            Every forest begins with a single seed.<br>
+            Every journey starts with a single step.
+        </p>
+        <div class="seed-symbol" id="seedSymbol">🌱</div>
+        <p style="margin-top:2rem;font-family:var(--font-mono);font-size:0.8rem;color:rgba(245,240,232,0.3)">touch the seed</p>
+    </div>
+</section>
+
+<!-- ====== LIVING FOREST ====== -->
+<section class="section section-forest" id="forest">
+    <div class="forest-canopy"></div>
+    <div class="container-narrow" style="position:relative;z-index:2">
+        <div class="section-label" style="color:var(--fern)">Chapter II</div>
+        <h2 class="section-title">The Living Forest</h2>
+        <p class="section-subtitle">A breathing ecosystem. Five pillars. One living world.</p>
+
+        <div style="display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap">
+            <div class="bio-card bio-card-dew" style="flex:1;min-width:120px;text-align:center;padding:1rem">
+                <div style="font-family:var(--font-mono);font-size:0.65rem;color:rgba(245,240,232,0.4);margin-bottom:0.25rem">SEASON</div>
+                <div id="forestSeason" style="font-size:1rem;color:var(--sunset);text-transform:uppercase;letter-spacing:0.05em">summer</div>
+            </div>
+            <div class="bio-card bio-card-dew" style="flex:1;min-width:120px;text-align:center;padding:1rem">
+                <div style="font-family:var(--font-mono);font-size:0.65rem;color:rgba(245,240,232,0.4);margin-bottom:0.25rem">PHASE</div>
+                <div id="forestPhase" style="font-size:1rem;color:var(--river);text-transform:uppercase;letter-spacing:0.05em">day</div>
+            </div>
+        </div>
+
+        <div class="bio-grid-2" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+            <div class="forest-stat">
+                <div class="forest-stat-value" id="forestCanopy">78</div>
+                <div class="forest-stat-label">Canopy</div>
+                <div class="bio-progress-vine" style="margin-top:0.5rem"><div class="fill" data-forest-stat="canopy" style="width:78%"></div></div>
+            </div>
+            <div class="forest-stat">
+                <div class="forest-stat-value" id="forestBiodiversity">64</div>
+                <div class="forest-stat-label">Biodiversity</div>
+                <div class="bio-progress-vine" style="margin-top:0.5rem"><div class="fill" data-forest-stat="biodiversity" style="width:64%"></div></div>
+            </div>
+            <div class="forest-stat">
+                <div class="forest-stat-value" id="forestWater">82</div>
+                <div class="forest-stat-label">Water</div>
+                <div class="bio-progress-vine" style="margin-top:0.5rem"><div class="fill" data-forest-stat="water" style="width:82%"></div></div>
+            </div>
+            <div class="forest-stat">
+                <div class="forest-stat-value" id="forestSoil">71</div>
+                <div class="forest-stat-label">Soil</div>
+                <div class="bio-progress-vine" style="margin-top:0.5rem"><div class="fill" data-forest-stat="soil" style="width:71%"></div></div>
+            </div>
+            <div class="forest-stat">
+                <div class="forest-stat-value" id="forestPollinators">59</div>
+                <div class="forest-stat-label">Pollinators</div>
+                <div class="bio-progress-vine" style="margin-top:0.5rem"><div class="fill" data-forest-stat="pollinators" style="width:59%"></div></div>
+            </div>
+        </div>
+
+        <div style="margin-top:2rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+            <a href="#lens" data-nav="lens" class="bio-btn bio-btn-leaf">Explore with Lens →</a>
+            <a href="#animals" data-nav="animals" class="bio-btn bio-btn-seed">Meet the Animals →</a>
+        </div>
+    </div>
+    <div class="scroll-indicator"><span>Explore</span><div class="line"></div></div>
+</section>
+
+<!-- ====== LENS ====== -->
+<section class="section section-lens" id="lens">
+    <div class="container-narrow">
+        <div class="section-label" style="color:var(--river)">Chapter III</div>
+        <h2 class="section-title">BioEcho Lens</h2>
+        <p class="section-subtitle">Point. Observe. Understand. Every organism has a story.</p>
+        <div class="lens-grid" id="lensContainer">
+        </div>
+        <div style="margin-top:2rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+            <a href="#animals" data-nav="animals" class="bio-btn bio-btn-water">Meet the Animals →</a>
+        </div>
+    </div>
+</section>
+
+<!-- ====== ANIMALS (Companion Journal) ====== -->
+<section class="section section-animals" id="animals">
+    <div class="container-narrow">
+        <div class="section-label" style="color:var(--sunset)">Chapter IV</div>
+        <h2 class="section-title">Animal Companions</h2>
+        <p class="section-subtitle">Not virtual pets. Companions with history, personality, and purpose.</p>
+
+        <div style="display:flex;gap:0.5rem;margin-bottom:2rem;flex-wrap:wrap">
+            <button class="bio-btn bio-btn-seed" onclick="addNewCompanion()">✨ Welcome a New Companion</button>
+        </div>
+
+        <div class="bio-grid-2" id="companionContainer">
+        </div>
+
+        <div style="margin-top:2rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+            <a href="#earth" data-nav="earth" class="bio-btn bio-btn-seed">Explore Living Earth →</a>
+        </div>
+    </div>
+</section>
+
+<!-- ====== LIVING EARTH ====== -->
+<section class="section section-earth" id="earth">
+    <div class="container-narrow" style="text-align:center">
+        <div class="section-label" style="color:var(--river)">Chapter V</div>
+        <h2 class="section-title" style="text-align:center;margin:0 auto 0.5rem">Living Earth</h2>
+        <p class="section-subtitle" style="text-align:center;margin:0 auto 2rem">One planet. Connected. Responding.</p>
+
+        <div class="earth-globe"></div>
+
+        <div class="earth-stats" style="margin-bottom:2rem">
+            <div class="earth-stat">
+                <div class="earth-stat-value" id="earthTreesPlanted">1,247</div>
+                <div class="earth-stat-label">Trees Planted</div>
+            </div>
+            <div class="earth-stat">
+                <div class="earth-stat-value" id="earthMissionsCompleted">89</div>
+                <div class="earth-stat-label">Missions</div>
+            </div>
+            <div class="earth-stat">
+                <div class="earth-stat-value" id="earthActiveCitizens">342</div>
+                <div class="earth-stat-label">Active Citizens</div>
+            </div>
+            <div class="earth-stat">
+                <div class="earth-stat-value" id="earthCarbonOffset">45.6</div>
+                <div class="earth-stat-label">Carbon Offset (t)</div>
+            </div>
+        </div>
+
+        <h4 style="text-align:left;margin-bottom:1rem;color:var(--cream)">Community Missions</h4>
+        <div class="bio-grid-2" id="missionsContainer" style="text-align:left">
+        </div>
+
+        <div style="margin-top:2rem;display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:center">
+            <a href="#lab" data-nav="lab" class="bio-btn bio-btn-water">Enter Research Lab →</a>
+        </div>
+    </div>
+</section>
+
+<!-- ====== RESEARCH LAB ====== -->
+<section class="section section-lab" id="lab">
+    <div class="container-narrow">
+        <div class="section-label" style="color:var(--fern)">Chapter VI</div>
+        <h2 class="section-title">Research Lab</h2>
+        <p class="section-subtitle">Science. Data. Discovery. Transparency in every observation.</p>
+
+        <div class="lab-toolbar">
+            <span style="font-family:var(--font-mono);font-size:0.7rem;color:rgba(245,240,232,0.3);margin-right:auto;align-self:center">
+                ⚡ Signal Monitor · Real-time
+            </span>
+            <button class="bio-btn bio-btn-sm bio-btn-leaf">⏸ Pause</button>
+            <button class="bio-btn bio-btn-sm bio-btn-stone">📊 Export</button>
+            <button class="bio-btn bio-btn-sm bio-btn-seed">🔄 Reset</button>
+        </div>
+
+        <div class="signal-visualizer">
+            <canvas id="signalCanvas"></canvas>
+        </div>
+
+        <h4 style="margin-bottom:1rem;color:var(--cream)">Active Experiments</h4>
+        <div class="bio-grid-2" id="experimentsContainer">
+        </div>
+
+        <div style="margin-top:2rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+            <a href="#legacy" data-nav="legacy" class="bio-btn bio-btn-glow">View Legacy →</a>
+        </div>
+    </div>
+</section>
+
+<!-- ====== LEGACY ====== -->
+<section class="section section-legacy" id="legacy">
+    <div class="container-narrow" style="text-align:center">
+        <div class="section-label" style="color:var(--sunset)">Final Chapter</div>
+        <h2 class="section-title" style="text-align:center;margin:0 auto 0.5rem">Legacy</h2>
+        <p class="section-subtitle" style="text-align:center;margin:0 auto 3rem">A timeline of growth. A story still being written.</p>
+
+        <div class="legacy-timeline" id="legacyTimeline">
+        </div>
+
+        <div class="legacy-impact">
+            <div class="legacy-impact-stat">
+                <div class="legacy-impact-value" id="legacyUsers">2,847</div>
+                <div class="legacy-impact-label">Users</div>
+            </div>
+            <div class="legacy-impact-stat">
+                <div class="legacy-impact-value" id="legacyCompanions">4,521</div>
+                <div class="legacy-impact-label">Companions</div>
+            </div>
+            <div class="legacy-impact-stat">
+                <div class="legacy-impact-value" id="legacyTreesPlanted">1,247</div>
+                <div class="legacy-impact-label">Trees Planted</div>
+            </div>
+            <div class="legacy-impact-stat">
+                <div class="legacy-impact-value" id="legacyMemories">18,932</div>
+                <div class="legacy-impact-label">Memories</div>
+            </div>
+            <div class="legacy-impact-stat">
+                <div class="legacy-impact-value" id="legacyResearchHours">8,432</div>
+                <div class="legacy-impact-label">Research Hours</div>
+            </div>
+        </div>
+
+        <div style="margin-top:3rem">
+            <a href="#arrival" data-nav="arrival" class="bio-btn bio-btn-glow">↻ Begin Again</a>
+        </div>
+    </div>
+</section>
+
+<script src="js/forest.js"></script>
+<script src="js/lens.js"></script>
+<script src="js/companion.js"></script>
+<script src="js/earth.js"></script>
+<script src="js/lab.js"></script>
+<script src="js/legacy.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
