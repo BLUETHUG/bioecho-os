@@ -17,6 +17,7 @@ class BioEchoScene {
     this.flowers = [];
     this.rocks = [];
     this.ferns = [];
+    this.debris = [];
     this.grassMesh = null;
     this.rain = null;
     this.dustMotes = null;
@@ -86,6 +87,8 @@ class BioEchoScene {
     this._setupRain();
     this._setupGodRays();
     this._setupGroundFog();
+    this._setupPostProcessing();
+    this._setupGroundDebris();
     this._bindEvents();
     this._startEntrance();
 
@@ -212,6 +215,7 @@ class BioEchoScene {
 
     const pos = geo.attributes.position;
     const colors = new Float32Array(pos.count * 3);
+    const slopes = new Float32Array(pos.count);
 
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
@@ -219,8 +223,15 @@ class BioEchoScene {
       const h = this._terrainHeight(x, z);
       pos.setY(i, h);
 
-      const slope = i > seg && i < pos.count - seg ?
-        Math.abs(h - pos.getY(i - seg - 1)) : 0;
+      let slope = 0;
+      if (i > seg && i < pos.count - seg) {
+        const left = pos.getY(i - 1) !== undefined ? pos.getY(i - 1) : h;
+        const right = pos.getY(i + 1) !== undefined ? pos.getY(i + 1) : h;
+        const up = pos.getY(i - seg - 1) !== undefined ? pos.getY(i - seg - 1) : h;
+        const down = pos.getY(i + seg + 1) !== undefined ? pos.getY(i + seg + 1) : h;
+        slope = Math.sqrt((right - left) * (right - left) + (down - up) * (down - up)) * 2;
+      }
+      slopes[i] = slope;
       const c = this._terrainColor(x, z, h, slope);
       colors[i * 3] = c.r;
       colors[i * 3 + 1] = c.g;
@@ -229,8 +240,68 @@ class BioEchoScene {
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geo.computeVertexNormals();
 
-    const mat = new THREE.MeshStandardMaterial({
-      vertexColors: true, roughness: 0.92, metalness: 0.0, flatShading: false
+    const normals = geo.attributes.normal;
+    this.terrainData = { slopes, normals: normals ? normals.array : null };
+
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        fogColor: { value: new THREE.Color(0x88AA88) },
+        fogDensity: { value: 0.006 },
+        sunDir: { value: new THREE.Vector3(0.5, 0.6, 0.3).normalize() }
+      },
+      vertexShader: `
+        attribute vec3 color;
+        varying vec3 vColor;
+        varying vec3 vNormal;
+        varying vec3 vWorldPos;
+        varying float vDist;
+        void main() {
+          vColor = color;
+          vNormal = normalize(normalMatrix * normal);
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vWorldPos = wp.xyz;
+          vDist = length(wp.xz);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`,
+      fragmentShader: `
+        uniform vec3 fogColor;
+        uniform float fogDensity;
+        uniform vec3 sunDir;
+        varying vec3 vColor;
+        varying vec3 vNormal;
+        varying vec3 vWorldPos;
+        varying float vDist;
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                     mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+        }
+
+        void main() {
+          vec2 detailUv = vWorldPos.xz * 3.0;
+          float detail = noise(detailUv) * 0.06 + noise(detailUv * 4.0) * 0.03;
+          vec3 col = vColor + detail;
+
+          float NdotL = max(dot(vNormal, sunDir), 0.0);
+          float ambient = 0.35;
+          float diffuse = NdotL * 0.65;
+          col *= ambient + diffuse;
+
+          float ao = smoothstep(0.0, 1.5, vNormal.y) * 0.3 + 0.7;
+          col *= ao;
+
+          float fog = 1.0 - exp(-fogDensity * vDist * vDist);
+          col = mix(col, fogColor, fog * 0.5);
+
+          gl_FragColor = vec4(col, 1.0);
+        }`
     });
     this.terrain = new THREE.Mesh(geo, mat);
     this.terrain.receiveShadow = true;
@@ -940,6 +1011,212 @@ class BioEchoScene {
     this.scene.add(this.groundFog);
   }
 
+  _setupPostProcessing() {
+    const w = window.innerWidth * Math.min(window.devicePixelRatio, 2);
+    const h = window.innerHeight * Math.min(window.devicePixelRatio, 2);
+    this.renderTarget = new THREE.WebGLRenderTarget(w, h, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat
+    });
+    this.renderTargetBloom = new THREE.WebGLRenderTarget(w / 2, h / 2, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter
+    });
+
+    const quadGeo = new THREE.PlaneGeometry(2, 2);
+    this.postMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        tDiffuse: { value: this.renderTarget.texture },
+        tBloom: { value: this.renderTargetBloom.texture },
+        resolution: { value: new THREE.Vector2(w, h) },
+        time: { value: 0 },
+        vignetteStrength: { value: 0.45 },
+        bloomStrength: { value: 0.35 },
+        saturation: { value: 1.1 },
+        contrast: { value: 1.08 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }`,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform sampler2D tBloom;
+        uniform vec2 resolution;
+        uniform float time;
+        uniform float vignetteStrength;
+        uniform float bloomStrength;
+        uniform float saturation;
+        uniform float contrast;
+        varying vec2 vUv;
+
+        vec3 adjustColor(vec3 col) {
+          float lum = dot(col, vec3(0.299, 0.587, 0.114));
+          col = mix(vec3(lum), col, saturation);
+          col = (col - 0.5) * contrast + 0.5;
+          return col;
+        }
+
+        void main() {
+          vec4 col = texture2D(tDiffuse, vUv);
+          vec4 bloom = texture2D(tBloom, vUv);
+          col.rgb += bloom.rgb * bloomStrength;
+
+          vec2 center = vUv - 0.5;
+          float dist = length(center);
+          float vig = smoothstep(0.7, 0.3, dist * vignetteStrength * 2.0);
+          col.rgb *= vig;
+
+          col.rgb = adjustColor(col.rgb);
+
+          float grain = (fract(sin(dot(vUv * resolution + time, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.015;
+          col.rgb += grain;
+
+          col.rgb = pow(col.rgb, vec3(1.0 / 2.2));
+          gl_FragColor = col;
+        }`
+    });
+    this.postQuad = new THREE.Mesh(quadGeo, this.postMaterial);
+    this.postScene = new THREE.Scene();
+    this.postScene.add(this.postQuad);
+    this.postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+    this.bloomScene = new THREE.Scene();
+    this.bloomCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const bloomQuad = new THREE.Mesh(
+      new THREE.PlaneGeometry(2, 2),
+      new THREE.ShaderMaterial({
+        uniforms: {
+          tDiffuse: { value: this.renderTarget.texture },
+          resolution: { value: new THREE.Vector2(w / 2, h / 2) },
+          direction: { value: new THREE.Vector2(1, 0) }
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = vec4(position.xy, 0.0, 1.0);
+          }`,
+        fragmentShader: `
+          uniform sampler2D tDiffuse;
+          uniform vec2 resolution;
+          uniform vec2 direction;
+          varying vec2 vUv;
+          void main() {
+            vec4 sum = vec4(0.0);
+            float weights[5];
+            weights[0] = 0.227027; weights[1] = 0.1945946; weights[2] = 0.1216216;
+            weights[3] = 0.054054; weights[4] = 0.016216;
+            vec2 texel = direction / resolution;
+            sum += texture2D(tDiffuse, vUv) * weights[0];
+            for (int i = 1; i < 5; i++) {
+              vec2 off = texel * float(i) * 2.0;
+              sum += texture2D(tDiffuse, vUv + off) * weights[i];
+              sum += texture2D(tDiffuse, vUv - off) * weights[i];
+            }
+            vec4 c = sum;
+            float lum = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+            float threshold = 0.6;
+            float soft = 0.3;
+            float w = smoothstep(threshold - soft, threshold + soft, lum);
+            gl_FragColor = vec4(c.rgb * w, 1.0);
+          }`
+      })
+    );
+    this.bloomScene.add(bloomQuad);
+
+    this.tempTargetA = new THREE.WebGLRenderTarget(w / 2, h / 2, {
+      minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter
+    });
+  }
+
+  _setupGroundDebris() {
+    this.debris = [];
+    for (let i = 0; i < 40; i++) {
+      const x = (Math.random() - 0.5) * 100;
+      const z = (Math.random() - 0.5) * 100;
+      const h = this._terrainHeight(x, z);
+      if (h < -1 || h > 8) continue;
+      const type = Math.random();
+      if (type < 0.4) {
+        this._addFallenLog(x, h, z, Math.random());
+      } else if (type < 0.65) {
+        this._addMushroom(x, h, z, Math.random());
+      } else {
+        this._addLeafLitter(x, h, z, Math.random());
+      }
+    }
+  }
+
+  _addFallenLog(x, y, z, rand) {
+    const len = 1.5 + rand * 2.5;
+    const r = 0.08 + rand * 0.12;
+    const geo = new THREE.CylinderGeometry(r * 0.6, r, len, 8, 3);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const t = (pos.getY(i) + len / 2) / len;
+      const bend = Math.sin(t * 3.14) * 0.05;
+      pos.setX(i, pos.getX(i) + bend);
+    }
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(0.07, 0.15 + rand * 0.1, 0.18 + rand * 0.08),
+      roughness: 0.95
+    });
+    const log = new THREE.Mesh(geo, mat);
+    log.position.set(x, y + r * 0.3, z);
+    log.rotation.set(rand * 0.2, rand * 3, Math.PI / 2 + rand * 0.3);
+    log.castShadow = true;
+    log.receiveShadow = true;
+    this.scene.add(log);
+    this.debris.push(log);
+  }
+
+  _addMushroom(x, y, z, rand) {
+    const group = new THREE.Group();
+    group.position.set(x, y, z);
+    const stemH = 0.15 + rand * 0.2;
+    const stemGeo = new THREE.CylinderGeometry(0.02, 0.025, stemH, 5);
+    const stemMat = new THREE.MeshStandardMaterial({ color: 0xE8DCC8, roughness: 0.8 });
+    const stem = new THREE.Mesh(stemGeo, stemMat);
+    stem.position.y = stemH / 2;
+    group.add(stem);
+    const capR = 0.06 + rand * 0.08;
+    const capGeo = new THREE.SphereGeometry(capR, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2);
+    const hue = rand > 0.5 ? 0.0 : 0.08;
+    const capMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(hue, 0.5 + rand * 0.3, 0.3 + rand * 0.15),
+      roughness: 0.6
+    });
+    const cap = new THREE.Mesh(capGeo, capMat);
+    cap.position.y = stemH;
+    cap.castShadow = true;
+    group.add(cap);
+    this.scene.add(group);
+    this.debris.push(group);
+  }
+
+  _addLeafLitter(x, y, z, rand) {
+    const count = 2 + Math.floor(rand * 4);
+    for (let i = 0; i < count; i++) {
+      const geo = new THREE.PlaneGeometry(0.1 + rand * 0.15, 0.08 + rand * 0.1);
+      const leafH = rand > 0.5 ? 0.06 : 0.03;
+      const mat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color().setHSL(leafH, 0.3 + rand * 0.3, 0.2 + rand * 0.15),
+        side: THREE.DoubleSide, roughness: 0.9
+      });
+      const leaf = new THREE.Mesh(geo, mat);
+      leaf.position.set(x + (Math.random() - 0.5) * 0.6, y + 0.01, z + (Math.random() - 0.5) * 0.6);
+      leaf.rotation.set(-Math.PI / 2 + (Math.random() - 0.5) * 0.3, Math.random() * Math.PI, 0);
+      leaf.receiveShadow = true;
+      this.scene.add(leaf);
+      this.debris.push(leaf);
+    }
+  }
+
   _startEntrance() {
     this.entranceActive = true;
     this.entrancePhase = 0;
@@ -1069,6 +1346,37 @@ class BioEchoScene {
       this.wind.gustTimer = 0;
     }
     this.wind.strength += (this.wind.target - this.wind.strength) * 0.02;
+
+    const hour = (this.time * 0.02 + 8) % 24;
+    const dayProgress = Math.max(0, Math.sin((hour - 5) / 14 * Math.PI));
+    const sunColor = new THREE.Color().setHSL(
+      0.08 + dayProgress * 0.04,
+      0.5 + dayProgress * 0.4,
+      0.5 + dayProgress * 0.4
+    );
+    if (this.sun) {
+      this.sun.color.copy(sunColor);
+      this.sun.intensity = 0.6 + dayProgress * 1.2;
+      const sunAngle = ((hour - 6) / 12) * Math.PI;
+      this.sun.position.set(
+        Math.cos(sunAngle) * 80,
+        Math.sin(sunAngle) * 100 + 20,
+        40
+      );
+    }
+    if (this.hemi) {
+      const skyColor = new THREE.Color().setHSL(0.55, 0.3 + dayProgress * 0.3, 0.4 + dayProgress * 0.3);
+      const groundColor = new THREE.Color().setHSL(0.25, 0.3, 0.15 + dayProgress * 0.1);
+      this.hemi.color.copy(skyColor);
+      this.hemi.groundColor.copy(groundColor);
+    }
+    if (this.ambient) {
+      this.ambient.intensity = 0.2 + dayProgress * 0.25;
+    }
+    if (this.scene.fog) {
+      const fogTint = new THREE.Color().setHSL(0.42, 0.2, 0.4 + dayProgress * 0.15);
+      this.scene.fog.color.copy(fogTint);
+    }
 
     if (!this.isDragging) {
       const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
@@ -1218,12 +1526,46 @@ class BioEchoScene {
   }
 
   render() {
+    if (!this.renderTarget) {
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
+
+    const blurPasses = 3;
+    const dir = new THREE.Vector2(1, 0);
+    for (let i = 0; i < blurPasses; i++) {
+      this.bloomScene.children[0].material.uniforms.direction.value.copy(dir);
+      this.renderer.setRenderTarget(this.tempTargetA);
+      this.renderer.render(this.bloomScene, this.bloomCamera);
+      this.bloomScene.children[0].material.uniforms.tDiffuse.value = this.tempTargetA.texture;
+      dir.set(0, 1);
+      this.bloomScene.children[0].material.uniforms.direction.value.copy(dir);
+      this.renderer.setRenderTarget(this.renderTargetBloom);
+      this.renderer.render(this.bloomScene, this.bloomCamera);
+      this.bloomScene.children[0].material.uniforms.tDiffuse.value = this.renderTarget.texture;
+      dir.set(1, 0);
+    }
+
+    this.renderer.setRenderTarget(this.renderTarget);
     this.renderer.render(this.scene, this.camera);
+    this.renderer.setRenderTarget(null);
+
+    this.postMaterial.uniforms.time.value = this.time;
+    this.renderer.render(this.postScene, this.postCamera);
   }
 
   _onResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(w, h);
+    const pr = Math.min(window.devicePixelRatio, 2);
+    if (this.renderTarget) {
+      this.renderTarget.setSize(w * pr, h * pr);
+      this.renderTargetBloom.setSize(w * pr / 2, h * pr / 2);
+      this.tempTargetA.setSize(w * pr / 2, h * pr / 2);
+      this.postMaterial.uniforms.resolution.value.set(w * pr, h * pr);
+    }
   }
 }
