@@ -2,175 +2,168 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>BioEcho — Where Nature Meets Intelligence</title>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BioEcho</title>
+    <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no, minimal-ui, viewport-fit=cover" name="viewport" />
     <meta content="bioecho, living ecosystem, virtual companions, nature intelligence" name="keywords" />
+    <meta content="A living digital ecosystem. Virtual companions with purpose. A forest that remembers you." name="description" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🌿</text></svg>">
     <link href="css/base.css" rel="stylesheet" />
-    <link href="css/components.css" rel="stylesheet" />
-    <link href="css/sections.css" rel="stylesheet" />
 </head>
 <body>
 
-<nav class="float-nav" id="floatNav"></nav>
+<div id="loader">
+    <div class="loader-ascii"></div>
+    <div class="loader-status">initializing</div>
+</div>
 
-<section class="s-hero" id="hero">
-    <div class="s-hero-bg" id="heroBg"></div>
-    <div class="hero-content">
-        <p class="hero-eyebrow reveal visible">BioEcho OS</p>
-        <h1 class="hero-title reveal visible reveal-delay-1">Where <em>Nature</em><br>Meets Intelligence</h1>
-        <p class="hero-sub reveal visible reveal-delay-2">A living digital ecosystem. Virtual companions with purpose. A forest that remembers you.</p>
-        <div class="hero-cta reveal visible reveal-delay-3">
-            <a href="#mission" class="btn btn-primary btn-lg">Explore the Forest</a>
-            <a href="#companions" class="btn btn-ice btn-lg">Meet the Companions</a>
-        </div>
+<div id="app">
+    <div class="ui-corner ui-corner-tl">
+        <div class="ui-label">BioEcho</div>
     </div>
-    <div class="hero-scroll"><span>Scroll</span><div class="hero-scroll-line"></div></div>
-</section>
-
-<section class="section s-mission" id="mission">
-    <div class="section-inner">
-        <div class="section-number reveal">Mission</div>
-        <div class="mission-statement reveal">
-            We believe the digital world should <span class="highlight">breathe</span>.
-            <br><br>
-            BioEcho is an experiment in living interfaces — where ecosystems grow, companions form bonds, and every visit leaves the forest changed.
-            <br><br>
-            <span style="color:var(--text-secondary);font-size:0.85em">Not a dashboard. A world.</span>
-        </div>
+    <div class="ui-corner ui-corner-tr">
+        <div class="ui-label" id="sceneLabel">00 &mdash; Arrival</div>
     </div>
-</section>
+    <div class="ui-corner ui-corner-bl">
+        <div class="ui-label" id="statusLabel">forest breathing</div>
+    </div>
 
-<section class="section s-forest" id="forest">
-    <div class="section-inner">
-        <div class="reveal">
-            <div class="section-number">Ecosystem</div>
-            <h2 class="section-title">The Living Forest</h2>
-            <p class="section-subtitle">Five pillars. One system. Breathing in real time.</p>
-        </div>
-        <div class="forest-grid reveal reveal-delay-1">
-            <div class="forest-metric">
-                <div class="forest-metric-value"><span id="forestCanopy">78</span>%</div>
-                <div class="forest-metric-label">Canopy</div>
-                <div class="progress"><div class="progress-fill" data-stat="canopy" style="width:78%"></div></div>
-            </div>
-            <div class="forest-metric">
-                <div class="forest-metric-value"><span id="forestBiodiversity">64</span>%</div>
-                <div class="forest-metric-label">Biodiversity</div>
-                <div class="progress"><div class="progress-fill" data-stat="biodiversity" style="width:64%"></div></div>
-            </div>
-            <div class="forest-metric">
-                <div class="forest-metric-value"><span id="forestWater">82</span>%</div>
-                <div class="forest-metric-label">Water</div>
-                <div class="progress"><div class="progress-fill" data-stat="water" style="width:82%"></div></div>
-            </div>
-            <div class="forest-metric">
-                <div class="forest-metric-value"><span id="forestSoil">71</span>%</div>
-                <div class="forest-metric-label">Soil</div>
-                <div class="progress"><div class="progress-fill" data-stat="soil" style="width:71%"></div></div>
-            </div>
-            <div class="forest-metric">
-                <div class="forest-metric-value"><span id="forestPollinators">59</span>%</div>
-                <div class="forest-metric-label">Pollinators</div>
-                <div class="progress"><div class="progress-fill" data-stat="pollinators" style="width:59%"></div></div>
+    <nav class="ui-nav" id="uiNav"></nav>
+
+    <!-- Scene 0: Arrival -->
+    <div class="scene active" data-scene="0">
+        <div class="scene-inner">
+            <div class="scene-number">BioEcho OS</div>
+            <h1 class="scene-title">
+                Where <span style="color:var(--accent)">Nature</span><br>
+                Meets Intelligence
+            </h1>
+            <p class="scene-sub">A living digital ecosystem. Virtual companions with purpose. A forest that remembers you.</p>
+            <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
+                <button class="btn btn-primary btn-lg" onclick="navigateScene(2)">Explore Forest</button>
+                <button class="btn btn-outline btn-lg" onclick="navigateScene(4)">Meet Companions</button>
             </div>
         </div>
-        <div class="forest-meta reveal reveal-delay-2">
-            <div class="forest-meta-item">Season: <span id="forestSeason">summer</span></div>
-            <div class="forest-meta-item">Phase: <span id="forestPhase">day</span></div>
+    </div>
+
+    <!-- Scene 1: Mission -->
+    <div class="scene" data-scene="1">
+        <div class="scene-inner" style="max-width:600px">
+            <div class="scene-label">01 &mdash; Mission</div>
+            <h2 class="scene-title" style="font-weight:300">
+                We believe the digital world<br>
+                should <span style="color:var(--accent)">breathe</span>.
+            </h2>
+            <p class="scene-sub" style="margin-top:1.5rem">
+                BioEcho is an experiment in living interfaces. Ecosystems that grow. Companions that bond. A forest that changes because you were there.
+            </p>
+            <p style="font-size:0.75rem;color:var(--text-tertiary);margin-top:2rem">Not a dashboard. A world.</p>
         </div>
     </div>
-</section>
 
-<section class="section s-lens" id="lens">
-    <div class="section-inner">
-        <div class="reveal">
-            <div class="section-number">Lens</div>
-            <h2 class="section-title">BioEcho Lens</h2>
-            <p class="section-subtitle">Every organism has a story. Point, observe, understand.</p>
-        </div>
-        <div class="lens-grid reveal reveal-delay-1" id="lensContainer"></div>
-    </div>
-</section>
-
-<section class="section s-companions" id="companions">
-    <div class="section-inner">
-        <div class="reveal">
-            <div class="section-number">Companions</div>
-            <h2 class="section-title">Animal Companions</h2>
-            <p class="section-subtitle">Not virtual pets. Companions with history, personality, and a bond that grows.</p>
-            <button class="btn btn-primary btn-sm" onclick="addNewCompanion()">+ New Companion</button>
-        </div>
-        <div class="companion-list reveal reveal-delay-1" id="companionContainer" style="margin-top:2rem"></div>
-    </div>
-</section>
-
-<section class="section s-earth" id="earth">
-    <div class="section-inner" style="text-align:center">
-        <div class="reveal">
-            <div class="section-number" style="justify-content:center">Earth</div>
-            <h2 class="section-title" style="text-align:center;margin:0 auto 0.5rem">Living Earth</h2>
-            <p class="section-subtitle" style="text-align:center;margin:0 auto 2rem">One planet. Connected. Responding.</p>
-        </div>
-        <div class="earth-visual reveal reveal-delay-1"></div>
-        <div class="earth-stats reveal reveal-delay-2">
-            <div class="stat"><div class="stat-value" id="earthTreesPlanted">1,247</div><div class="stat-label">Trees Planted</div></div>
-            <div class="stat"><div class="stat-value" id="earthMissionsCompleted">89</div><div class="stat-label">Missions</div></div>
-            <div class="stat"><div class="stat-value" id="earthActiveCitizens">342</div><div class="stat-label">Active Citizens</div></div>
-            <div class="stat"><div class="stat-value" id="earthCarbonOffset">45.6</div><div class="stat-label">Carbon (t)</div></div>
-        </div>
-        <div style="text-align:left;margin-top:2rem">
-            <h4 style="margin-bottom:1rem;font-weight:300;font-size:1.1rem">Community Missions</h4>
-            <div class="mission-list reveal reveal-delay-3" id="missionsContainer"></div>
+    <!-- Scene 2: Forest -->
+    <div class="scene" data-scene="2">
+        <div class="scene-inner" style="max-width:600px">
+            <div class="scene-label">02 &mdash; Forest</div>
+            <h2 class="scene-title">The Living Forest</h2>
+            <p class="scene-sub">Five pillars. Breathing in real time.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;text-align:left">
+                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
+                    <div style="font-size:1.4rem;font-weight:var(--font-weight-light);font-family:var(--font);color:var(--accent)" id="fCanopy">78%</div>
+                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Canopy</div>
+                </div>
+                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
+                    <div style="font-size:1.4rem;font-weight:var(--font-weight-light);font-family:var(--font);color:var(--accent)" id="fBiodiversity">64%</div>
+                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Biodiversity</div>
+                </div>
+                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
+                    <div style="font-size:1.4rem;font-weight:var(--font-weight-light);font-family:var(--font);color:var(--accent)" id="fWater">82%</div>
+                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Water</div>
+                </div>
+                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
+                    <div style="font-size:1.4rem;font-weight:var(--font-weight-light);font-family:var(--font);color:var(--accent)" id="fSoil">71%</div>
+                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Soil</div>
+                </div>
+                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
+                    <div style="font-size:1.4rem;font-weight:var(--font-weight-light);font-family:var(--font);color:var(--accent)" id="fPollinators">59%</div>
+                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Pollinators</div>
+                </div>
+                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
+                    <div style="font-size:0.75rem;font-weight:var(--font-weight-regular)" id="fSeason">summer</div>
+                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Season</div>
+                </div>
+            </div>
         </div>
     </div>
-</section>
 
-<section class="section s-lab" id="lab">
-    <div class="section-inner">
-        <div class="reveal">
-            <div class="section-number">Lab</div>
-            <h2 class="section-title">Research Lab</h2>
-            <p class="section-subtitle">Science. Data. Transparency. Every observation matters.</p>
-        </div>
-        <div class="lab-tools reveal reveal-delay-1">
-            <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text-tertiary);margin-right:auto;align-self:center">Signal Monitor · Real-time</span>
-            <button class="btn btn-sm btn-ghost">⏸</button>
-            <button class="btn btn-sm btn-ghost">📊</button>
-            <button class="btn btn-sm btn-ghost">↻</button>
-        </div>
-        <div class="signal-box reveal reveal-delay-1"><canvas id="signalCanvas"></canvas></div>
-        <div class="reveal reveal-delay-2">
-            <h4 style="margin-bottom:1rem;font-weight:300;font-size:1.1rem;color:var(--text)">Active Experiments</h4>
-            <div class="experiment-grid" id="experimentsContainer"></div>
+    <!-- Scene 3: Lens -->
+    <div class="scene" data-scene="3">
+        <div class="scene-inner" style="max-width:600px">
+            <div class="scene-label">03 &mdash; Lens</div>
+            <h2 class="scene-title">BioEcho Lens</h2>
+            <p class="scene-sub">Every organism has a story.</p>
+            <div id="lensGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem"></div>
         </div>
     </div>
-</section>
 
-<section class="section s-legacy" id="legacy">
-    <div class="section-inner">
-        <div class="reveal">
-            <div class="section-number">Legacy</div>
-            <h2 class="section-title">Our Story</h2>
-            <p class="section-subtitle">A timeline of growth. Still being written.</p>
+    <!-- Scene 4: Companions -->
+    <div class="scene" data-scene="4">
+        <div class="scene-inner" style="max-width:680px">
+            <div class="scene-label">04 &mdash; Companions</div>
+            <h2 class="scene-title">Animal Companions</h2>
+            <p class="scene-sub">Bonds that grow. Stories that unfold.</p>
+            <div style="margin-bottom:1.5rem">
+                <button class="btn btn-primary btn-sm" onclick="addCompanion()">+ New Companion</button>
+            </div>
+            <div id="companionGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;text-align:left"></div>
         </div>
-        <div class="legacy-timeline reveal reveal-delay-1" id="legacyTimeline"></div>
-        <div class="legacy-impact reveal reveal-delay-2">
-            <div class="stat"><div class="stat-value" id="legacyUsers">2,847</div><div class="stat-label">Users</div></div>
-            <div class="stat"><div class="stat-value" id="legacyCompanions">4,521</div><div class="stat-label">Companions</div></div>
-            <div class="stat"><div class="stat-value" id="legacyTreesPlanted">1,247</div><div class="stat-label">Trees</div></div>
-            <div class="stat"><div class="stat-value" id="legacyMemories">18,932</div><div class="stat-label">Memories</div></div>
-        </div>
-        <div style="margin-top:3rem"><a href="#hero" class="btn btn-ice">↻ Begin Again</a></div>
     </div>
-</section>
 
-<script src="js/forest.js"></script>
-<script src="js/lens.js"></script>
-<script src="js/companion.js"></script>
-<script src="js/earth.js"></script>
-<script src="js/lab.js"></script>
-<script src="js/legacy.js"></script>
+    <!-- Scene 5: Earth -->
+    <div class="scene" data-scene="5">
+        <div class="scene-inner" style="max-width:600px">
+            <div class="scene-label">05 &mdash; Earth</div>
+            <h2 class="scene-title">Living Earth</h2>
+            <p class="scene-sub">One planet. Connected. Responding.</p>
+            <div style="display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem">
+                <div><div style="font-size:1.3rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="eTrees">1,247</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Trees</div></div>
+                <div><div style="font-size:1.3rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="eMissions">89</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Missions</div></div>
+                <div><div style="font-size:1.3rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="eCitizens">342</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Citizens</div></div>
+                <div><div style="font-size:1.3rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="eCarbon">45.6</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Carbon (t)</div></div>
+            </div>
+            <div id="missionGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;text-align:left"></div>
+        </div>
+    </div>
+
+    <!-- Scene 6: Lab -->
+    <div class="scene" data-scene="6">
+        <div class="scene-inner" style="max-width:600px">
+            <div class="scene-label">06 &mdash; Lab</div>
+            <h2 class="scene-title">Research Lab</h2>
+            <p class="scene-sub">Science. Data. Transparency.</p>
+            <div style="height:80px;border-radius:var(--radius-md);background:rgba(0,0,0,0.05);border:1px solid var(--border);overflow:hidden;margin-bottom:1rem">
+                <canvas id="sigCanvas"></canvas>
+            </div>
+            <div id="experimentGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;text-align:left"></div>
+        </div>
+    </div>
+
+    <!-- Scene 7: Legacy -->
+    <div class="scene" data-scene="7">
+        <div class="scene-inner" style="max-width:560px">
+            <div class="scene-label">07 &mdash; Legacy</div>
+            <h2 class="scene-title">Our Story</h2>
+            <p class="scene-sub">Still being written.</p>
+            <div id="legacyList" style="text-align:left"></div>
+            <div style="display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-top:2rem">
+                <div><div style="font-size:1.1rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="lUsers">2,847</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Users</div></div>
+                <div><div style="font-size:1.1rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="lCompanions">4,521</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Companions</div></div>
+                <div><div style="font-size:1.1rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="lTrees">1,247</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Trees</div></div>
+                <div><div style="font-size:1.1rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="lMemories">18,932</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Memories</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="js/app.js"></script>
 </body>
 </html>
