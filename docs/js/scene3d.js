@@ -84,6 +84,8 @@ class BioEchoScene {
     this._setupFireflies();
     this._setupBirdFlocks();
     this._setupRain();
+    this._setupGodRays();
+    this._setupGroundFog();
     this._bindEvents();
     this._startEntrance();
 
@@ -267,41 +269,71 @@ class BioEchoScene {
   }
 
   _setupWater() {
-    const geo = new THREE.PlaneGeometry(this.worldSize, this.worldSize, 1, 1);
+    const geo = new THREE.PlaneGeometry(this.worldSize, this.worldSize, 64, 64);
     geo.rotateX(-Math.PI / 2);
     const mat = new THREE.ShaderMaterial({
       transparent: true,
       uniforms: {
         time: { value: 0 },
-        waterColor: { value: new THREE.Color(0x2A5A6A) },
+        waterColor: { value: new THREE.Color(0x1A4A5A) },
+        waterDeep: { value: new THREE.Color(0x0D2A35) },
+        foamColor: { value: new THREE.Color(0xCCDDEE) },
         fogColor: { value: new THREE.Color(0x88AA88) },
-        fogDensity: { value: 0.006 }
+        fogDensity: { value: 0.006 },
+        sunDir: { value: new THREE.Vector3(0.5, 0.6, 0.3).normalize() }
       },
       vertexShader: `
+        uniform float time;
         varying vec2 vUv;
         varying float vDist;
+        varying vec3 vWorldPos;
+        varying vec3 vNormal;
         void main() {
           vUv = uv;
-          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vec3 pos = position;
+          float wave1 = sin(pos.x * 0.8 + time * 1.2) * cos(pos.z * 0.6 + time * 0.9) * 0.3;
+          float wave2 = sin(pos.x * 1.5 + pos.z * 1.2 + time * 2.0) * 0.15;
+          float wave3 = cos(pos.x * 0.3 - time * 0.5) * sin(pos.z * 0.4 + time * 0.7) * 0.2;
+          pos.y += wave1 + wave2 + wave3;
+          vec4 wp = modelMatrix * vec4(pos, 1.0);
+          vWorldPos = wp.xyz;
           vDist = length(wp.xz);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          float dx = cos(pos.x * 0.8 + time * 1.2) * 0.8 * 0.3 + cos(pos.x * 1.5 + pos.z * 1.2 + time * 2.0) * 1.5 * 0.15;
+          float dz = -sin(pos.z * 0.6 + time * 0.9) * 0.6 * 0.3 + sin(pos.x * 0.3 - time * 0.5) * 0.4 * 0.2;
+          vNormal = normalize(vec3(-dx, 1.0, -dz));
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }`,
       fragmentShader: `
         uniform float time;
         uniform vec3 waterColor;
+        uniform vec3 waterDeep;
+        uniform vec3 foamColor;
         uniform vec3 fogColor;
         uniform float fogDensity;
+        uniform vec3 sunDir;
         varying vec2 vUv;
         varying float vDist;
+        varying vec3 vWorldPos;
+        varying vec3 vNormal;
         void main() {
-          vec2 uv = vUv * 30.0;
+          vec2 uv = vUv * 40.0;
           float wave = sin(uv.x * 2.0 + time * 1.5) * cos(uv.y * 1.5 + time * 1.2) * 0.5 + 0.5;
-          float ripple = sin(uv.x * 5.0 + time * 2.0) * sin(uv.y * 4.0 + time * 1.8) * 0.3;
-          float fresnel = 0.3 + wave * 0.2 + ripple * 0.1;
-          vec3 col = waterColor + vec3(fresnel * 0.15, fresnel * 0.1, fresnel * 0.05);
+          float ripple = sin(uv.x * 6.0 + time * 2.5) * sin(uv.y * 5.0 + time * 2.0) * 0.2;
+          float caustic = sin(uv.x * 3.0 + time) * sin(uv.y * 3.0 - time * 0.7) * 0.15 + 0.15;
+          vec3 viewDir = normalize(cameraPosition - vWorldPos);
+          vec3 halfDir = normalize(sunDir + viewDir);
+          float spec = pow(max(dot(vNormal, halfDir), 0.0), 128.0) * 0.8;
+          float fresnel = pow(1.0 - max(dot(vNormal, viewDir), 0.0), 3.0) * 0.4 + 0.3;
+          float depth = smoothstep(-3.0, -1.0, vWorldPos.y);
+          vec3 col = mix(waterDeep, waterColor, depth);
+          col += vec3(caustic * 0.08, caustic * 0.12, caustic * 0.15);
+          col += fresnel * vec3(0.15, 0.2, 0.25);
+          col += spec * vec3(1.0, 0.95, 0.85);
+          float foam = smoothstep(0.7, 1.0, wave + ripple) * 0.3;
+          col = mix(col, foamColor, foam);
           float fog = 1.0 - exp(-fogDensity * vDist * vDist);
-          col = mix(col, fogColor, fog * 0.6);
-          gl_FragColor = vec4(col, 0.7 + wave * 0.1);
+          col = mix(col, fogColor, fog * 0.5);
+          gl_FragColor = vec4(col, 0.75 + wave * 0.1 + fresnel * 0.1);
         }`
     });
     this.water = new THREE.Mesh(geo, mat);
@@ -375,6 +407,15 @@ class BioEchoScene {
       if (h < -0.5 || h > 6) continue;
       this._addFern(x, h, z, i);
     }
+
+    const mossCount = 8 + Math.floor(hash(seed + 1000) * 6);
+    for (let i = 0; i < mossCount; i++) {
+      const x = sx + hash(seed + i * 239) * this.chunkSize;
+      const z = sz + hash(seed + i * 251) * this.chunkSize;
+      const h = this._terrainHeight(x, z);
+      if (h < -1 || h > 5) continue;
+      this._addMoss(x, h, z, hash(seed + i * 263));
+    }
   }
 
   _addTree(x, y, z, scale, species) {
@@ -384,10 +425,20 @@ class BioEchoScene {
     const trunkH = (5 + scale * 5) * (species === 'pine' ? 1.3 : 1);
     const trunkR = 0.12 + scale * 0.08;
 
-    const segments = 8;
-    const trunkGeo = new THREE.CylinderGeometry(trunkR * 0.5, trunkR, trunkH, segments);
+    const segments = 12;
+    const trunkGeo = new THREE.CylinderGeometry(trunkR * 0.5, trunkR, trunkH, segments, 4);
+    const trunkPos = trunkGeo.attributes.position;
+    for (let i = 0; i < trunkPos.count; i++) {
+      const ny = trunkPos.getY(i) / trunkH;
+      const bend = Math.sin(ny * Math.PI) * 0.15 * scale;
+      trunkPos.setX(i, trunkPos.getX(i) + bend);
+      const barkR = 1 + (Math.sin(ny * 12 + x) * 0.03 + Math.sin(ny * 7 + z) * 0.02);
+      trunkPos.setX(i, trunkPos.getX(i) * barkR);
+      trunkPos.setZ(i, trunkPos.getZ(i) * barkR);
+    }
+    trunkGeo.computeVertexNormals();
     const trunkColors = {
-      oak: 0x4A3520, pine: 0x3A2A18, birch: 0x8A7A6A
+      oak: 0x4A3520, pine: 0x3A2A18, birch: 0xC8B8A0
     };
     const trunkMat = new THREE.MeshStandardMaterial({
       color: trunkColors[species], roughness: 0.95, metalness: 0
@@ -399,68 +450,97 @@ class BioEchoScene {
     group.add(trunk);
 
     if (species === 'oak') {
-      for (let b = 0; b < 3; b++) {
-        const bLen = 1.5 + scale * 1.5;
-        const bGeo = new THREE.CylinderGeometry(0.04, 0.08, bLen, 4);
+      const branchCount = 4 + Math.floor(Math.random() * 3);
+      for (let b = 0; b < branchCount; b++) {
+        const bLen = (1.5 + scale * 1.5) * (0.7 + Math.random() * 0.6);
+        const bGeo = new THREE.CylinderGeometry(0.03, 0.09, bLen, 5, 2);
+        const bPos = bGeo.attributes.position;
+        for (let i = 0; i < bPos.count; i++) {
+          const t = (bPos.getY(i) + bLen / 2) / bLen;
+          bPos.setX(i, bPos.getX(i) * (1 + t * 0.3));
+        }
+        bGeo.computeVertexNormals();
         const branch = new THREE.Mesh(bGeo, trunkMat);
-        const angle = (b / 3) * Math.PI * 2 + Math.random() * 0.5;
-        branch.position.set(Math.sin(angle) * 1.2, trunkH * (0.5 + b * 0.15), Math.cos(angle) * 1.2);
+        const angle = (b / branchCount) * Math.PI * 2 + Math.random() * 0.5;
+        const heightFrac = 0.45 + (b / branchCount) * 0.3;
+        branch.position.set(Math.sin(angle) * 1.4, trunkH * heightFrac, Math.cos(angle) * 1.4);
         branch.rotation.z = Math.sin(angle) * 0.6;
-        branch.rotation.x = Math.cos(angle) * 0.6;
+        branch.rotation.x = Math.cos(angle) * 0.5;
         branch.castShadow = true;
         group.add(branch);
       }
-      for (let l = 0; l < 5; l++) {
-        const r = (2 + scale * 2) * (1 - l * 0.12);
-        const leafGeo = new THREE.SphereGeometry(r, 7, 5);
+      const canopyClusters = 7 + Math.floor(Math.random() * 4);
+      for (let l = 0; l < canopyClusters; l++) {
+        const r = (1.5 + scale * 1.8) * (0.5 + Math.random() * 0.5);
+        const leafGeo = new THREE.IcosahedronGeometry(r, 1);
+        const leafPos = leafGeo.attributes.position;
+        for (let i = 0; i < leafPos.count; i++) {
+          leafPos.setY(i, leafPos.getY(i) * (0.6 + Math.random() * 0.2));
+        }
+        leafGeo.computeVertexNormals();
         const leafMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color().setHSL(0.27 + Math.random() * 0.05, 0.5 + Math.random() * 0.15, 0.2 + Math.random() * 0.08),
-          roughness: 0.85
+          color: new THREE.Color().setHSL(0.26 + Math.random() * 0.06, 0.45 + Math.random() * 0.2, 0.18 + Math.random() * 0.1),
+          roughness: 0.82
         });
         const leaf = new THREE.Mesh(leafGeo, leafMat);
+        const spread = 2 + scale * 2;
         leaf.position.set(
-          Math.sin(l * 1.2) * 0.8,
-          trunkH + r * 0.3 + l * 0.5,
-          Math.cos(l * 1.5) * 0.8
+          (Math.random() - 0.5) * spread,
+          trunkH + r * 0.2 + Math.random() * 2,
+          (Math.random() - 0.5) * spread
         );
         leaf.castShadow = true;
         group.add(leaf);
       }
     } else if (species === 'pine') {
-      for (let l = 0; l < 5; l++) {
-        const r = (1.8 + scale * 1.5) * (1 - l * 0.18);
-        const h = 2.5 + scale;
-        const coneGeo = new THREE.ConeGeometry(r, h, 7);
+      const layerCount = 6 + Math.floor(Math.random() * 2);
+      for (let l = 0; l < layerCount; l++) {
+        const r = (1.8 + scale * 1.5) * (1 - l / layerCount * 0.8);
+        const h = (2.5 + scale) * (1 - l / layerCount * 0.3);
+        const coneGeo = new THREE.ConeGeometry(r, h, 10);
         const coneMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color().setHSL(0.3, 0.45 + Math.random() * 0.1, 0.16 + l * 0.02),
+          color: new THREE.Color().setHSL(0.29 + Math.random() * 0.03, 0.4 + Math.random() * 0.12, 0.14 + l * 0.015),
           roughness: 0.85
         });
         const cone = new THREE.Mesh(coneGeo, coneMat);
-        cone.position.y = trunkH * 0.35 + l * h * 0.55;
+        cone.position.y = trunkH * 0.3 + l * h * 0.5;
+        cone.rotation.y = Math.random() * Math.PI;
         cone.castShadow = true;
         group.add(cone);
       }
     } else {
-      for (let b = 0; b < 4; b++) {
-        const bLen = 1 + scale * 1.2;
-        const bGeo = new THREE.CylinderGeometry(0.03, 0.06, bLen, 4);
+      const branchCount = 5 + Math.floor(Math.random() * 2);
+      for (let b = 0; b < branchCount; b++) {
+        const bLen = (1 + scale * 1.2) * (0.7 + Math.random() * 0.5);
+        const bGeo = new THREE.CylinderGeometry(0.02, 0.06, bLen, 5, 2);
         const branch = new THREE.Mesh(bGeo, trunkMat);
-        const angle = (b / 4) * Math.PI * 2;
-        branch.position.set(Math.sin(angle) * 0.8, trunkH * (0.4 + b * 0.12), Math.cos(angle) * 0.8);
+        const angle = (b / branchCount) * Math.PI * 2 + Math.random() * 0.3;
+        branch.position.set(Math.sin(angle) * 0.9, trunkH * (0.35 + b * 0.1), Math.cos(angle) * 0.9);
         branch.rotation.z = Math.sin(angle) * 0.7;
-        branch.rotation.x = Math.cos(angle) * 0.7;
+        branch.rotation.x = Math.cos(angle) * 0.6;
         branch.castShadow = true;
         group.add(branch);
       }
-      for (let l = 0; l < 4; l++) {
-        const r = (1.5 + scale * 1.5) * (1 - l * 0.1);
-        const leafGeo = new THREE.SphereGeometry(r, 6, 5);
+      const canopyClusters = 6 + Math.floor(Math.random() * 3);
+      for (let l = 0; l < canopyClusters; l++) {
+        const r = (1.2 + scale * 1.3) * (0.5 + Math.random() * 0.5);
+        const leafGeo = new THREE.IcosahedronGeometry(r, 1);
+        const leafPos = leafGeo.attributes.position;
+        for (let i = 0; i < leafPos.count; i++) {
+          leafPos.setY(i, leafPos.getY(i) * (0.55 + Math.random() * 0.25));
+        }
+        leafGeo.computeVertexNormals();
         const leafMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color().setHSL(0.22 + Math.random() * 0.04, 0.4 + Math.random() * 0.1, 0.25 + Math.random() * 0.06),
-          roughness: 0.85
+          color: new THREE.Color().setHSL(0.22 + Math.random() * 0.05, 0.35 + Math.random() * 0.15, 0.22 + Math.random() * 0.08),
+          roughness: 0.82
         });
         const leaf = new THREE.Mesh(leafGeo, leafMat);
-        leaf.position.set(Math.sin(l) * 0.6, trunkH + r * 0.3 + l * 0.3, Math.cos(l) * 0.6);
+        const spread = 1.5 + scale * 1.5;
+        leaf.position.set(
+          (Math.random() - 0.5) * spread,
+          trunkH + r * 0.3 + Math.random() * 1.5,
+          (Math.random() - 0.5) * spread
+        );
         leaf.castShadow = true;
         group.add(leaf);
       }
@@ -472,8 +552,16 @@ class BioEchoScene {
 
   _setupGrass() {
     const count = 5000;
-    const geo = new THREE.PlaneGeometry(0.15, 0.6);
-    geo.translate(0, 0.3, 0);
+    const geo = new THREE.PlaneGeometry(0.12, 0.5, 1, 4);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      const t = (y + 0.25) / 0.5;
+      pos.setX(i, pos.getX(i) * (1 - t * 0.5));
+      pos.setZ(i, Math.sin(t * 3.14) * 0.02);
+    }
+    geo.translate(0, 0.25, 0);
+    geo.computeVertexNormals();
     const mat = new THREE.MeshStandardMaterial({
       color: 0x3A6B3A, side: THREE.DoubleSide, roughness: 0.9
     });
@@ -487,12 +575,14 @@ class BioEchoScene {
   _addGrassInstance(x, y, z) {
     if (this.grassCount >= 5000) return;
     const m = new THREE.Matrix4();
-    const s = 0.6 + Math.random() * 0.8;
+    const s = 0.5 + Math.random() * 1.0;
+    const lean = (Math.random() - 0.5) * 0.3;
     m.makeRotationY(Math.random() * Math.PI);
-    m.scale(new THREE.Vector3(s, s, s));
-    m.setPosition(x, y + 0.05, z);
+    m.multiply(new THREE.Matrix4().makeRotationZ(lean));
+    m.scale(new THREE.Vector3(s, s * (0.7 + Math.random() * 0.6), s));
+    m.setPosition(x, y + 0.02, z);
     this.grassMesh.setMatrixAt(this.grassCount, m);
-    const c = new THREE.Color().setHSL(0.27 + Math.random() * 0.05, 0.4 + Math.random() * 0.15, 0.2 + Math.random() * 0.1);
+    const c = new THREE.Color().setHSL(0.26 + Math.random() * 0.06, 0.35 + Math.random() * 0.2, 0.18 + Math.random() * 0.12);
     this.grassMesh.setColorAt(this.grassCount, c);
     this.grassCount++;
     this.grassMesh.count = this.grassCount;
@@ -532,6 +622,27 @@ class BioEchoScene {
 
     this.scene.add(group);
     this.flowers.push(group);
+  }
+
+  _addMoss(x, y, z, rand) {
+    const group = new THREE.Group();
+    group.position.set(x, y, z);
+    const patchCount = 3 + Math.floor(rand * 4);
+    for (let i = 0; i < patchCount; i++) {
+      const r = 0.2 + rand * 0.5;
+      const geo = new THREE.CircleGeometry(r, 6);
+      geo.rotateX(-Math.PI / 2);
+      const mat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color().setHSL(0.28 + rand * 0.04, 0.35 + rand * 0.15, 0.15 + rand * 0.08),
+        roughness: 0.95
+      });
+      const patch = new THREE.Mesh(geo, mat);
+      patch.position.set((Math.random() - 0.5) * 0.8, 0.01 + i * 0.005, (Math.random() - 0.5) * 0.8);
+      patch.rotation.y = Math.random() * Math.PI;
+      patch.receiveShadow = true;
+      group.add(patch);
+    }
+    this.scene.add(group);
   }
 
   _addRock(x, y, z, rand) {
@@ -738,6 +849,95 @@ class BioEchoScene {
     this.rain = new THREE.Points(geo, mat);
     this.rain.visible = false;
     this.scene.add(this.rain);
+  }
+
+  _setupGodRays() {
+    const geo = new THREE.CylinderGeometry(0.3, 15, 60, 6, 1, true);
+    const mat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      uniforms: {
+        time: { value: 0 },
+        opacity: { value: 0.08 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying float vY;
+        void main() {
+          vUv = uv;
+          vY = position.y;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`,
+      fragmentShader: `
+        uniform float time;
+        uniform float opacity;
+        varying vec2 vUv;
+        varying float vY;
+        void main() {
+          float fade = smoothstep(-30.0, 30.0, vY);
+          float flicker = 0.7 + sin(time * 0.5 + vUv.x * 6.28) * 0.3;
+          float edge = smoothstep(0.0, 0.15, vUv.x) * smoothstep(1.0, 0.85, vUv.x);
+          float alpha = fade * flicker * edge * opacity;
+          gl_FragColor = vec4(1.0, 0.98, 0.9, alpha);
+        }`
+    });
+    this.godRays = [];
+    for (let i = 0; i < 5; i++) {
+      const ray = new THREE.Mesh(geo, mat.clone());
+      ray.position.set((Math.random() - 0.5) * 60, 30, (Math.random() - 0.5) * 60);
+      ray.rotation.y = Math.random() * Math.PI;
+      ray.rotation.z = (Math.random() - 0.5) * 0.15;
+      this.scene.add(ray);
+      this.godRays.push(ray);
+    }
+  }
+
+  _setupGroundFog() {
+    const geo = new THREE.PlaneGeometry(this.worldSize, this.worldSize, 1, 1);
+    geo.rotateX(-Math.PI / 2);
+    const mat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      uniforms: {
+        time: { value: 0 },
+        fogColor: { value: new THREE.Color(0x88AA88) }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying float vDist;
+        void main() {
+          vUv = uv;
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vDist = length(wp.xz);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`,
+      fragmentShader: `
+        uniform float time;
+        uniform vec3 fogColor;
+        varying vec2 vUv;
+        varying float vDist;
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                     mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+        }
+        void main() {
+          vec2 uv = vUv * 15.0;
+          float n = noise(uv + time * 0.05) * 0.5 + noise(uv * 2.0 - time * 0.03) * 0.25;
+          float distFade = smoothstep(200.0, 50.0, vDist);
+          float alpha = n * 0.18 * distFade;
+          gl_FragColor = vec4(fogColor, alpha);
+        }`
+    });
+    this.groundFog = new THREE.Mesh(geo, mat);
+    this.groundFog.position.y = -1.5;
+    this.scene.add(this.groundFog);
   }
 
   _startEntrance() {
@@ -1000,6 +1200,16 @@ class BioEchoScene {
         pos.setX(i, pos.getX(i) + this.wind.strength * 0.1);
       }
       pos.needsUpdate = true;
+    }
+
+    if (this.godRays) {
+      for (const ray of this.godRays) {
+        ray.material.uniforms.time.value = this.time;
+        ray.position.x += Math.sin(this.time * 0.1 + ray.position.z) * 0.003;
+      }
+    }
+    if (this.groundFog) {
+      this.groundFog.material.uniforms.time.value = this.time;
     }
 
     const cx = Math.floor(this.camera.position.x / this.chunkSize);
