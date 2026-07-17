@@ -1,259 +1,358 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0A1A12">
-<meta name="description" content="BioEcho — Understand, care for, and protect the living world.">
-<title>BioEcho</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/ldl.css">
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <meta charset="utf-8" />
+    <title>BioEcho - Where Nature Meets Intelligence</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta content="bioecho, ecosystem, virtual pets, nature" name="keywords" />
+    <meta content="BioEcho - A living digital ecosystem with virtual pet companions" name="description" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🌿</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500&family=Quicksand:wght@600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/style.css" rel="stylesheet" />
 </head>
 <body>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     LOADING SCREEN
-     ═══════════════════════════════════════════════════════════════ -->
-<div id="loader">
-  <div class="loader-inner">
-    <div class="loader-logo">
-      <div class="loader-ring">
-        <svg viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" class="ring-track"/>
-          <circle cx="50" cy="50" r="45" class="ring-fill"/>
-        </svg>
-      </div>
-      <div class="loader-mark"></div>
+    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
     </div>
-    <div class="loader-brand">BioEcho</div>
-    <div class="loader-status">
-      <span class="loader-text">initializing living systems</span>
-      <span class="loader-pct">0%</span>
-    </div>
-    <div class="loader-bar">
-      <div class="loader-bar-fill"></div>
-    </div>
-  </div>
-</div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     WEBGL CANVAS
-     ═══════════════════════════════════════════════════════════════ -->
-<canvas id="world-canvas"></canvas>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     CUSTOM CURSOR
-     ═══════════════════════════════════════════════════════════════ -->
-<div id="cursor" aria-hidden="true">
-  <div class="cursor-dot"></div>
-  <div class="cursor-ring"></div>
-  <div class="cursor-label"></div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     LANDING
-     ═══════════════════════════════════════════════════════════════ -->
-<div id="landing" role="button" tabindex="0" aria-label="Enter BioEcho">
-  <div class="landing-bg"></div>
-  <div class="landing-content">
-    <canvas id="seed-canvas" width="300" height="300" aria-hidden="true"></canvas>
-    <div class="landing-brand">
-      <div class="brand-dot"></div>
-      <span class="brand-name">BioEcho</span>
+    <div class="container-fluid bg-light p-0 wow fadeIn" data-wow-delay="0.1s">
+        <div class="row gx-0 d-none d-lg-flex">
+            <div class="col-lg-7 px-5 text-start">
+                <div class="h-100 d-inline-flex align-items-center py-3 me-4">
+                    <small class="fa fa-leaf text-primary me-2"></small>
+                    <small>BioEcho OS v2.0 — Living Intelligence</small>
+                </div>
+                <div class="h-100 d-inline-flex align-items-center py-3">
+                    <small class="far fa-clock text-primary me-2"></small>
+                    <small>Always Awake — Nature Never Sleeps</small>
+                </div>
+            </div>
+            <div class="col-lg-5 px-5 text-end">
+                <div class="h-100 d-inline-flex align-items-center py-3 me-4">
+                    <small class="fa fa-heart text-primary me-2"></small>
+                    <small>Your pets are waiting</small>
+                </div>
+                <div class="h-100 d-inline-flex align-items-center">
+                    <a class="btn btn-sm-square bg-white text-primary me-1" href="#"><i class="fab fa-github"></i></a>
+                    <a class="btn btn-sm-square bg-white text-primary me-1" href="#"><i class="fab fa-twitter"></i></a>
+                    <a class="btn btn-sm-square bg-white text-primary me-0" href="#"><i class="fab fa-discord"></i></a>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="landing-cta">
-      <span class="cta-line"></span>
-      <span class="cta-text">tap to enter</span>
-      <span class="cta-line"></span>
-    </div>
-  </div>
-</div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     MAIN UI
-     ═══════════════════════════════════════════════════════════════ -->
-<div id="ui" aria-hidden="true">
-
-  <!-- Top bar -->
-  <header id="hud-top">
-    <div class="hud-left">
-      <div class="hud-logo">
-        <div class="logo-pulse"></div>
-        <span class="logo-wordmark">BioEcho</span>
-      </div>
-    </div>
-    <div class="hud-right">
-      <button class="hud-btn" id="btn-sound" aria-label="Toggle sound" data-tooltip="Sound">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-          <path d="M19.07 4.93a10 10 0 0 1 0 14.14" class="wave-1"/>
-          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" class="wave-2"/>
-        </svg>
-      </button>
-      <button class="hud-btn" id="btn-fullscreen" aria-label="Fullscreen" data-tooltip="Fullscreen">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-        </svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- Hero text overlay -->
-  <div id="hero" aria-live="polite">
-    <div class="hero-row">
-      <span class="hero-word" style="--d:0">Listen</span>
-      <span class="hero-word" style="--d:1">to</span>
-      <span class="hero-word" style="--d:2">the</span>
-    </div>
-    <div class="hero-row">
-      <span class="hero-word accent" style="--d:3">forest</span>
-      <span class="hero-word" style="--d:4">breathe</span>
-    </div>
-  </div>
-
-  <!-- Floating feature tooltip -->
-  <div id="orb-tooltip" role="tooltip" aria-hidden="true">
-    <div class="tooltip-dot"></div>
-    <span class="tooltip-text"></span>
-  </div>
-
-  <!-- Side panel -->
-  <aside id="panel" role="dialog" aria-label="Feature details">
-    <div class="panel-glow"></div>
-    <div class="panel-inner">
-      <div class="panel-head">
-        <div class="panel-icon" id="panel-icon"></div>
-        <h2 class="panel-title" id="panel-title"></h2>
-        <button class="panel-x" id="panel-close" aria-label="Close panel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
+    <nav class="navbar navbar-expand-lg bg-white navbar-light sticky-top py-lg-0 px-4 px-lg-5 wow fadeIn" data-wow-delay="0.1s">
+        <a href="index.html" class="navbar-brand p-0">
+            <span class="display-6" style="font-size:1.8rem;line-height:1">🌿</span>
+            <h1 class="m-0 text-primary" style="display:inline-block;font-size:1.5rem">BioEcho</h1>
+        </a>
+        <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+            <span class="navbar-toggler-icon"></span>
         </button>
-      </div>
-      <div class="panel-scroll" id="panel-body"></div>
+        <div class="collapse navbar-collapse py-4 py-lg-0" id="navbarCollapse">
+            <div class="navbar-nav ms-auto">
+                <a href="index.html" class="nav-item nav-link active">Home</a>
+                <a href="#about" class="nav-item nav-link">About</a>
+                <a href="#ecosystem" class="nav-item nav-link">Ecosystem</a>
+                <a href="#pets" class="nav-item nav-link">Pets</a>
+                <a href="#community" class="nav-item nav-link">Community</a>
+                <a href="#contact" class="nav-item nav-link">Contact</a>
+            </div>
+            <a href="#pets" class="btn btn-primary">Adopt a Pet <i class="fa fa-paw ms-2"></i></a>
+        </div>
+    </nav>
+
+    <div class="container-fluid bg-dark p-0 mb-5">
+        <div class="row g-0 flex-column-reverse flex-lg-row">
+            <div class="col-lg-6 p-0 wow fadeIn" data-wow-delay="0.1s">
+                <div class="header-bg h-100 d-flex flex-column justify-content-center p-5">
+                    <h1 class="display-4 text-light mb-3">Where Nature Meets Intelligence</h1>
+                    <p class="text-light mb-4 fs-5">BioEcho is a living digital ecosystem — raise virtual companions, nurture a thriving environment, and watch your world grow.</p>
+                    <div class="d-flex align-items-center pt-4 animated slideInDown">
+                        <a href="#pets" class="btn btn-primary py-sm-3 px-3 px-sm-5 me-5">Meet Your Pets</a>
+                        <button type="button" class="btn-play" data-bs-toggle="modal" data-src="https://www.youtube.com/embed/DWRcNpR6Kdc" data-bs-target="#videoModal">
+                            <span></span>
+                        </button>
+                        <h6 class="text-white m-0 ms-4 d-none d-sm-block">Watch Trailer</h6>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 wow fadeIn" data-wow-delay="0.5s">
+                <div class="owl-carousel header-carousel">
+                    <div class="owl-carousel-item"><img class="img-fluid" src="img/carousel-1.jpg" alt="" /></div>
+                    <div class="owl-carousel-item"><img class="img-fluid" src="img/carousel-2.jpg" alt="" /></div>
+                    <div class="owl-carousel-item"><img class="img-fluid" src="img/carousel-3.jpg" alt="" /></div>
+                </div>
+            </div>
+        </div>
     </div>
-  </aside>
 
-  <!-- Bottom nav -->
-  <nav id="hud-bottom" aria-label="Main navigation">
-    <div class="nav-rail">
-      <button class="nav-item active" data-view="lens" aria-label="BioEcho Lens" data-tooltip="Lens">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <span class="nav-label">Lens</span>
-      </button>
-      <button class="nav-item" data-view="care" aria-label="Living Care" data-tooltip="Care">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-        <span class="nav-label">Care</span>
-      </button>
-      <button class="nav-item" data-view="earth" aria-label="Living Earth" data-tooltip="Earth">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M2 12h20"/>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-        </svg>
-        <span class="nav-label">Earth</span>
-      </button>
-      <button class="nav-item" data-view="research" aria-label="Living Research" data-tooltip="Research">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <circle cx="12" cy="12" r="6"/>
-          <circle cx="12" cy="12" r="2"/>
-        </svg>
-        <span class="nav-label">Research</span>
-      </button>
-      <button class="nav-item" data-view="community" aria-label="Living Community" data-tooltip="Community">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        <span class="nav-label">Community</span>
-      </button>
+    <div class="modal modal-video fade" id="videoModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content rounded-0">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="exampleModalLabel">BioEcho Trailer</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="ratio ratio-16x9">
+                        <iframe class="embed-responsive-item" src="" id="video" allowfullscreen allowscriptaccess="always" allow="autoplay"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </nav>
 
-  <!-- Coordinates -->
-  <div id="hud-coords" aria-hidden="true">
-    <span class="coord-axis">X</span>
-    <span class="coord-val" id="coord-x">0.0</span>
-    <span class="coord-sep">/</span>
-    <span class="coord-axis">Z</span>
-    <span class="coord-val" id="coord-z">0.0</span>
-  </div>
-
-  <!-- Explore hint -->
-  <div id="explore-hint" aria-live="polite">
-    <div class="hint-anim">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2L12 22"/>
-        <path d="M17 7L12 2L7 7"/>
-      </svg>
+    <div class="container-xxl py-5" id="about">
+        <div class="container">
+            <div class="row g-5">
+                <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.1s">
+                    <p><span class="text-primary me-2">#</span>Welcome To BioEcho</p>
+                    <h1 class="display-5 mb-4">A Living <span class="text-primary">Digital Ecosystem</span> in Your Browser</h1>
+                    <p class="mb-4">BioEcho is an experimental living interface — a digital forest where virtual pets roam, ecosystems breathe, and every interaction shapes your world. Adopt companions, care for them, and watch your bond grow over time.</p>
+                    <h5 class="mb-3"><i class="far fa-check-circle text-primary me-3"></i>Virtual Pet Companions</h5>
+                    <h5 class="mb-3"><i class="far fa-check-circle text-primary me-3"></i>Living Ecosystem Health</h5>
+                    <h5 class="mb-3"><i class="far fa-check-circle text-primary me-3"></i>Dynamic Day/Night Cycle</h5>
+                    <h5 class="mb-3"><i class="far fa-check-circle text-primary me-3"></i>Persistent Bond Progress</h5>
+                    <a class="btn btn-primary py-3 px-5 mt-3" href="#pets">Meet the Pets</a>
+                </div>
+                <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.5s">
+                    <div class="img-border">
+                        <img class="img-fluid" src="img/about.jpg" alt="" />
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <span class="hint-text">drag to explore</span>
-  </div>
 
-  <!-- Compass -->
-  <div id="hud-compass" aria-hidden="true">
-    <svg viewBox="0 0 40 40">
-      <circle cx="20" cy="20" r="18" class="compass-ring"/>
-      <text x="20" y="8" class="compass-n">N</text>
-      <line x1="20" y1="12" x2="20" y2="18" class="compass-needle"/>
-    </svg>
-  </div>
+    <div class="container-xxl bg-primary facts my-5 py-5 wow fadeInUp" data-wow-delay="0.1s">
+        <div class="container py-5">
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3 text-center wow fadeIn" data-wow-delay="0.1s">
+                    <i class="fa fa-paw fa-3x text-primary mb-3" style="color:#6FA36F!important"></i>
+                    <h1 class="text-white mb-2" data-toggle="counter-up">8</h1>
+                    <p class="text-white mb-0">Species</p>
+                </div>
+                <div class="col-md-6 col-lg-3 text-center wow fadeIn" data-wow-delay="0.3s">
+                    <i class="fa fa-heart fa-3x text-primary mb-3" style="color:#6FA36F!important"></i>
+                    <h1 class="text-white mb-2" data-toggle="counter-up">100</h1>
+                    <p class="text-white mb-0">Bond Level Max</p>
+                </div>
+                <div class="col-md-6 col-lg-3 text-center wow fadeIn" data-wow-delay="0.5s">
+                    <i class="fa fa-tree fa-3x text-primary mb-3" style="color:#6FA36F!important"></i>
+                    <h1 class="text-white mb-2" data-toggle="counter-up">5</h1>
+                    <p class="text-white mb-0">Ecosystem Stats</p>
+                </div>
+                <div class="col-md-6 col-lg-3 text-center wow fadeIn" data-wow-delay="0.7s">
+                    <i class="fa fa-leaf fa-3x text-primary mb-3" style="color:#6FA36F!important"></i>
+                    <h1 class="text-white mb-2" data-toggle="counter-up">24</h1>
+                    <p class="text-white mb-0">Hour Cycle</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-</div>
+    <div class="container-xxl py-5" id="ecosystem">
+        <div class="container">
+            <div class="row g-5 mb-5 wow fadeInUp" data-wow-delay="0.1s">
+                <div class="col-lg-6">
+                    <p><span class="text-primary me-2">#</span>Ecosystem</p>
+                    <h1 class="display-5 mb-0">Features of the <span class="text-primary">Living World</span></h1>
+                </div>
+                <div class="col-lg-6">
+                    <div class="bg-primary h-100 d-flex align-items-center py-4 px-4 px-sm-5">
+                        <i class="fa fa-3x fa-leaf text-white"></i>
+                        <div class="ms-4">
+                            <p class="text-white mb-0">Every interaction matters</p>
+                            <h2 class="text-white mb-0">Nature Responds</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row gy-5 gx-4">
+                <div class="col-lg-3 col-md-4 col-sm-6 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="eco-feature-card text-center">
+                        <div class="eco-feature-icon"><i class="fa fa-paw"></i></div>
+                        <h5 class="mb-3">Virtual Pets</h5>
+                        <span>Adopt foxes, owls, deer, rabbits, bears and more. Each with unique personality and needs.</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 wow fadeInUp" data-wow-delay="0.3s">
+                    <div class="eco-feature-card text-center">
+                        <div class="eco-feature-icon"><i class="fa fa-heartbeat"></i></div>
+                        <h5 class="mb-3">Health System</h5>
+                        <span>Hunger, energy, happiness, and bond stats change in real-time. Care matters.</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 wow fadeInUp" data-wow-delay="0.5s">
+                    <div class="eco-feature-card text-center">
+                        <div class="eco-feature-icon"><i class="fa fa-sun"></i></div>
+                        <h5 class="mb-3">Day & Night</h5>
+                        <span>Living world scheduler with dawn, noon, twilight, and deep night phases.</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 wow fadeInUp" data-wow-delay="0.7s">
+                    <div class="eco-feature-card text-center">
+                        <div class="eco-feature-icon"><i class="fa fa-cloud"></i></div>
+                        <h5 class="mb-3">Dynamic Weather</h5>
+                        <span>Sunshine, rain, fog, and storms. Weather shifts naturally over time.</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="eco-feature-card text-center">
+                        <div class="eco-feature-icon"><i class="fa fa-seedling"></i></div>
+                        <h5 class="mb-3">Growth System</h5>
+                        <span>Pets grow and bond levels evolve from Egg to Soulmate over time.</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 wow fadeInUp" data-wow-delay="0.3s">
+                    <div class="eco-feature-card text-center">
+                        <div class="eco-feature-icon"><i class="fa fa-save"></i></div>
+                        <h5 class="mb-3">Persistent World</h5>
+                        <span>Your pets and their stats are saved in your browser. Come back anytime.</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 wow fadeInUp" data-wow-delay="0.5s">
+                    <div class="eco-feature-card text-center">
+                        <div class="eco-feature-icon"><i class="fa fa-comments"></i></div>
+                        <h5 class="mb-3">Pet Interaction</h5>
+                        <span>Feed, play, talk, or let them sleep. Pets respond with thoughts and mood changes.</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 wow fadeInUp" data-wow-delay="0.7s">
+                    <div class="eco-feature-card text-center">
+                        <div class="eco-feature-icon"><i class="fa fa-leaf"></i></div>
+                        <h5 class="mb-3">Eco Balance</h5>
+                        <span>Forest, water, biodiversity, and pollinator stats reflect your world's health.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<script src="js/ldl.js"></script>
-<script src="js/icons.js"></script>
-<script src="js/hal.js"></script>
-<script src="js/calibration.js"></script>
-<script src="js/species.js"></script>
-<script src="js/local-db.js"></script>
-<script src="js/identity.js"></script>
-<script src="js/twin.js"></script>
-<script src="js/context.js"></script>
-<script src="js/meaning.js"></script>
-<script src="js/evidence.js"></script>
-<script src="js/environment.js"></script>
-<script src="js/relationship.js"></script>
-<script src="js/experiment.js"></script>
-<script src="js/knowledge-graph.js"></script>
-<script src="js/lens.js"></script>
-<script src="js/verification.js"></script>
-<script src="js/citizen-science.js"></script>
-<script src="js/predictive.js"></script>
-<script src="js/research-assistant.js"></script>
-<script src="js/bio-search.js"></script>
-<script src="js/earth.js"></script>
-<script src="js/timemachine.js"></script>
-<script src="js/sdk.js"></script>
-<script src="js/emergency.js"></script>
-<script src="js/marketplace.js"></script>
-<script src="js/dsp.js"></script>
-<script src="js/serial.js"></script>
-<script src="js/audio-capture.js"></script>
-<script src="js/ambient.js"></script>
-<script src="js/sound.js"></script>
-<script src="js/scene3d.js"></script>
-<script src="js/camera.js"></script>
-<script src="js/world.js"></script>
-<script src="js/firefly.js"></script>
-<script src="js/scheduler.js"></script>
-<script src="js/tree.js"></script>
-<script src="js/life.js"></script>
-<script src="js/transitions.js"></script>
-<script src="js/landing.js"></script>
-<script src="js/chart.js"></script>
-<script src="js/chat.js"></script>
-<script src="js/app.js"></script>
+    <div class="container-xxl py-5" id="pets">
+        <div class="container">
+            <div class="row g-5 mb-5 align-items-end wow fadeInUp" data-wow-delay="0.1s">
+                <div class="col-lg-6">
+                    <p><span class="text-primary me-2">#</span>Pets</p>
+                    <h1 class="display-5 mb-0">Your <span class="text-primary">Virtual</span> Companions</h1>
+                </div>
+                <div class="col-lg-6 text-lg-end">
+                    <button class="btn btn-primary py-3 px-5" onclick="addRandomPet()">Adopt New Pet <i class="fa fa-plus ms-2"></i></button>
+                </div>
+            </div>
+            <div class="row g-4" id="petContainer">
+            </div>
+        </div>
+    </div>
+
+    <div id="community" class="container-xxl py-5">
+        <div class="container">
+            <h1 class="display-5 text-center mb-5 wow fadeInUp" data-wow-delay="0.1s">What Pet Parents Say</h1>
+            <div class="owl-carousel testimonial-carousel wow fadeInUp" data-wow-delay="0.1s">
+                <div class="testimonial-item text-center">
+                    <img class="img-fluid rounded-circle border border-2 p-2 mx-auto mb-4" src="img/testimonial-1.jpg" style="width:100px;height:100px" />
+                    <div class="testimonial-text rounded text-center p-4">
+                        <p>My fox Ember follows me everywhere now. The bond system is incredible — it feels like a real pet!</p>
+                        <h5 class="mb-1">Alex Rivera</h5>
+                        <span class="fst-italic">Digital Naturalist</span>
+                    </div>
+                </div>
+                <div class="testimonial-item text-center">
+                    <img class="img-fluid rounded-circle border border-2 p-2 mx-auto mb-4" src="img/testimonial-2.jpg" style="width:100px;height:100px" />
+                    <div class="testimonial-text rounded text-center p-4">
+                        <p>I adopted Sage the owl and we've reached Companion level. The decay system makes it feel alive.</p>
+                        <h5 class="mb-1">Maya Chen</h5>
+                        <span class="fst-italic">Ecosystem Designer</span>
+                    </div>
+                </div>
+                <div class="testimonial-item text-center">
+                    <img class="img-fluid rounded-circle border border-2 p-2 mx-auto mb-4" src="img/testimonial-3.jpg" style="width:100px;height:100px" />
+                    <div class="testimonial-text rounded text-center p-4">
+                        <p>BioEcho is unlike anything I've seen. A digital forest that actually cares about you visiting.</p>
+                        <h5 class="mb-1">Jordan Kim</h5>
+                        <span class="fst-italic">Creative Technologist</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid footer bg-dark text-light footer mt-5 pt-5 wow fadeIn" data-wow-delay="0.1s" id="contact">
+        <div class="container py-5">
+            <div class="row g-5">
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="text-light mb-4"><span class="display-6" style="font-size:1.5rem">🌿</span> BioEcho</h5>
+                    <p class="mb-2"><i class="fa fa-map-marker-alt me-3"></i>A digital forest, everywhere</p>
+                    <p class="mb-2"><i class="fa fa-github me-3"></i>github.com/BLUETHUG/bioecho-os</p>
+                    <p class="mb-2"><i class="fa fa-envelope me-3"></i>bioecho@nature.io</p>
+                    <div class="d-flex pt-2">
+                        <a class="btn btn-outline-light btn-social" href=""><i class="fab fa-github"></i></a>
+                        <a class="btn btn-outline-light btn-social" href=""><i class="fab fa-twitter"></i></a>
+                        <a class="btn btn-outline-light btn-social" href=""><i class="fab fa-discord"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="text-light mb-4">Quick Links</h5>
+                    <a class="btn btn-link" href="#about">About</a>
+                    <a class="btn btn-link" href="#ecosystem">Ecosystem</a>
+                    <a class="btn btn-link" href="#pets">Our Pets</a>
+                    <a class="btn btn-link" href="#community">Community</a>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="text-light mb-4">Species</h5>
+                    <a class="btn btn-link" href="#pets">Fox 🦊</a>
+                    <a class="btn btn-link" href="#pets">Owl 🦉</a>
+                    <a class="btn btn-link" href="#pets">Deer 🦌</a>
+                    <a class="btn btn-link" href="#pets">Rabbit 🐇</a>
+                    <a class="btn btn-link" href="#pets">Bear 🐻</a>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="text-light mb-4">Newsletter</h5>
+                    <p>Get updates on new species and features.</p>
+                    <div class="position-relative mx-auto" style="max-width:400px">
+                        <input class="form-control border-0 w-100 py-3 ps-4 pe-5" type="text" placeholder="Your email" />
+                        <button type="button" class="btn btn-primary py-2 position-absolute top-0 end-0 mt-2 me-2">SignUp</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="copyright">
+                <div class="row">
+                    <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                        &copy; <a class="border-bottom" href="#">BioEcho OS</a>, All Right Reserved.
+                    </div>
+                    <div class="col-md-6 text-center text-md-end">
+                        Designed By <a class="border-bottom" href="https://htmlcodex.com">HTML Codex</a>
+                        <br />Adapted for <a href="https://github.com/BLUETHUG/bioecho-os">BioEcho</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/waypoints/4.0.1/jquery.waypoints.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Counter-Up/1.0.0/jquery.counterup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/pets.js"></script>
 </body>
 </html>
