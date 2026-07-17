@@ -569,33 +569,46 @@ html, body {
   color: rgba(245,240,232,0.6);
 }
 
-/* ─── Side Panel ─── */
+/* ─── Side Panel — Living Interface ─── */
 #panel {
   position: fixed;
   top: 50%; right: 24px;
-  transform: translateY(-50%) translateX(24px);
+  transform: translateY(-50%);
   z-index: 80;
   width: 340px;
   max-height: 72vh;
   pointer-events: none;
   opacity: 0;
-  transition: all var(--t-slow);
+  clip-path: inset(100% 0 0 0 round 0);
+  transition: opacity 0.8s var(--ease-out), clip-path 0.8s var(--ease-out);
 }
 
 #panel.visible {
   opacity: 1;
-  transform: translateY(-50%) translateX(0);
+  clip-path: inset(0 0 0 0 round var(--r-xl));
   pointer-events: auto;
+}
+
+#panel.closing {
+  clip-path: inset(100% 0 0 0 round 0);
+  opacity: 0;
 }
 
 .panel-glow {
   position: absolute;
   inset: -1px;
   border-radius: var(--r-xl);
-  background: linear-gradient(135deg, rgba(111,163,111,0.08), transparent 50%);
+  background: linear-gradient(180deg, rgba(111,163,111,0.1) 0%, transparent 40%);
   z-index: -1;
+  opacity: 0;
+  transition: opacity 1s var(--ease-out) 0.2s;
 }
 
+#panel.visible .panel-glow {
+  opacity: 1;
+}
+
+/* Root tendrils that grow from panel bottom */
 .panel-inner {
   position: relative;
   border-radius: var(--r-xl);
@@ -610,11 +623,52 @@ html, body {
   overflow: hidden;
 }
 
+.panel-inner::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 0;
+  background: linear-gradient(180deg, transparent, rgba(111,163,111,0.15));
+  transition: height 1.2s var(--ease-out) 0.3s;
+}
+
+#panel.visible .panel-inner::before {
+  height: 40px;
+}
+
+.panel-inner::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 20px;
+  background: radial-gradient(ellipse, rgba(111,163,111,0.08) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 1s var(--ease-out) 0.5s;
+}
+
+#panel.visible .panel-inner::after {
+  opacity: 1;
+}
+
 .panel-head {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 22px 24px 0;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.6s var(--ease-out) 0.3s;
+}
+
+#panel.visible .panel-head {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .panel-icon {

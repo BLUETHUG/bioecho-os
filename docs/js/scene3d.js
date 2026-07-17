@@ -36,6 +36,9 @@ class BioEchoScene {
     this.friction = 0.88;
     this.headBob = 0;
     this.headBobPhase = 0;
+    this.breathPhase = 0;
+    this.butterflies = [];
+    this.deerSilhouettes = [];
     this.isMoving = false;
     this.cameraHeight = 3;
     this.smoothing = 0.06;
@@ -87,6 +90,8 @@ class BioEchoScene {
     this._setupRain();
     this._setupGodRays();
     this._setupGroundFog();
+    this._setupButterflies();
+    this._setupDeer();
     this._setupPostProcessing();
     this._setupGroundDebris();
     this._bindEvents();
@@ -1217,6 +1222,84 @@ class BioEchoScene {
     }
   }
 
+  _setupButterflies() {
+    this.butterflies = [];
+    const wingGeo = new THREE.PlaneGeometry(0.15, 0.1);
+    const wingMat = new THREE.MeshStandardMaterial({
+      color: 0xE7A95A, side: THREE.DoubleSide, transparent: true, opacity: 0.7
+    });
+    const wingMat2 = new THREE.MeshStandardMaterial({
+      color: 0xD4A0D4, side: THREE.DoubleSide, transparent: true, opacity: 0.7
+    });
+
+    for (let i = 0; i < 8; i++) {
+      const group = new THREE.Group();
+      const leftWing = new THREE.Mesh(wingGeo, Math.random() > 0.5 ? wingMat : wingMat2);
+      leftWing.position.x = -0.08;
+      const rightWing = new THREE.Mesh(wingGeo, leftWing.material);
+      rightWing.position.x = 0.08;
+      group.add(leftWing, rightWing);
+
+      group.position.set(
+        (Math.random() - 0.5) * 60,
+        2 + Math.random() * 4,
+        (Math.random() - 0.5) * 60
+      );
+
+      this.scene.add(group);
+      this.butterflies.push({
+        mesh: group,
+        leftWing, rightWing,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.5 + Math.random() * 0.5,
+        radius: 3 + Math.random() * 5,
+        centerY: group.position.y,
+        baseX: group.position.x,
+        baseZ: group.position.z
+      });
+    }
+  }
+
+  _setupDeer() {
+    this.deerSilhouettes = [];
+    const bodyGeo = new THREE.CapsuleGeometry(0.3, 1.2, 4, 8);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3A2A18, roughness: 0.9 });
+    const headGeo = new THREE.SphereGeometry(0.2, 6, 4);
+    const legGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.6, 4);
+
+    for (let i = 0; i < 3; i++) {
+      const group = new THREE.Group();
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.rotation.z = Math.PI / 2;
+      body.position.y = 0.8;
+      group.add(body);
+
+      const head = new THREE.Mesh(headGeo, bodyMat);
+      head.position.set(0.7, 1.1, 0);
+      group.add(head);
+
+      for (let l = 0; l < 4; l++) {
+        const leg = new THREE.Mesh(legGeo, bodyMat);
+        leg.position.set(l < 2 ? -0.3 : 0.3, 0.3, l % 2 === 0 ? -0.2 : 0.2);
+        group.add(leg);
+      }
+
+      const angle = (i / 3) * Math.PI * 2 + Math.random();
+      const dist = 30 + Math.random() * 20;
+      group.position.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
+      group.rotation.y = Math.random() * Math.PI * 2;
+      group.scale.setScalar(0.8 + Math.random() * 0.4);
+
+      this.scene.add(group);
+      this.deerSilhouettes.push({
+        mesh: group,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.1 + Math.random() * 0.1,
+        lookTimer: Math.random() * 10
+      });
+    }
+  }
+
   _startEntrance() {
     this.entranceActive = true;
     this.entrancePhase = 0;
@@ -1419,6 +1502,14 @@ class BioEchoScene {
     );
     this.camera.lookAt(this.camera.position.clone().add(lookDir));
 
+    this.breathPhase += dt * 0.8;
+    const breathX = Math.sin(this.breathPhase * 0.7) * 0.008;
+    const breathY = Math.sin(this.breathPhase * 0.5) * 0.005;
+    const breathZ = Math.cos(this.breathPhase * 0.6) * 0.006;
+    this.camera.position.x += breathX;
+    this.camera.position.y += breathY;
+    this.camera.position.z += breathZ;
+
     this.sun.position.copy(this.camera.position).add(new THREE.Vector3(60, 100, 40));
     this.sun.target.position.copy(this.camera.position);
     this.sun.target.updateMatrixWorld();
@@ -1431,6 +1522,28 @@ class BioEchoScene {
       const sway = Math.sin(this.time * 0.7 + tree.position.x * 0.1 + tree.position.z * 0.05) * 0.02 * this.wind.strength;
       tree.rotation.z = sway;
       tree.rotation.x = Math.sin(this.time * 0.5 + tree.position.z * 0.08) * 0.01 * this.wind.strength;
+    }
+
+    for (const b of this.butterflies) {
+      b.phase += dt * b.speed * 8;
+      b.leftWing.rotation.y = Math.sin(b.phase) * 0.8;
+      b.rightWing.rotation.y = -Math.sin(b.phase) * 0.8;
+      b.mesh.position.x = b.baseX + Math.sin(this.time * 0.3 + b.phase * 0.1) * b.radius;
+      b.mesh.position.z = b.baseZ + Math.cos(this.time * 0.25 + b.phase * 0.1) * b.radius;
+      b.mesh.position.y = b.centerY + Math.sin(this.time * 0.5 + b.phase) * 0.5;
+      b.mesh.rotation.y = Math.atan2(
+        Math.cos(this.time * 0.3 + b.phase * 0.1) * b.radius,
+        -Math.sin(this.time * 0.25 + b.phase * 0.1) * b.radius
+      );
+    }
+
+    for (const d of this.deerSilhouettes) {
+      d.lookTimer += dt;
+      if (d.lookTimer > 8 + Math.random() * 5) {
+        d.lookTimer = 0;
+        d.mesh.rotation.y += (Math.random() - 0.5) * 0.5;
+      }
+      d.mesh.position.y = Math.sin(this.time * d.speed) * 0.03;
     }
 
     if (this.grassMesh) {
