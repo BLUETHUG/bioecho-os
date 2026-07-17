@@ -1,19 +1,22 @@
-// BioEcho OS v4 — Living World Experience
+// BioEcho OS v5 — 360° Immersive Living World Experience
 
 let world = null;
 let tree = null;
+let camera = null;
 const sound = new SoundEngine();
 let experienceReady = false;
 let lastFrame = 0;
 let activeView = 'home';
 let ambientInterval = null;
 let activeUnfurl = null;
+const keys = {};
 
 function initLanding() {
   BarkPanel.init();
 
   world = new WorldV4(document.getElementById('world-canvas'));
   tree = new LivingTree(world);
+  camera = new WorldCamera();
   const landing = document.getElementById('landing');
   const seedCanvas = document.getElementById('seed-canvas');
   const worldCanvas = document.getElementById('world-canvas');
@@ -41,6 +44,8 @@ landing.addEventListener('click', async () => {
 
         tree.initialize();
         sound.playGrowth();
+        camera.init();
+        setupCameraControls();
         requestAnimationFrame(renderLoop);
 
       setTimeout(() => {
@@ -112,6 +117,81 @@ function startAmbient() {
   };
   setAmbient();
   ambientInterval = setInterval(setAmbient, 600000);
+}
+
+function setupCameraControls() {
+  const canvas = document.getElementById('world-canvas');
+
+  window.addEventListener('keydown', (e) => {
+    keys[e.key.toLowerCase()] = true;
+  });
+  window.addEventListener('keyup', (e) => {
+    keys[e.key.toLowerCase()] = false;
+  });
+
+  canvas.addEventListener('mousedown', (e) => {
+    camera.startDrag(e.clientX, e.clientY);
+    canvas.style.cursor = 'grabbing';
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    if (camera.isDragging) {
+      camera.drag(e.clientX, e.clientY);
+    }
+  });
+  canvas.addEventListener('mouseup', () => {
+    camera.endDrag();
+    canvas.style.cursor = 'grab';
+  });
+  canvas.addEventListener('mouseleave', () => {
+    camera.endDrag();
+  });
+
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    camera.adjustZoom(-e.deltaY * 0.001);
+  }, { passive: false });
+
+  let lastTouch = null;
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      camera.startDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      camera.drag(e.touches[0].clientX, e.touches[0].clientY);
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (lastTouch) {
+        const lastDx = lastTouch.x2 - lastTouch.x1;
+        const lastDy = lastTouch.y2 - lastTouch.y1;
+        const lastDist = Math.sqrt(lastDx * lastDx + lastDy * lastDy);
+        camera.adjustZoom((dist - lastDist) * 0.005);
+      }
+      lastTouch = {
+        x1: e.touches[0].clientX, y1: e.touches[0].clientY,
+        x2: e.touches[1].clientX, y2: e.touches[1].clientY
+      };
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => {
+    camera.endDrag();
+    lastTouch = null;
+  });
+
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', (e) => {
+      if (e.gamma !== null && e.beta !== null) {
+        camera.gyro(e.gamma, e.beta);
+      }
+    });
+  }
+
+  canvas.style.cursor = 'grab';
 }
 
 function enableTreeInteraction() {
@@ -224,15 +304,25 @@ function renderLoop(timestamp) {
     const dt = Math.min((timestamp - lastFrame) / 1000, 0.05);
     lastFrame = timestamp;
 
+    if (keys['w'] || keys['arrowup']) camera.moveForward(dt);
+    if (keys['s'] || keys['arrowdown']) camera.moveForward(-dt);
+    if (keys['a'] || keys['arrowleft']) camera.moveRight(-dt);
+    if (keys['d'] || keys['arrowright']) camera.moveRight(dt);
+
+    world._generateChunks(
+      Math.floor(camera.x / world.sectorSize),
+      Math.floor(camera.z / world.sectorSize)
+    );
+
     LDL.currentHour = new Date().getHours() + new Date().getMinutes() / 60;
     LDL.currentTime = LDL.getTimeOfDay(LDL.currentHour);
 
     world.update(dt, LDL.currentTime);
-    world.render(LDL.currentTime, LDL.currentSeason || 'spring');
+    world.render(LDL.currentTime, LDL.currentSeason || 'spring', camera);
 
     const ctx = document.getElementById('world-canvas').getContext('2d');
     tree.update(dt);
-    tree.render(ctx, LDL.currentTime);
+    tree.render(ctx, LDL.currentTime, camera);
   } catch (e) {
     console.error('Render loop error:', e);
   }

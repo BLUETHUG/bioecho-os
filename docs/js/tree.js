@@ -79,15 +79,72 @@ class LivingTree {
     }
   }
 
-  render(ctx, tod) {
+  render(ctx, tod, cam) {
     if (!ctx) return;
     const ambient = tod?.ambient ?? 1;
 
-    this._drawRoots(ctx, ambient);
-    this._drawTrunk(ctx, ambient);
-    this._drawBranches(ctx, ambient);
-    this._drawCanopy(ctx, ambient);
-    this._drawFeatures(ctx, ambient);
+    if (cam) {
+      const proj = cam.project(this.world.treeWorldX, 0, this.world.treeWorldZ, ctx.canvas.width, ctx.canvas.height);
+      if (!proj || proj.z < 10 || proj.z > 600) return;
+      this._drawFeatures3D(ctx, ambient, proj);
+    } else {
+      this._drawRoots(ctx, ambient);
+      this._drawTrunk(ctx, ambient);
+      this._drawBranches(ctx, ambient);
+      this._drawCanopy(ctx, ambient);
+      this._drawFeatures(ctx, ambient);
+    }
+  }
+
+  _drawFeatures3D(ctx, ambient, proj) {
+    const s = proj.scale;
+    const sway = Math.sin(this.windPhase) * 3 * s;
+    const angles = [-0.65, -0.35, -0.1, 0.1, 0.35, 0.65];
+    const dists = [0.72, 0.55, 0.85, 0.85, 0.55, 0.72];
+    const colors = ['#6FA36F', '#5FA8D3', '#E7A95A', '#6E5843', '#D9E3EC', '#8BC48B'];
+
+    for (let i = 0; i < 6; i++) {
+      const f = this.features[i];
+      if (f.alpha <= 0) continue;
+      const angle = angles[i];
+      const dist = dists[i];
+
+      const fx = proj.x + Math.sin(angle) * 60 * s + sway;
+      const fy = proj.y - 120 * s * dist;
+      const pulse = Math.sin(this.time * 1.5 + f.glowPhase) * 0.15 + 0.85;
+      f.leafX = fx;
+      f.leafY = fy;
+
+      ctx.save();
+      ctx.globalAlpha = f.alpha * ambient;
+
+      ctx.fillStyle = f.hover ? `rgba(111,163,111,0.12)` : `rgba(111,163,111,0.05)`;
+      ctx.beginPath();
+      ctx.ellipse(fx, fy, 22 * s, 14 * s, angle * 0.2, 0, 6.28);
+      ctx.fill();
+
+      const glowGrad = ctx.createRadialGradient(fx, fy, 0, fx, fy, 18 * s * pulse);
+      glowGrad.addColorStop(0, f.hover ? `rgba(231,169,90,0.15)` : `rgba(111,163,111,0.08)`);
+      glowGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath();
+      ctx.arc(fx, fy, 18 * s * pulse, 0, 6.28);
+      ctx.fill();
+
+      ctx.fillStyle = f.hover ? '#E7A95A' : colors[i];
+      ctx.globalAlpha = f.alpha * ambient * (f.hover ? 0.9 : 0.6);
+      ctx.beginPath();
+      ctx.arc(fx, fy, 5 * s * pulse, 0, 6.28);
+      ctx.fill();
+
+      ctx.fillStyle = '#F5F0E8';
+      ctx.globalAlpha = f.alpha * ambient * 0.3;
+      ctx.beginPath();
+      ctx.arc(fx - 1, fy - 1, 2 * s, 0, 6.28);
+      ctx.fill();
+
+      ctx.restore();
+    }
   }
 
   _drawRoots(ctx, ambient) {
