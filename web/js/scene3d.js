@@ -58,6 +58,33 @@ class BioEchoScene {
     this.loaded = false;
     this.onProgress = null;
     this.onLoaded = null;
+
+    // Butterfly curiosity
+    this.cursorScreenX = -1000;
+    this.cursorScreenY = -1000;
+    this.cursorStillTime = 0;
+    this.cursorActive = false;
+    this.butterflyFleeTimer = 0;
+
+    // Underground world
+    this.undergroundActive = false;
+    this.undergroundProgress = 0;
+    this.undergroundTarget = null;
+    this.undergroundRoots = [];
+    this.undergroundMycelium = [];
+    this.undergroundFungi = [];
+    this.savedCameraPos = new THREE.Vector3();
+    this.savedYaw = 0;
+    this.savedPitch = 0;
+
+    // Weather
+    this.currentWeather = 'clear';
+    this.dewAmount = 0;
+    this.windStrength = 0.3;
+    this.cloudCover = 0.1;
+
+    // Scheduler reference
+    this.scheduler = null;
   }
 
   init(canvas) {
@@ -94,6 +121,7 @@ class BioEchoScene {
     this._setupDeer();
     this._setupPostProcessing();
     this._setupGroundDebris();
+    this._setupUnderground();
     this._bindEvents();
     this._startEntrance();
 
@@ -1323,6 +1351,180 @@ class BioEchoScene {
     if (t >= 1) this.entranceActive = false;
   }
 
+  // ─── Underground World ───
+  _setupUnderground() {
+    // Create underground root system
+    const rootMat = new THREE.MeshStandardMaterial({ color: 0x3A2210, roughness: 0.95, transparent: true, opacity: 0.6 });
+    for (let i = 0; i < 30; i++) {
+      const len = 3 + Math.random() * 8;
+      const r = 0.04 + Math.random() * 0.08;
+      const geo = new THREE.CylinderGeometry(r * 0.3, r, len, 5, 3);
+      const pos = geo.attributes.position;
+      for (let j = 0; j < pos.count; j++) {
+        const t = (pos.getY(j) + len / 2) / len;
+        pos.setX(j, pos.getX(j) + Math.sin(t * 6) * 0.2);
+      }
+      geo.computeVertexNormals();
+      const root = new THREE.Mesh(geo, rootMat);
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 2 + Math.random() * 8;
+      root.position.set(Math.cos(angle) * dist, -5 - Math.random() * 8, Math.sin(angle) * dist);
+      root.rotation.set(Math.random() * 0.5, Math.random() * Math.PI * 2, Math.PI / 2 + (Math.random() - 0.5) * 0.4);
+      root.visible = false;
+      this.scene.add(root);
+      this.undergroundRoots.push(root);
+    }
+
+    // Mycelium network
+    const myceliumMat = new THREE.MeshBasicMaterial({ color: 0x6FA36F, transparent: true, opacity: 0.15 });
+    for (let i = 0; i < 50; i++) {
+      const len = 1 + Math.random() * 3;
+      const geo = new THREE.CylinderGeometry(0.01, 0.01, len, 3);
+      const mycelium = new THREE.Mesh(geo, myceliumMat);
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 1 + Math.random() * 12;
+      mycelium.position.set(Math.cos(angle) * dist, -8 + Math.random() * 6, Math.sin(angle) * dist);
+      mycelium.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      mycelium.visible = false;
+      this.scene.add(mycelium);
+      this.undergroundMycelium.push(mycelium);
+    }
+
+    // Glowing fungi
+    const fungiMat = new THREE.MeshStandardMaterial({
+      color: 0x8BC48B, emissive: 0x6FA36F, emissiveIntensity: 0.3, transparent: true, opacity: 0.7
+    });
+    for (let i = 0; i < 15; i++) {
+      const stemGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.3 + Math.random() * 0.5, 5);
+      const capGeo = new THREE.SphereGeometry(0.06 + Math.random() * 0.08, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2);
+      const group = new THREE.Group();
+      const stem = new THREE.Mesh(stemGeo, new THREE.MeshStandardMaterial({ color: 0xE8DCC8, roughness: 0.8 }));
+      const cap = new THREE.Mesh(capGeo, fungiMat);
+      cap.position.y = 0.4 + Math.random() * 0.4;
+      cap.scale.y = 0.3 + Math.random() * 0.3;
+      group.add(stem, cap);
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 1 + Math.random() * 10;
+      group.position.set(Math.cos(angle) * dist, -6 + Math.random() * 4, Math.sin(angle) * dist);
+      group.rotation.y = Math.random() * Math.PI;
+      group.visible = false;
+      this.scene.add(group);
+      this.undergroundFungi.push({ group, phase: Math.random() * Math.PI * 2 });
+    }
+  }
+
+  _enterUnderground() {
+    if (this.undergroundActive) return;
+    this.undergroundActive = true;
+    this.undergroundProgress = 0;
+    this.savedCameraPos.copy(this.camera.position);
+    this.savedYaw = this.yaw;
+    this.savedPitch = this.pitch;
+
+    for (const r of this.undergroundRoots) r.visible = true;
+    for (const m of this.undergroundMycelium) m.visible = true;
+    for (const f of this.undergroundFungi) f.group.visible = true;
+
+    // Hide surface elements
+    this.groundFog.visible = false;
+    if (this.rain) this.rain.visible = false;
+  }
+
+  _exitUnderground() {
+    if (!this.undergroundActive) return;
+    this.undergroundActive = false;
+    this.undergroundProgress = 0;
+
+    for (const r of this.undergroundRoots) r.visible = false;
+    for (const m of this.undergroundMycelium) m.visible = false;
+    for (const f of this.undergroundFungi) f.group.visible = false;
+
+    this.camera.position.copy(this.savedCameraPos);
+    this.yaw = this.savedYaw;
+    this.pitch = this.savedPitch;
+
+    this.groundFog.visible = true;
+  }
+
+  _updateUnderground(dt) {
+    if (!this.undergroundActive) return;
+    this.undergroundProgress = Math.min(1, this.undergroundProgress + dt * 0.5);
+
+    const ease = this.undergroundProgress < 0.5
+      ? 4 * this.undergroundProgress * this.undergroundProgress * this.undergroundProgress
+      : 1 - Math.pow(-2 * this.undergroundProgress + 2, 3) / 2;
+
+    // Camera moves underground
+    const targetY = -12;
+    this.camera.position.y = this.savedCameraPos.y + (targetY - this.savedCameraPos.y) * ease;
+    this.camera.position.x = this.savedCameraPos.x + Math.sin(ease * Math.PI) * 5;
+    this.camera.position.z = this.savedCameraPos.z + Math.cos(ease * Math.PI * 0.5) * 3;
+
+    this.yaw = this.savedYaw + ease * 0.3;
+    this.pitch = this.savedPitch - ease * 0.2;
+
+    // Pulse fungi glow
+    for (const f of this.undergroundFungi) {
+      const intensity = 0.2 + Math.sin(this.time * 2 + f.phase) * 0.15 + 0.15;
+      f.group.children[1].material.emissiveIntensity = intensity * ease;
+    }
+
+    // Mycelium pulse
+    for (let i = 0; i < this.undergroundMycelium.length; i++) {
+      const pulse = Math.sin(this.time * 0.5 + i * 0.3) * 0.05 + 0.1;
+      this.undergroundMycelium[i].material.opacity = pulse * ease;
+    }
+
+    // Exit on click or key
+    if (this.undergroundProgress >= 0.95 && (this.keys['KeyE'] || this.keys['Escape'] || this.keys['Space'])) {
+      this._exitUnderground();
+    }
+  }
+
+  // ─── Weather / Environment Controls ───
+  setWeather(type) {
+    this.currentWeather = type;
+    const weatherConfig = {
+      clear: { cloud: 0.05, wind: 0.2, rain: 0, fog: 0.02 },
+      partly: { cloud: 0.35, wind: 0.3, rain: 0, fog: 0.05 },
+      cloudy: { cloud: 0.65, wind: 0.4, rain: 0, fog: 0.1 },
+      overcast: { cloud: 0.85, wind: 0.4, rain: 0.1, fog: 0.3 },
+      light_rain: { cloud: 0.8, wind: 0.5, rain: 0.4, fog: 0.35 },
+      rain: { cloud: 0.9, wind: 0.6, rain: 0.8, fog: 0.4 },
+      storm: { cloud: 0.95, wind: 0.85, rain: 1, fog: 0.25 },
+      fog: { cloud: 0.5, wind: 0.05, rain: 0, fog: 0.85 }
+    };
+    const w = weatherConfig[type] || weatherConfig.clear;
+    this.cloudCover = w.cloud;
+    this.windStrength = w.wind;
+    if (this.scene.fog) {
+      this.scene.fog.density = 0.004 + w.fog * 0.008;
+    }
+  }
+
+  _startRain() {
+    if (this.rain) this.rain.visible = true;
+  }
+
+  _stopRain() {
+    if (this.rain) this.rain.visible = false;
+  }
+
+  _activateFireflies() {
+    if (this.fireflies) {
+      this.fireflies.visible = true;
+      this.fireflies.material.opacity = 0.6;
+    }
+  }
+
+  _setDew(amount) {
+    this.dewAmount = amount;
+    // Visual dew: adjust grass reflection, add moisture to ground
+    if (this.grassMesh) {
+      this.grassMesh.material.roughness = 0.85 - amount * 0.2;
+    }
+  }
+
   _bindEvents() {
     const c = this.renderer.domElement;
 
@@ -1417,6 +1619,12 @@ class BioEchoScene {
 
   update(dt) {
     this.time += dt;
+
+    // Always update animals and environment so world is alive from moment of arrival
+    this._updateEnvironment(dt);
+    this._updateAnimals(dt);
+    this._updateVegetation(dt);
+    this._updateParticles(dt);
 
     if (this.entranceActive) {
       this._updateEntrance(dt);
@@ -1518,23 +1726,107 @@ class BioEchoScene {
 
     if (this.water) this.water.material.uniforms.time.value = this.time;
 
-    for (const tree of this.trees) {
-      const sway = Math.sin(this.time * 0.7 + tree.position.x * 0.1 + tree.position.z * 0.05) * 0.02 * this.wind.strength;
-      tree.rotation.z = sway;
-      tree.rotation.x = Math.sin(this.time * 0.5 + tree.position.z * 0.08) * 0.01 * this.wind.strength;
+    // Chunk generation (needs camera position)
+    if (!this.entranceActive) {
+      const cx = Math.floor(this.camera.position.x / this.chunkSize);
+      const cz = Math.floor(this.camera.position.z / this.chunkSize);
+      this._generateChunks(cx, cz);
+    }
+
+    if (this.undergroundActive) {
+      this._updateUnderground(dt);
+    }
+  }
+
+  _updateEnvironment(dt) {
+    if (this.godRays) {
+      for (const ray of this.godRays) {
+        ray.material.uniforms.time.value = this.time;
+        ray.position.x += Math.sin(this.time * 0.1 + ray.position.z) * 0.003;
+      }
+    }
+    if (this.groundFog) {
+      this.groundFog.material.uniforms.time.value = this.time;
+    }
+    if (this.orbs) {
+      const ecoKeys = ['forest', 'water', 'biodiversity', 'pollinators', 'community', 'forest'];
+      for (let i = 0; i < this.orbs.length; i++) {
+        let ecoVal = 0.5;
+        try {
+          if (typeof ecoHealth !== 'undefined' && ecoKeys[i]) {
+            ecoVal = (ecoHealth[ecoKeys[i]] || 50) / 100;
+          }
+        } catch(e) {}
+        const pulse = Math.sin(this.time * 1.5 + i * 1.1) * (0.15 + ecoVal * 0.15) + 0.3 + ecoVal * 0.5;
+        this.orbs[i].material.emissiveIntensity = pulse;
+      }
+    }
+    if (this.scheduler) {
+      const weatherData = this.scheduler.getWeather();
+      if (weatherData.lightning && Math.random() < 0.003) {
+        this._flashLightning();
+      }
+    }
+  }
+
+  _updateAnimals(dt) {
+    // Butterfly curiosity: approach cursor when still, flee when moving
+    const cursorWorldPos = new THREE.Vector3();
+    if (this.cursorActive && this.cursorScreenX > -1000 && this.cursorScreenY > -1000) {
+      const fov = this.camera.fov * Math.PI / 180;
+      const aspect = window.innerWidth / window.innerHeight;
+      const tanFov = Math.tan(fov / 2);
+      const lookDir = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+      const rightDir = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
+      const depth = 20;
+      const ndcX = (this.cursorScreenX / window.innerWidth) * 2 - 1;
+      const ndcY = -(this.cursorScreenY / window.innerHeight) * 2 + 1;
+      cursorWorldPos.copy(this.camera.position);
+      cursorWorldPos.add(lookDir.clone().multiplyScalar(depth));
+      cursorWorldPos.add(rightDir.clone().multiplyScalar(ndcX * depth * tanFov * aspect));
+      cursorWorldPos.y = Math.max(0, this._terrainHeight(cursorWorldPos.x, cursorWorldPos.z) + 1.5);
     }
 
     for (const b of this.butterflies) {
       b.phase += dt * b.speed * 8;
       b.leftWing.rotation.y = Math.sin(b.phase) * 0.8;
       b.rightWing.rotation.y = -Math.sin(b.phase) * 0.8;
-      b.mesh.position.x = b.baseX + Math.sin(this.time * 0.3 + b.phase * 0.1) * b.radius;
-      b.mesh.position.z = b.baseZ + Math.cos(this.time * 0.25 + b.phase * 0.1) * b.radius;
-      b.mesh.position.y = b.centerY + Math.sin(this.time * 0.5 + b.phase) * 0.5;
-      b.mesh.rotation.y = Math.atan2(
-        Math.cos(this.time * 0.3 + b.phase * 0.1) * b.radius,
-        -Math.sin(this.time * 0.25 + b.phase * 0.1) * b.radius
-      );
+
+      const still = this.cursorActive && this.cursorStillTime > 2 && this.cursorStillTime < 15;
+      const justMoved = this.cursorActive && this.cursorStillTime < 1;
+
+      if (still && cursorWorldPos.lengthSq() > 0) {
+        this.butterflyFleeTimer = Math.max(0, this.butterflyFleeTimer - dt * 0.5);
+        const toCursor = new THREE.Vector3(
+          cursorWorldPos.x - b.mesh.position.x,
+          0, cursorWorldPos.z - b.mesh.position.z
+        );
+        const dist = toCursor.length();
+        if (dist > 0.5) {
+          toCursor.normalize();
+          const approach = Math.min(1, 2 - dist * 0.1);
+          b.mesh.position.x += toCursor.x * dt * 3 * approach;
+          b.mesh.position.z += toCursor.z * dt * 3 * approach;
+          b.mesh.position.y = b.centerY + Math.sin(this.time * 0.5 + b.phase) * 0.5;
+          b.mesh.rotation.y = Math.atan2(toCursor.x, toCursor.z);
+        }
+      } else if (justMoved) {
+        this.butterflyFleeTimer = Math.min(4, this.butterflyFleeTimer + dt * 2);
+        const fleeX = b.baseX + (Math.random() - 0.5) * 5;
+        const fleeZ = b.baseZ + (Math.random() - 0.5) * 5;
+        b.mesh.position.x += (fleeX - b.mesh.position.x) * dt * 2;
+        b.mesh.position.z += (fleeZ - b.mesh.position.z) * dt * 2;
+        b.mesh.position.y = b.centerY + 1.5 + Math.sin(this.time * 0.5 + b.phase) * 0.5;
+      } else {
+        this.butterflyFleeTimer = Math.max(0, this.butterflyFleeTimer - dt * 0.2);
+        b.mesh.position.x = b.baseX + Math.sin(this.time * 0.3 + b.phase * 0.1) * b.radius + Math.sin(this.time * 0.1 + b.phase) * 2;
+        b.mesh.position.z = b.baseZ + Math.cos(this.time * 0.25 + b.phase * 0.1) * b.radius + Math.cos(this.time * 0.08 + b.phase * 0.5) * 2;
+        b.mesh.position.y = b.centerY + Math.sin(this.time * 0.5 + b.phase) * 0.5 + (this.butterflyFleeTimer > 0 ? 0.5 : 0);
+        b.mesh.rotation.y = Math.atan2(
+          Math.cos(this.time * 0.3 + b.phase * 0.1) * b.radius,
+          -Math.sin(this.time * 0.25 + b.phase * 0.1) * b.radius
+        );
+      }
     }
 
     for (const d of this.deerSilhouettes) {
@@ -1544,6 +1836,27 @@ class BioEchoScene {
         d.mesh.rotation.y += (Math.random() - 0.5) * 0.5;
       }
       d.mesh.position.y = Math.sin(this.time * d.speed) * 0.03;
+    }
+
+    for (const flock of this.birdFlocks) {
+      const ud = flock.userData;
+      ud.phase += dt * 0.3;
+      ud.wingPhase += dt * 8;
+      flock.position.x += Math.cos(ud.phase) * ud.speed * dt;
+      flock.position.z += Math.sin(ud.phase) * ud.speed * dt;
+      flock.position.y += Math.sin(ud.wingPhase * 0.3) * 0.02;
+      flock.rotation.y = ud.phase + Math.PI / 2;
+      flock.children.forEach((bird, i) => {
+        bird.position.y += Math.sin(ud.wingPhase + i * 0.5) * 0.005;
+      });
+    }
+  }
+
+  _updateVegetation(dt) {
+    for (const tree of this.trees) {
+      const sway = Math.sin(this.time * 0.7 + tree.position.x * 0.1 + tree.position.z * 0.05) * 0.02 * this.wind.strength;
+      tree.rotation.z = sway;
+      tree.rotation.x = Math.sin(this.time * 0.5 + tree.position.z * 0.08) * 0.01 * this.wind.strength;
     }
 
     if (this.grassMesh) {
@@ -1560,14 +1873,9 @@ class BioEchoScene {
       const sway = Math.sin(this.time * 0.7 + fern.position.x * 0.2 + fern.position.z * 0.15) * 0.04 * this.wind.strength;
       fern.rotation.z = sway;
     }
+  }
 
-    if (this.orbs) {
-      for (let i = 0; i < this.orbs.length; i++) {
-        const pulse = Math.sin(this.time * 1.5 + i * 1.1) * 0.25 + 0.5;
-        this.orbs[i].material.emissiveIntensity = pulse;
-      }
-    }
-
+  _updateParticles(dt) {
     if (this.dustMotes) {
       const pos = this.dustMotes.geometry.attributes.position;
       for (let i = 0; i < pos.count; i++) {
@@ -1595,19 +1903,6 @@ class BioEchoScene {
       this.fireflies.material.opacity = 0.3 + Math.sin(this.time * 2) * 0.3;
     }
 
-    for (const flock of this.birdFlocks) {
-      const ud = flock.userData;
-      ud.phase += dt * 0.3;
-      ud.wingPhase += dt * 8;
-      flock.position.x += Math.cos(ud.phase) * ud.speed * dt;
-      flock.position.z += Math.sin(ud.phase) * ud.speed * dt;
-      flock.position.y += Math.sin(ud.wingPhase * 0.3) * 0.02;
-      flock.rotation.y = ud.phase + Math.PI / 2;
-      flock.children.forEach((bird, i) => {
-        bird.position.y += Math.sin(ud.wingPhase + i * 0.5) * 0.005;
-      });
-    }
-
     if (this.rain && this.rain.visible) {
       const pos = this.rain.geometry.attributes.position;
       for (let i = 0; i < pos.count; i++) {
@@ -1622,20 +1917,17 @@ class BioEchoScene {
       }
       pos.needsUpdate = true;
     }
+  }
 
-    if (this.godRays) {
-      for (const ray of this.godRays) {
-        ray.material.uniforms.time.value = this.time;
-        ray.position.x += Math.sin(this.time * 0.1 + ray.position.z) * 0.003;
-      }
-    }
-    if (this.groundFog) {
-      this.groundFog.material.uniforms.time.value = this.time;
-    }
-
-    const cx = Math.floor(this.camera.position.x / this.chunkSize);
-    const cz = Math.floor(this.camera.position.z / this.chunkSize);
-    this._generateChunks(cx, cz);
+  _flashLightning() {
+    if (!this.renderer) return;
+    const flash = () => {
+      this.renderer.toneMappingExposure = 2.0;
+      setTimeout(() => { this.renderer.toneMappingExposure = 0.8; }, 80);
+      setTimeout(() => { this.renderer.toneMappingExposure = 1.8; }, 120);
+      setTimeout(() => { this.renderer.toneMappingExposure = 0.6 + this.scheduler.getAmbientLight() * 0.7; }, 200);
+    };
+    flash();
   }
 
   render() {

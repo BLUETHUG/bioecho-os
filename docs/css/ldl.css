@@ -1028,6 +1028,180 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   LIVING MATERIAL SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Frosted Dew Glass — default surface */
+.surface-dew {
+  background: rgba(10,26,18,0.55);
+  border: 1px solid rgba(111,163,111,0.08);
+  backdrop-filter: blur(32px) saturate(1.2);
+  -webkit-backdrop-filter: blur(32px) saturate(1.2);
+  box-shadow: inset 0 1px 0 rgba(245,240,232,0.02);
+}
+
+/* Wet Stone — research, scientific panels */
+.surface-stone {
+  background: rgba(20,30,25,0.7);
+  border: 1px solid rgba(110,88,67,0.12);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  box-shadow: inset 0 1px 0 rgba(110,88,67,0.04);
+}
+
+/* Tree Bark — navigation, buttons */
+.surface-bark {
+  background: rgba(42,26,10,0.6);
+  border: 1px solid rgba(110,88,67,0.15);
+  backdrop-filter: blur(8px) saturate(1.0);
+  -webkit-backdrop-filter: blur(8px) saturate(1.0);
+  box-shadow: inset 0 1px 0 rgba(110,88,67,0.06), 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Water Surface — search, lens, timeline */
+.surface-water {
+  background: rgba(10,30,40,0.4);
+  border: 1px solid rgba(95,168,211,0.08);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  box-shadow: inset 0 1px 0 rgba(95,168,211,0.04);
+}
+
+/* Moss — notifications, hints */
+.surface-moss {
+  background: rgba(30,60,40,0.6);
+  border: 1px solid rgba(62,107,72,0.12);
+  backdrop-filter: blur(12px) saturate(1.15);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
+  box-shadow: inset 0 1px 0 rgba(62,107,72,0.05);
+}
+
+/* Leaf Veins — progress, connections */
+.surface-vein {
+  background: rgba(15,40,25,0.5);
+  border: 1px solid rgba(111,163,111,0.06);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  box-shadow: inset 0 1px 0 rgba(111,163,111,0.03);
+}
+
+/* ─── Ecosystem Health Bars ─── */
+.eco-health {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.eco-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eco-label {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  font-weight: 300;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(245,240,232,0.3);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.eco-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(111,163,111,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.eco-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1.2s var(--ease-out);
+  position: relative;
+}
+
+.eco-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1));
+  border-radius: 2px;
+}
+
+.eco-fill.green {
+  background: linear-gradient(90deg, var(--c-moss), var(--c-fern));
+}
+.eco-fill.gold {
+  background: linear-gradient(90deg, var(--c-bark), var(--c-sunset));
+}
+.eco-fill.blue {
+  background: linear-gradient(90deg, var(--c-river), var(--c-sky));
+}
+.eco-fill.fern {
+  background: linear-gradient(90deg, var(--c-fern), var(--c-leaf));
+}
+.eco-fill.soil {
+  background: linear-gradient(90deg, var(--c-soil), var(--c-bark));
+}
+
+.eco-pct {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--c-fern);
+  min-width: 28px;
+  text-align: right;
+}
+
+.eco-pct.gold { color: var(--c-sunset); }
+.eco-pct.blue { color: var(--c-river); }
+.eco-pct.soil { color: var(--c-soil); }
+
+/* ─── Season Badge ─── */
+.season-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--r-full);
+  font-family: var(--f-mono);
+  font-size: 9px;
+  font-weight: 300;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(245,240,232,0.35);
+  background: rgba(111,163,111,0.04);
+  border: 1px solid rgba(111,163,111,0.04);
+}
+
+.season-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+}
+
+.season-dot.spring { background: #8BC48B; }
+.season-dot.summer { background: #6FA36F; }
+.season-dot.autumn { background: #E7A95A; }
+.season-dot.winter { background: #BFDFF6; }
+
+/* ─── Greeting Text ─── */
+.greeting-text {
+  font-family: var(--f-sans);
+  font-size: 12px;
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+  color: rgba(245,240,232,0.35);
+  margin-bottom: 16px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    REDUCED MOTION
    ═══════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

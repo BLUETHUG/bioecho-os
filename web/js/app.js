@@ -4,8 +4,16 @@
 
 let scene3d = null;
 const sound = new SoundEngine();
+let scheduler = null;
 let experienceReady = false;
 let lastFrame = 0;
+
+// Mouse stillness tracking
+let cursorWorldX = 0, cursorWorldZ = 0;
+let cursorStillTime = 0;
+let lastCursorMove = 0;
+let cursorActive = false;
+let cursorScreenX = -1000, cursorScreenY = -1000;
 
 // ─── Boot Sequence ───
 (function boot() {
@@ -58,6 +66,16 @@ function initApp() {
   }
 
   try { scene3d = new BioEchoScene(); } catch(e) { console.warn('Scene:', e); }
+  scheduler = new LivingWorldScheduler();
+
+  // Cursor tracking for butterfly curiosity
+  document.addEventListener('mousemove', (e) => {
+    cursorScreenX = e.clientX;
+    cursorScreenY = e.clientY;
+    cursorActive = true;
+    lastCursorMove = scheduler ? scheduler.time : 0;
+    cursorStillTime = 0;
+  });
 
   initCursor();
   initLanding(worldCanvas);
@@ -182,11 +200,35 @@ function initLanding(worldCanvas) {
 
       try {
         scene3d.init(worldCanvas);
-        scene3d.setTimeOfDay(LDL.currentTime || 'noon');
+        scene3d.scheduler = scheduler;
+        const phase = scheduler.getCurrentPhase();
+        scene3d.setTimeOfDay(phase.id);
       } catch(e) { console.error('Scene init:', e); }
 
       try { sound.playGrowth(); } catch(e) {}
       requestAnimationFrame(renderLoop);
+
+      // Scheduler integration
+      scheduler.on('phase_change', (data) => {
+        try {
+          scene3d.setTimeOfDay(data.to);
+          const greeting = scheduler.getGreeting();
+          if (greeting) showEcoGreeting(greeting);
+        } catch(e) {}
+      });
+      scheduler.on('weather_change', (data) => {
+        try {
+          scene3d.setWeather(data.weather);
+          if (data.weather === 'rain' || data.weather === 'storm') {
+            scene3d._startRain();
+          } else {
+            scene3d._stopRain();
+          }
+        } catch(e) {}
+      });
+      scheduler.on('bird_chorus', () => { try { sound.playBirdChirp(); } catch(e) {} });
+      scheduler.on('fireflies_emerge', () => { try { scene3d._activateFireflies(); } catch(e) {} });
+      scheduler.on('dew_formation', () => { try { scene3d._setDew(0.4); } catch(e) {} });
 
       setTimeout(() => {
         showHero();
@@ -196,9 +238,24 @@ function initLanding(worldCanvas) {
         initNav();
         initSoundToggle();
         initFullscreen();
+        initUnderground();
       }, 800);
     });
   }, { once: true });
+}
+
+// ─── Eco Greeting ───
+function showEcoGreeting(text) {
+  const el = document.getElementById('eco-greeting') || (() => {
+    const div = document.createElement('div');
+    div.id = 'eco-greeting';
+    div.style.cssText = 'position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:50;font-family:var(--f-sans,Inter);font-size:13px;font-weight:300;font-style:italic;color:rgba(245,240,232,0.3);pointer-events:none;opacity:0;transition:opacity 2s ease-out;text-align:center;';
+    document.body.appendChild(div);
+    return div;
+  })();
+  el.textContent = text;
+  el.style.opacity = '1';
+  setTimeout(() => { el.style.opacity = '0'; }, 6000);
 }
 
 // ─── Hero Text ───
@@ -257,6 +314,8 @@ function initOrbs() {
   const tooltipText = tooltip?.querySelector('.tooltip-text');
   const names = ['Lens', 'Care', 'Earth', 'Research', 'Community', 'Story'];
   const keys = ['lens', 'care', 'earth', 'research', 'community', 'story'];
+  const ecoLabels = ['Forest', 'Water', 'Biodiversity', 'Pollinators', 'Community', 'Forest'];
+  const ecoKeys = ['forest', 'water', 'biodiversity', 'pollinators', 'community', 'forest'];
 
   canvas.addEventListener('mousemove', (e) => {
     if (!experienceReady) return;
@@ -267,13 +326,19 @@ function initOrbs() {
     if (hits.length > 0) {
       const idx = scene3d.orbs.indexOf(hits[0].object);
       if (idx >= 0) {
-        if (tooltipText) tooltipText.textContent = names[idx];
+        let label = names[idx];
+        const ecoKey = ecoKeys[idx];
+        if (ecoKey && typeof ecoHealth !== 'undefined') {
+          const val = Math.round(ecoHealth[ecoKey] || 0);
+          label = `${ecoLabels[idx]} ${val}%`;
+        }
+        if (tooltipText) tooltipText.textContent = label;
         if (tooltip) {
           tooltip.style.left = `${e.clientX + 16}px`;
           tooltip.style.top = `${e.clientY - 8}px`;
           tooltip.classList.add('visible');
         }
-        setCursorLabel(names[idx]);
+        setCursorLabel(label);
         canvas.style.cursor = 'none';
       }
     } else {
@@ -300,7 +365,59 @@ function initOrbs() {
   });
 }
 
+// ─── Underground Click ───
+function initUnderground() {
+  const canvas = document.getElementById('world-canvas');
+  if (!canvas || !scene3d) return;
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  canvas.addEventListener('dblclick', (e) => {
+    if (!experienceReady || !scene3d) return;
+    if (scene3d.undergroundActive) {
+      scene3d._exitUnderground();
+      return;
+    }
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, scene3d.camera);
+    if (scene3d.terrain) {
+      const hits = raycaster.intersectObject(scene3d.terrain);
+      if (hits.length > 0) {
+        scene3d._enterUnderground();
+        showEcoGreeting('You discover the world beneath... roots, fungi, mycelium networks');
+        try { sound.playGrowth(); } catch(e) {}
+      }
+    }
+  });
+
+  // Also allow via keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyU' && scene3d && !scene3d.undergroundActive) {
+      scene3d._enterUnderground();
+      showEcoGreeting('You discover the world beneath... roots, fungi, mycelium networks');
+      try { sound.playGrowth(); } catch(e) {}
+    } else if (e.code === 'KeyU' && scene3d && scene3d.undergroundActive) {
+      scene3d._exitUnderground();
+    }
+  });
+}
+
 // ─── Panel ───
+// Ecosystem health state (replaces XP/gamification)
+const ecoHealth = {
+  forest: 82, pollinators: 68, biodiversity: 75, water: 91, community: 44,
+  _targets: { forest: 82, pollinators: 68, biodiversity: 75, water: 91, community: 44 },
+  update() {
+    for (const key of Object.keys(this._targets)) {
+      this[key] += (this._targets[key] - this[key]) * 0.01;
+      this[key] = Math.max(0, Math.min(100, this[key]));
+    }
+  },
+  set(key, val) { if (this._targets[key] !== undefined) this._targets[key] = Math.max(0, Math.min(100, val)); },
+  add(key, delta) { if (this._targets[key] !== undefined) this._targets[key] = Math.max(0, Math.min(100, this._targets[key] + delta)); }
+};
+
 const panelData = {
   lens: {
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
@@ -313,7 +430,7 @@ const panelData = {
         <div class="p-stat"><span class="p-stat-label">Range</span><span class="p-stat-val">12m</span></div>
         <div class="p-stat"><span class="p-stat-label">Latency</span><span class="p-stat-val b">3ms</span></div>
       </div>
-      <canvas class="p-sparkline" id="spark-lens" height="32"></canvas>
+      <div class="eco-health" id="eco-health-lens"></div>
       <button class="p-btn">Connect Sensor</button>`
   },
   care: {
@@ -321,13 +438,7 @@ const panelData = {
     title: 'Living Care',
     html: `
       <p class="p-desc">Your ecosystem's health timeline. Track vitality, detect early warning signs, and nurture what matters most.</p>
-      <div class="p-stats">
-        <div class="p-stat"><span class="p-stat-label">Vitality</span><span class="p-stat-val g">94%</span></div>
-        <div class="p-stat"><span class="p-stat-label">Stress</span><span class="p-stat-val g">Low</span></div>
-        <div class="p-stat"><span class="p-stat-label">Growth Rate</span><span class="p-stat-val g">+2.3%</span></div>
-        <div class="p-stat"><span class="p-stat-label">Hydration</span><span class="p-stat-val b">Optimal</span></div>
-      </div>
-      <canvas class="p-sparkline" id="spark-care" height="32"></canvas>
+      <div class="eco-health" id="eco-health-care"></div>
       <button class="p-btn">View Timeline</button>`
   },
   earth: {
@@ -341,6 +452,7 @@ const panelData = {
         <div class="p-stat"><span class="p-stat-label">Active Regions</span><span class="p-stat-val">156</span></div>
         <div class="p-stat"><span class="p-stat-label">Last Sync</span><span class="p-stat-val b">2m ago</span></div>
       </div>
+      <div class="eco-health" id="eco-health-earth"></div>
       <button class="p-btn">Explore Map</button>`
   },
   research: {
@@ -354,6 +466,7 @@ const panelData = {
         <div class="p-stat"><span class="p-stat-label">Confidence</span><span class="p-stat-val g">96.2%</span></div>
         <div class="p-stat"><span class="p-stat-label">Last Updated</span><span class="p-stat-val b">Today</span></div>
       </div>
+      <div class="eco-health" id="eco-health-research"></div>
       <button class="p-btn">Open Graph</button>`
   },
   community: {
@@ -367,6 +480,7 @@ const panelData = {
         <div class="p-stat"><span class="p-stat-label">Contributions</span><span class="p-stat-val">34,612</span></div>
         <div class="p-stat"><span class="p-stat-label">Your Rank</span><span class="p-stat-val b">#428</span></div>
       </div>
+      <div class="eco-health" id="eco-health-community"></div>
       <button class="p-btn">Join Discussion</button>`
   },
   story: {
@@ -380,11 +494,61 @@ const panelData = {
         <div class="p-stat"><span class="p-stat-label">Predictions</span><span class="p-stat-val g">Active</span></div>
         <div class="p-stat"><span class="p-stat-label">Accuracy</span><span class="p-stat-val b">89%</span></div>
       </div>
+      <div class="eco-health" id="eco-health-story"></div>
       <button class="p-btn">View Timeline</button>`
   }
 };
 
 let activePanel = null;
+
+const ecoHealthConfig = {
+  lens: [
+    { label: 'Forest Health', key: 'forest', color: 'green' },
+    { label: 'Pollinators', key: 'pollinators', color: 'gold' },
+    { label: 'Biodiversity', key: 'biodiversity', color: 'fern' }
+  ],
+  care: [
+    { label: 'Forest Health', key: 'forest', color: 'green' },
+    { label: 'Pollinators', key: 'pollinators', color: 'gold' },
+    { label: 'Biodiversity', key: 'biodiversity', color: 'fern' },
+    { label: 'Water Quality', key: 'water', color: 'blue' },
+    { label: 'Community Care', key: 'community', color: 'soil' }
+  ],
+  earth: [
+    { label: 'Forest Health', key: 'forest', color: 'green' },
+    { label: 'Water Quality', key: 'water', color: 'blue' }
+  ],
+  research: [
+    { label: 'Biodiversity', key: 'biodiversity', color: 'fern' },
+    { label: 'Pollinators', key: 'pollinators', color: 'gold' }
+  ],
+  community: [
+    { label: 'Community Care', key: 'community', color: 'soil' },
+    { label: 'Forest Health', key: 'forest', color: 'green' }
+  ],
+  story: [
+    { label: 'Forest Health', key: 'forest', color: 'green' },
+    { label: 'Biodiversity', key: 'biodiversity', color: 'fern' },
+    { label: 'Water Quality', key: 'water', color: 'blue' }
+  ]
+};
+
+function renderEcoHealth(container, config) {
+  if (!container) return;
+  container.innerHTML = '';
+  for (const item of config) {
+    const val = Math.round(ecoHealth[item.key] || 0);
+    const row = document.createElement('div');
+    row.className = 'eco-row';
+    row.innerHTML = `
+      <span class="eco-label">${item.label}</span>
+      <div class="eco-track">
+        <div class="eco-fill ${item.color}" style="width:${val}%"></div>
+      </div>
+      <span class="eco-pct ${item.color}">${val}%</span>`;
+    container.appendChild(row);
+  }
+}
 
 function showPanel(key) {
   const panel = document.getElementById('panel');
@@ -401,8 +565,12 @@ function showPanel(key) {
   panel.classList.add('visible');
   activePanel = key;
 
-  // Draw sparkline
-  setTimeout(() => drawSparkline(key), 100);
+  // Render ecosystem health bars
+  const ecoConfig = ecoHealthConfig[key];
+  if (ecoConfig) {
+    const ecoEl = document.getElementById(`eco-health-${key}`);
+    if (ecoEl) renderEcoHealth(ecoEl, ecoConfig);
+  }
 }
 
 function hidePanel() {
@@ -536,6 +704,7 @@ function startAmbient() {
 
 // ─── Render Loop ───
 let lastGust = 0, lastStep = 0;
+let ecoUpdateTimer = 0;
 
 function renderLoop(ts) {
   if (!experienceReady) return;
@@ -543,10 +712,44 @@ function renderLoop(ts) {
     const dt = Math.min((ts - lastFrame) / 1000, 0.05);
     lastFrame = ts;
 
-    LDL.currentHour = new Date().getHours() + new Date().getMinutes() / 60;
-    LDL.currentTime = LDL.getTimeOfDay(LDL.currentHour);
+    // Update scheduler
+    if (scheduler) scheduler.update(dt);
+
+    // Update eco health values based on scheduler
+    ecoUpdateTimer += dt;
+    if (ecoUpdateTimer > 2) {
+      ecoUpdateTimer = 0;
+      const rain = scheduler ? scheduler.getWeather().rain : 0;
+      const phase = scheduler ? scheduler.getCurrentPhase() : null;
+      if (rain > 0.5) ecoHealth.add('water', 0.5);
+      if (rain < 0.1) ecoHealth.add('water', -0.1);
+      if (phase && (phase.id === 'morning' || phase.id === 'noon')) ecoHealth.add('pollinators', 0.2);
+      const wind = scheduler ? scheduler.getWindStrength() : 0.3;
+      if (wind > 0.7) ecoHealth.add('forest', -0.1);
+      ecoHealth.add('forest', 0.05);
+      // Refresh panel if open
+      if (activePanel && document.getElementById('panel')?.classList.contains('visible')) {
+        const ecoConfig = ecoHealthConfig[activePanel];
+        if (ecoConfig) {
+          const ecoEl = document.getElementById(`eco-health-${activePanel}`);
+          if (ecoEl) renderEcoHealth(ecoEl, ecoConfig);
+        }
+      }
+    }
+    ecoHealth.update();
+
+    // Cursor stillness tracking for butterfly curiosity
+    if (cursorActive) {
+      cursorStillTime += dt;
+    }
 
     if (scene3d) {
+      // Pass cursor data to scene for butterfly curiosity
+      scene3d.cursorScreenX = cursorScreenX;
+      scene3d.cursorScreenY = cursorScreenY;
+      scene3d.cursorStillTime = cursorStillTime;
+      scene3d.cursorActive = cursorActive;
+
       scene3d.update(dt);
       scene3d.render();
     }
