@@ -3,140 +3,211 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0F3D2E">
+<meta name="theme-color" content="#0A1A12">
+<meta name="description" content="BioEcho — Understand, care for, and protect the living world.">
 <title>BioEcho</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/ldl.css">
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 </head>
 <body>
 
-<canvas id="world-canvas"></canvas>
-
-<div id="cursor">
-  <div class="cursor-dot"></div>
-  <div class="cursor-ring"></div>
-</div>
-
-<div id="landing">
-  <div class="landing-inner">
-    <canvas id="seed-canvas" width="300" height="300"></canvas>
-    <div class="landing-brand">
-      <div class="brand-mark"></div>
-      <div class="brand-text">BioEcho</div>
+<!-- ═══════════════════════════════════════════════════════════════
+     LOADING SCREEN
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="loader">
+  <div class="loader-inner">
+    <div class="loader-logo">
+      <div class="loader-ring">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" class="ring-track"/>
+          <circle cx="50" cy="50" r="45" class="ring-fill"/>
+        </svg>
+      </div>
+      <div class="loader-mark"></div>
     </div>
-    <div class="landing-prompt">
-      <div class="prompt-line"></div>
-      <div class="prompt-text">enter the living world</div>
-      <div class="prompt-line"></div>
+    <div class="loader-brand">BioEcho</div>
+    <div class="loader-status">
+      <span class="loader-text">initializing living systems</span>
+      <span class="loader-pct">0%</span>
+    </div>
+    <div class="loader-bar">
+      <div class="loader-bar-fill"></div>
     </div>
   </div>
 </div>
 
-<div id="ui-layer" style="display:none">
+<!-- ═══════════════════════════════════════════════════════════════
+     WEBGL CANVAS
+     ═══════════════════════════════════════════════════════════════ -->
+<canvas id="world-canvas"></canvas>
 
-  <header id="top-bar">
-    <div class="top-left">
-      <div class="logo-mark"></div>
-      <span class="logo-text">BioEcho</span>
+<!-- ═══════════════════════════════════════════════════════════════
+     CUSTOM CURSOR
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="cursor" aria-hidden="true">
+  <div class="cursor-dot"></div>
+  <div class="cursor-ring"></div>
+  <div class="cursor-label"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LANDING
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="landing" role="button" tabindex="0" aria-label="Enter BioEcho">
+  <div class="landing-bg"></div>
+  <div class="landing-content">
+    <canvas id="seed-canvas" width="300" height="300" aria-hidden="true"></canvas>
+    <div class="landing-brand">
+      <div class="brand-dot"></div>
+      <span class="brand-name">BioEcho</span>
     </div>
-    <div class="top-right">
-      <button class="icon-btn" id="btn-sound" aria-label="Sound">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-          <path class="sound-wave" d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    <div class="landing-cta">
+      <span class="cta-line"></span>
+      <span class="cta-text">tap to enter</span>
+      <span class="cta-line"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN UI
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="ui" aria-hidden="true">
+
+  <!-- Top bar -->
+  <header id="hud-top">
+    <div class="hud-left">
+      <div class="hud-logo">
+        <div class="logo-pulse"></div>
+        <span class="logo-wordmark">BioEcho</span>
+      </div>
+    </div>
+    <div class="hud-right">
+      <button class="hud-btn" id="btn-sound" aria-label="Toggle sound" data-tooltip="Sound">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14" class="wave-1"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" class="wave-2"/>
         </svg>
       </button>
-      <button class="icon-btn" id="btn-info" aria-label="Info">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="16" x2="12" y2="12"/>
-          <line x1="12" y1="8" x2="12.01" y2="8"/>
+      <button class="hud-btn" id="btn-fullscreen" aria-label="Fullscreen" data-tooltip="Fullscreen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
         </svg>
       </button>
     </div>
   </header>
 
-  <div id="hero-text">
-    <div class="hero-line hero-line-1">
-      <span class="hero-word" style="--i:0">Listen</span>
-      <span class="hero-word" style="--i:1">to</span>
-      <span class="hero-word" style="--i:2">the</span>
+  <!-- Hero text overlay -->
+  <div id="hero" aria-live="polite">
+    <div class="hero-row">
+      <span class="hero-word" style="--d:0">Listen</span>
+      <span class="hero-word" style="--d:1">to</span>
+      <span class="hero-word" style="--d:2">the</span>
     </div>
-    <div class="hero-line hero-line-2">
-      <span class="hero-word accent" style="--i:3">forest</span>
-      <span class="hero-word" style="--i:4">breathe</span>
+    <div class="hero-row">
+      <span class="hero-word accent" style="--d:3">forest</span>
+      <span class="hero-word" style="--d:4">breathe</span>
     </div>
   </div>
 
-  <div id="feature-label">
-    <div class="label-dot"></div>
-    <div class="label-text"></div>
+  <!-- Floating feature tooltip -->
+  <div id="orb-tooltip" role="tooltip" aria-hidden="true">
+    <div class="tooltip-dot"></div>
+    <span class="tooltip-text"></span>
   </div>
 
-  <div id="side-panel" class="panel">
-    <div class="panel-header">
-      <div class="panel-title"></div>
-      <button class="panel-close" id="panel-close">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
+  <!-- Side panel -->
+  <aside id="panel" role="dialog" aria-label="Feature details">
+    <div class="panel-glow"></div>
+    <div class="panel-inner">
+      <div class="panel-head">
+        <div class="panel-icon" id="panel-icon"></div>
+        <h2 class="panel-title" id="panel-title"></h2>
+        <button class="panel-x" id="panel-close" aria-label="Close panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="panel-scroll" id="panel-body"></div>
     </div>
-    <div class="panel-body"></div>
-  </div>
+  </aside>
 
-  <div id="bottom-bar">
-    <div class="nav-pills">
-      <button class="pill active" data-view="lens">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+  <!-- Bottom nav -->
+  <nav id="hud-bottom" aria-label="Main navigation">
+    <div class="nav-rail">
+      <button class="nav-item active" data-view="lens" aria-label="BioEcho Lens" data-tooltip="Lens">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
-        <span>Lens</span>
+        <span class="nav-label">Lens</span>
       </button>
-      <button class="pill" data-view="care">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M12 22c-4-3-8-7-8-11a8 8 0 0 1 16 0c0 4-4 8-8 11z"/>
+      <button class="nav-item" data-view="care" aria-label="Living Care" data-tooltip="Care">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
         </svg>
-        <span>Care</span>
+        <span class="nav-label">Care</span>
       </button>
-      <button class="pill" data-view="earth">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      <button class="nav-item" data-view="earth" aria-label="Living Earth" data-tooltip="Earth">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M2 12h20"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
-        <span>Earth</span>
+        <span class="nav-label">Earth</span>
       </button>
-      <button class="pill" data-view="research">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>
+      <button class="nav-item" data-view="research" aria-label="Living Research" data-tooltip="Research">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2"/>
         </svg>
-        <span>Research</span>
+        <span class="nav-label">Research</span>
       </button>
-      <button class="pill" data-view="community">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      <button class="nav-item" data-view="community" aria-label="Living Community" data-tooltip="Community">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
-        <span>Community</span>
+        <span class="nav-label">Community</span>
       </button>
     </div>
+  </nav>
+
+  <!-- Coordinates -->
+  <div id="hud-coords" aria-hidden="true">
+    <span class="coord-axis">X</span>
+    <span class="coord-val" id="coord-x">0.0</span>
+    <span class="coord-sep">/</span>
+    <span class="coord-axis">Z</span>
+    <span class="coord-val" id="coord-z">0.0</span>
   </div>
 
-  <div id="explore-prompt">
-    <div class="scroll-arrow">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <polyline points="19 12 12 19 5 12"/>
+  <!-- Explore hint -->
+  <div id="explore-hint" aria-live="polite">
+    <div class="hint-anim">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L12 22"/>
+        <path d="M17 7L12 2L7 7"/>
       </svg>
     </div>
-    <span>drag to explore</span>
+    <span class="hint-text">drag to explore</span>
   </div>
 
-  <div id="coordinates">
-    <span class="coord-label">N</span>
-    <span class="coord-value" id="coord-pos">0.0, 0.0</span>
+  <!-- Compass -->
+  <div id="hud-compass" aria-hidden="true">
+    <svg viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="18" class="compass-ring"/>
+      <text x="20" y="8" class="compass-n">N</text>
+      <line x1="20" y1="12" x2="20" y2="18" class="compass-needle"/>
+    </svg>
   </div>
 
 </div>
