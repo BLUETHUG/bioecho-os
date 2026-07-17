@@ -7,77 +7,140 @@
 <title>BioEcho</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/ldl.css">
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 </head>
 <body>
+
 <canvas id="world-canvas"></canvas>
-<div id="landing"><canvas id="seed-canvas" width="300" height="300"></canvas></div>
-<div id="ui-layer" style="display:none">
-  <div class="living-panel left" id="panel-left" style="opacity:0;pointer-events:none">
-    <div id="organism-list"></div>
-  </div>
-  <div class="living-panel right" id="panel-right" style="opacity:0;pointer-events:none">
-    <div class="panel-section">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div><span class="panel-value highlight" id="stat-health">--</span></div>
-        <div><span class="panel-value" id="stat-stress">--</span></div>
-        <div><span class="panel-value" id="stat-spikes">--</span></div>
-        <div><span class="panel-value growth" id="stat-growth">--</span></div>
-      </div>
-      <div class="health-vine"><div class="health-vine-fill" id="health-bar" style="width:0%"></div></div>
+
+<div id="cursor">
+  <div class="cursor-dot"></div>
+  <div class="cursor-ring"></div>
+</div>
+
+<div id="landing">
+  <div class="landing-inner">
+    <canvas id="seed-canvas" width="300" height="300"></canvas>
+    <div class="landing-brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">BioEcho</div>
     </div>
-    <div class="panel-section">
-      <div class="panel-row"><span class="panel-value" id="env-light">--</span></div>
-      <div class="panel-row"><span class="panel-value" id="env-soil">--</span></div>
-      <div class="panel-row"><span class="panel-value" id="env-season">--</span></div>
+    <div class="landing-prompt">
+      <div class="prompt-line"></div>
+      <div class="prompt-text">enter the living world</div>
+      <div class="prompt-line"></div>
     </div>
-    <div class="panel-section">
-      <div class="panel-value" id="prediction-content">--</div>
-    </div>
-    <div class="panel-section">
-      <div class="panel-row"><span class="panel-value" id="stat-chains">0</span></div>
-      <div class="panel-row"><span class="panel-value" id="stat-confidence">0%</span></div>
-    </div>
-  </div>
-  <nav id="root-nav" style="opacity:0;pointer-events:none;transition:opacity 0.8s ease">
-    <button class="root-btn" data-view="home"></button>
-    <button class="root-btn" data-view="lens"></button>
-    <button class="root-btn" data-view="graph"></button>
-    <button class="root-btn" data-view="predict"></button>
-    <button class="root-btn" data-view="search"></button>
-    <button class="root-btn" data-view="earth"></button>
-    <button class="root-btn" data-view="shop"></button>
-  </nav>
-  <div class="action-bar" id="action-bar" style="opacity:0;pointer-events:none">
-    <button class="organic-btn" id="btn-connect"></button>
-    <button class="organic-btn" id="btn-start"></button>
-    <button class="organic-btn" id="btn-scan"></button>
-    <button class="organic-btn" id="btn-submit-obs"></button>
-    <button class="organic-btn" id="btn-emergency"></button>
-  </div>
-  <div class="content-overlay" id="content-overlay">
-    <div class="content-card">
-      <div class="content-card-header">
-        <div class="content-card-title" id="overlay-title"></div>
-        <button class="content-card-close" id="overlay-close"></button>
-      </div>
-      <div id="overlay-body"></div>
-    </div>
-  </div>
-  <div id="movement-hint">
-    <div class="hint-keys">
-      <div class="hint-key">W</div>
-      <div class="hint-key">A</div>
-      <div class="hint-key">S</div>
-      <div class="hint-key">D</div>
-      <div class="hint-divider"></div>
-      <div class="hint-key" style="font-size:9px">drag</div>
-    </div>
-    <div class="hint-label">explore the world</div>
   </div>
 </div>
+
+<div id="ui-layer" style="display:none">
+
+  <header id="top-bar">
+    <div class="top-left">
+      <div class="logo-mark"></div>
+      <span class="logo-text">BioEcho</span>
+    </div>
+    <div class="top-right">
+      <button class="icon-btn" id="btn-sound" aria-label="Sound">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+          <path class="sound-wave" d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btn-info" aria-label="Info">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="hero-text">
+    <div class="hero-line hero-line-1">
+      <span class="hero-word" style="--i:0">Listen</span>
+      <span class="hero-word" style="--i:1">to</span>
+      <span class="hero-word" style="--i:2">the</span>
+    </div>
+    <div class="hero-line hero-line-2">
+      <span class="hero-word accent" style="--i:3">forest</span>
+      <span class="hero-word" style="--i:4">breathe</span>
+    </div>
+  </div>
+
+  <div id="feature-label">
+    <div class="label-dot"></div>
+    <div class="label-text"></div>
+  </div>
+
+  <div id="side-panel" class="panel">
+    <div class="panel-header">
+      <div class="panel-title"></div>
+      <button class="panel-close" id="panel-close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="panel-body"></div>
+  </div>
+
+  <div id="bottom-bar">
+    <div class="nav-pills">
+      <button class="pill active" data-view="lens">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <span>Lens</span>
+      </button>
+      <button class="pill" data-view="care">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 22c-4-3-8-7-8-11a8 8 0 0 1 16 0c0 4-4 8-8 11z"/>
+        </svg>
+        <span>Care</span>
+      </button>
+      <button class="pill" data-view="earth">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+        <span>Earth</span>
+      </button>
+      <button class="pill" data-view="research">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>
+        </svg>
+        <span>Research</span>
+      </button>
+      <button class="pill" data-view="community">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Community</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="explore-prompt">
+    <div class="scroll-arrow">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <polyline points="19 12 12 19 5 12"/>
+      </svg>
+    </div>
+    <span>drag to explore</span>
+  </div>
+
+  <div id="coordinates">
+    <span class="coord-label">N</span>
+    <span class="coord-value" id="coord-pos">0.0, 0.0</span>
+  </div>
+
+</div>
+
 <script src="js/ldl.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/hal.js"></script>

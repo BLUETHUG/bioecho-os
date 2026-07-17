@@ -1,15 +1,12 @@
-// BioEcho OS v5 — 3D Immersive Living World
+// BioEcho OS v6 — Award-Winning Immersive Experience
 
 let scene3d = null;
 const sound = new SoundEngine();
 let experienceReady = false;
 let lastFrame = 0;
-let activeView = 'home';
-let ambientInterval = null;
-let activeUnfurl = null;
 
 function initLanding() {
-  try { BarkPanel.init(); } catch(e) { console.warn('BarkPanel:', e); }
+  try { BarkPanel.init(); } catch(e) {}
 
   const worldCanvas = document.getElementById('world-canvas');
   if (worldCanvas) {
@@ -23,9 +20,11 @@ function initLanding() {
   const seedCanvas = document.getElementById('seed-canvas');
   const uiLayer = document.getElementById('ui-layer');
 
-  if (!landing || !seedCanvas) { console.error('Missing landing elements'); return; }
+  if (!landing || !seedCanvas) return;
 
   const seq = new LandingSequence(seedCanvas);
+
+  initCursor();
 
   landing.addEventListener('click', async () => {
     try {
@@ -35,12 +34,13 @@ function initLanding() {
         await sound.initialize();
         await sound.resume();
         sound.playPulse();
-      } catch(e) { console.warn('Sound init:', e); }
+      } catch(e) {}
 
       seq.start(() => {
         landing.classList.add('hidden');
         experienceReady = true;
         uiLayer.style.display = 'block';
+        requestAnimationFrame(() => uiLayer.classList.add('visible'));
 
         try {
           scene3d.init(worldCanvas);
@@ -53,10 +53,11 @@ function initLanding() {
         requestAnimationFrame(renderLoop);
 
         setTimeout(() => {
-          try { enableTreeInteraction(); } catch(e) {}
-          startAmbient();
-          showMovementHint();
-        }, 2000);
+          showExplorePrompt();
+          showHeroText();
+          startCoordTracker();
+          enableOrbInteraction();
+        }, 1500);
       });
     } catch (e) {
       console.error('Click handler error:', e);
@@ -78,8 +79,8 @@ function initLanding() {
     const b = Math.sin(pt * 0.8) * 0.08 + 1;
 
     const g = seedCtx.createRadialGradient(cx, cy, 0, cx, cy, 100 * s * b);
-    g.addColorStop(0, 'rgba(245,240,232,0.25)');
-    g.addColorStop(0.4, 'rgba(111,163,111,0.15)');
+    g.addColorStop(0, 'rgba(245,240,232,0.2)');
+    g.addColorStop(0.4, 'rgba(111,163,111,0.1)');
     g.addColorStop(1, 'transparent');
     seedCtx.fillStyle = g;
     seedCtx.beginPath(); seedCtx.arc(cx, cy, 100 * s * b, 0, 6.28); seedCtx.fill();
@@ -87,7 +88,7 @@ function initLanding() {
     seedCtx.fillStyle = '#F5F0E8';
     seedCtx.beginPath(); seedCtx.ellipse(cx, cy, 28 * s * p, 42 * s * p, 0, 0, 6.28); seedCtx.fill();
 
-    seedCtx.fillStyle = 'rgba(255,255,255,0.4)';
+    seedCtx.fillStyle = 'rgba(255,255,255,0.3)';
     seedCtx.beginPath(); seedCtx.ellipse(cx - 4 * s, cy - 6 * s, 10 * s * p, 16 * s * p, -0.2, 0, 6.28); seedCtx.fill();
 
     seedCtx.strokeStyle = '#6FA36F';
@@ -97,13 +98,221 @@ function initLanding() {
     seedCtx.quadraticCurveTo(cx + 6 * s, cy - 60 * s * p, cx, cy - 80 * s * p);
     seedCtx.stroke();
 
-    seedCtx.fillStyle = 'rgba(111,163,111,0.6)';
+    seedCtx.fillStyle = 'rgba(111,163,111,0.5)';
     seedCtx.beginPath(); seedCtx.ellipse(cx + 6 * s, cy - 70 * s * p, 8 * s * p, 4 * s * p, 0.3, 0, 6.28); seedCtx.fill();
 
     if (!landing.classList.contains('hidden')) requestAnimationFrame(drawIdle);
   };
   requestAnimationFrame(drawIdle);
 }
+
+function initCursor() {
+  const cursor = document.getElementById('cursor');
+  if (!cursor || window.innerWidth < 769) return;
+
+  let mx = 0, my = 0, cx = 0, cy = 0;
+
+  document.addEventListener('mousemove', (e) => {
+    mx = e.clientX;
+    my = e.clientY;
+  });
+
+  document.addEventListener('mousedown', () => cursor.classList.add('clicking'));
+  document.addEventListener('mouseup', () => cursor.classList.remove('clicking'));
+
+  const hoverTargets = 'button, a, .pill, .icon-btn, #seed-canvas, #landing';
+  document.addEventListener('mouseover', (e) => {
+    if (e.target.closest(hoverTargets)) cursor.classList.add('hovering');
+  });
+  document.addEventListener('mouseout', (e) => {
+    if (e.target.closest(hoverTargets)) cursor.classList.remove('hovering');
+  });
+
+  const animate = () => {
+    cx += (mx - cx) * 0.12;
+    cy += (my - cy) * 0.12;
+    cursor.style.transform = `translate(${cx}px, ${cy}px)`;
+    requestAnimationFrame(animate);
+  };
+  requestAnimationFrame(animate);
+}
+
+function showHeroText() {
+  const hero = document.getElementById('hero-text');
+  if (!hero) return;
+  hero.classList.add('visible');
+  setTimeout(() => {
+    hero.classList.add('fading');
+    setTimeout(() => hero.classList.remove('visible', 'fading'), 2000);
+  }, 5000);
+}
+
+function showExplorePrompt() {
+  const prompt = document.getElementById('explore-prompt');
+  if (!prompt) return;
+  setTimeout(() => prompt.classList.add('visible'), 1000);
+  const dismiss = () => {
+    prompt.classList.add('fading');
+    setTimeout(() => prompt.classList.remove('visible', 'fading'), 1500);
+  };
+  window.addEventListener('keydown', dismiss, { once: true });
+  document.getElementById('world-canvas')?.addEventListener('mousedown', dismiss, { once: true });
+  setTimeout(dismiss, 10000);
+}
+
+function startCoordTracker() {
+  const el = document.getElementById('coord-pos');
+  if (!el || !scene3d) return;
+  setInterval(() => {
+    if (!scene3d?.camera) return;
+    const x = scene3d.camera.position.x.toFixed(1);
+    const z = scene3d.camera.position.z.toFixed(1);
+    el.textContent = `${x}, ${z}`;
+  }, 200);
+}
+
+const featureContent = {
+  lens: {
+    title: 'BioEcho Lens',
+    body: `<p>See the invisible. The Lens reveals the hidden signals that plants and ecosystems emit — electrical pulses, chemical signatures, stress patterns.</p>
+    <div class="stat-row"><span class="stat-label">Status</span><span class="stat-value accent">Active</span></div>
+    <div class="stat-row"><span class="stat-label">Sensitivity</span><span class="stat-value">High</span></div>
+    <div class="stat-row"><span class="stat-label">Range</span><span class="stat-value">12m</span></div>`
+  },
+  care: {
+    title: 'Living Care',
+    body: `<p>Your ecosystem's health timeline. Track vitality, detect early warning signs, and nurture what matters.</p>
+    <div class="stat-row"><span class="stat-label">Vitality</span><span class="stat-value accent">94%</span></div>
+    <div class="stat-row"><span class="stat-label">Stress</span><span class="stat-value">Low</span></div>
+    <div class="stat-row"><span class="stat-label">Growth</span><span class="stat-value accent">+2.3%</span></div>`
+  },
+  earth: {
+    title: 'Living Earth',
+    body: `<p>Every observation connects to a global living map. See what others are discovering — from old-growth forests to your own backyard.</p>
+    <div class="stat-row"><span class="stat-label">Observations</span><span class="stat-value">12.4k</span></div>
+    <div class="stat-row"><span class="stat-label">Species</span><span class="stat-value accent">847</span></div>
+    <div class="stat-row"><span class="stat-label">Regions</span><span class="stat-value">156</span></div>`
+  },
+  research: {
+    title: 'Living Research',
+    body: `<p>Explore the knowledge graph of life — species relationships, ecological networks, and evolutionary lineages interconnected like a vast root system.</p>
+    <div class="stat-row"><span class="stat-label">Nodes</span><span class="stat-value">24.8k</span></div>
+    <div class="stat-row"><span class="stat-label">Edges</span><span class="stat-value accent">142k</span></div>
+    <div class="stat-row"><span class="stat-label">Confidence</span><span class="stat-value">96%</span></div>`
+  },
+  community: {
+    title: 'Living Community',
+    body: `<p>You're not alone. Join a flock of citizen scientists, naturalists, and caretakers working together to understand and protect the living world.</p>
+    <div class="stat-row"><span class="stat-label">Members</span><span class="stat-value accent">8.2k</span></div>
+    <div class="stat-row"><span class="stat-label">Active</span><span class="stat-value">1,247</span></div>
+    <div class="stat-row"><span class="stat-label">Contributions</span><span class="stat-value">34.6k</span></div>`
+  },
+  story: {
+    title: 'Living Story',
+    body: `<p>Travel through time. See the deep history of your ecosystem — from ancient forests to restoration stories — and peer into what's coming next.</p>
+    <div class="stat-row"><span class="stat-label">Timeline</span><span class="stat-value">2,400 yrs</span></div>
+    <div class="stat-row"><span class="stat-label">Events</span><span class="stat-value accent">1,892</span></div>
+    <div class="stat-row"><span class="stat-label">Predictions</span><span class="stat-value">Active</span></div>`
+  }
+};
+
+let activeFeature = null;
+
+function showFeaturePanel(name, originX, originY) {
+  const panel = document.getElementById('side-panel');
+  const title = panel.querySelector('.panel-title');
+  const body = panel.querySelector('.panel-body');
+  const content = featureContent[name] || featureContent.lens;
+
+  if (title) title.textContent = content.title;
+  if (body) body.innerHTML = content.body;
+
+  panel.classList.add('visible');
+  activeFeature = name;
+
+  try { sound.playWaterDrop(); } catch(e) {}
+}
+
+function hideFeaturePanel() {
+  const panel = document.getElementById('side-panel');
+  panel.classList.remove('visible');
+  activeFeature = null;
+  try { sound.playLeafRustle(); } catch(e) {}
+}
+
+document.getElementById('panel-close')?.addEventListener('click', hideFeaturePanel);
+
+function enableOrbInteraction() {
+  const canvas = document.getElementById('world-canvas');
+  if (!canvas || !scene3d?.orbs) return;
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  const label = document.getElementById('feature-label');
+  const labelText = label?.querySelector('.label-text');
+  const featureNames = ['lens', 'care', 'earth', 'research', 'community', 'story'];
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (!experienceReady || !scene3d?.orbs) return;
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, scene3d.camera);
+    const hits = raycaster.intersectObjects(scene3d.orbs);
+    if (hits.length > 0) {
+      const idx = scene3d.orbs.indexOf(hits[0].object);
+      if (idx >= 0) {
+        const name = featureNames[idx];
+        const content = featureContent[name];
+        if (labelText && content) labelText.textContent = content.title;
+        label.style.left = `${e.clientX + 20}px`;
+        label.style.top = `${e.clientY - 10}px`;
+        label.classList.add('visible');
+      }
+    } else {
+      label.classList.remove('visible');
+    }
+  });
+
+  canvas.addEventListener('click', (e) => {
+    if (!experienceReady || !scene3d?.orbs) return;
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, scene3d.camera);
+    const hits = raycaster.intersectObjects(scene3d.orbs);
+    if (hits.length > 0) {
+      const idx = scene3d.orbs.indexOf(hits[0].object);
+      if (idx >= 0) {
+        const name = featureNames[idx];
+        if (activeFeature === name) {
+          hideFeaturePanel();
+        } else {
+          showFeaturePanel(name, e.clientX, e.clientY);
+        }
+      }
+    }
+  });
+}
+
+document.querySelectorAll('.pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    const view = pill.dataset.view;
+    if (view) {
+      try { sound.playWaterDrop(); } catch(e) {}
+    }
+  });
+});
+
+document.getElementById('btn-sound')?.addEventListener('click', function() {
+  this.classList.toggle('muted');
+  if (this.classList.contains('muted')) {
+    sound.stopAmbient();
+  } else {
+    startAmbient();
+  }
+});
+
+let ambientInterval = null;
 
 function startAmbient() {
   const setAmbient = () => {
@@ -117,127 +326,6 @@ function startAmbient() {
   setAmbient();
   ambientInterval = setInterval(setAmbient, 600000);
 }
-
-function showMovementHint() {
-  const hint = document.getElementById('movement-hint');
-  if (!hint) return;
-  setTimeout(() => hint.classList.add('visible'), 1500);
-  const fade = () => {
-    hint.classList.add('fade-out');
-    setTimeout(() => hint.classList.remove('visible'), 1500);
-  };
-  window.addEventListener('keydown', fade, { once: true });
-  document.getElementById('world-canvas')?.addEventListener('mousedown', fade, { once: true });
-  setTimeout(fade, 12000);
-}
-
-function enableTreeInteraction() {
-  const canvas = document.getElementById('world-canvas');
-  if (!canvas || !scene3d?.orbs) return;
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-
-  canvas.addEventListener('click', (e) => {
-    if (!experienceReady || !scene3d?.orbs) return;
-    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, scene3d.camera);
-    const hits = raycaster.intersectObjects(scene3d.orbs);
-    if (hits.length > 0) {
-      const idx = scene3d.orbs.indexOf(hits[0].object);
-      if (idx >= 0) {
-        sound.playWaterDrop();
-        openFeature(idx, e.clientX, e.clientY);
-      }
-    }
-  });
-}
-
-const featureContent = {
-  lens: {
-    title: 'BioEcho Lens', icon: 'lens',
-    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
-      <p style="opacity:0.8">See the invisible. The Lens reveals the hidden signals that plants and ecosystems emit — electrical pulses, chemical signatures, stress patterns.</p>
-      <p style="opacity:0.5;font-size:12px;margin-top:12px">Connect a device to activate sensing.</p>
-    </div>`
-  },
-  care: {
-    title: 'Living Care', icon: 'sprout',
-    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
-      <p style="opacity:0.8">Your ecosystem's health timeline. Track vitality, detect early warning signs, and nurture what matters.</p>
-      <p style="opacity:0.5;font-size:12px;margin-top:12px">Each organism you monitor appears here as it grows.</p>
-    </div>`
-  },
-  earth: {
-    title: 'Living Earth', icon: 'seed',
-    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
-      <p style="opacity:0.8">Every observation connects to a global living map. See what others are discovering — from old-growth forests to your own backyard.</p>
-      <p style="opacity:0.5;font-size:12px;margin-top:12px">Community observations, biodiversity hotspots, and local discoveries.</p>
-    </div>`
-  },
-  research: {
-    title: 'Living Research', icon: 'rings',
-    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
-      <p style="opacity:0.8">Explore the knowledge graph of life — species relationships, ecological networks, and evolutionary lineages interconnected like a vast root system.</p>
-      <p style="opacity:0.5;font-size:12px;margin-top:12px">Powered by citizen science data and peer-reviewed research.</p>
-    </div>`
-  },
-  community: {
-    title: 'Living Community', icon: 'flock',
-    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
-      <p style="opacity:0.8">You're not alone. Join a flock of citizen scientists, naturalists, and caretakers working together to understand and protect the living world.</p>
-      <p style="opacity:0.5;font-size:12px;margin-top:12px">Share observations, verify findings, and contribute to real research.</p>
-    </div>`
-  },
-  story: {
-    title: 'Living Story', icon: 'vine',
-    body: `<div style="color:#F5F0E8;font-family:Inter,sans-serif;font-weight:300;font-size:14px;line-height:1.6">
-      <p style="opacity:0.8">Travel through time. See the deep history of your ecosystem — from ancient forests to restoration stories — and peer into what's coming next.</p>
-      <p style="opacity:0.5;font-size:12px;margin-top:12px">Your personal ecosystem timeline, from past to future.</p>
-    </div>`
-  }
-};
-
-function openFeature(index, originX, originY) {
-  const names = ['lens', 'care', 'earth', 'research', 'community', 'story'];
-  const name = names[index] || 'home';
-  showView(name, originX, originY);
-}
-
-function showView(name, ox, oy) {
-  activeView = name;
-  const overlay = document.getElementById('content-overlay');
-  const card = overlay?.querySelector('.content-card');
-  const title = document.getElementById('overlay-title');
-  const body = document.getElementById('overlay-body');
-  const closeBtn = document.getElementById('overlay-close');
-
-  if (name === 'home') {
-    if (activeUnfurl) { activeUnfurl.close(); activeUnfurl = null; }
-    overlay?.classList.remove('visible');
-    return;
-  }
-
-  const content = featureContent[name] || featureContent.lens;
-  if (title) title.innerHTML = `<span style="display:flex;align-items:center;gap:8px">${bioechoIcon(content.icon, 18)}<span style="font-size:14px;font-weight:400;color:#F5F0E8;font-family:Inter,sans-serif">${content.title}</span></span>`;
-  if (closeBtn) closeBtn.innerHTML = bioechoIcon('close', 14);
-  if (body) body.innerHTML = content.body;
-  overlay?.classList.add('visible');
-
-  if (activeUnfurl) activeUnfurl.close();
-  const vineCanvas = document.getElementById('vine-canvas');
-  if (vineCanvas) { vineCanvas.width = window.innerWidth; vineCanvas.height = window.innerHeight; }
-  if (card) {
-    activeUnfurl = new PanelUnfurl(card, ox || window.innerWidth / 2, oy || window.innerHeight * 0.72);
-    activeUnfurl.open();
-  }
-}
-
-document.getElementById('overlay-close')?.addEventListener('click', () => {
-  if (activeUnfurl) { activeUnfurl.close(); activeUnfurl = null; }
-  document.getElementById('content-overlay')?.classList.remove('visible');
-  try { sound.playLeafRustle(); } catch(e) {}
-});
 
 let lastGustSound = 0;
 let lastFootstep = 0;
