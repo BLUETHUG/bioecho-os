@@ -1,8 +1,6 @@
-// BioEcho OS v5 — 360° Immersive Living World Experience
+// BioEcho OS v5 — 3D Immersive Living World
 
-let world = null;
-let tree = null;
-let camera = null;
+let scene3d = null;
 const sound = new SoundEngine();
 let experienceReady = false;
 let lastFrame = 0;
@@ -13,20 +11,18 @@ let activeUnfurl = null;
 function initLanding() {
   BarkPanel.init();
 
-  world = new WorldV4(document.getElementById('world-canvas'));
-  tree = new LivingTree(world);
-  camera = new Camera(document.getElementById('world-canvas'));
-  const landing = document.getElementById('landing');
-  const seedCanvas = document.getElementById('seed-canvas');
   const worldCanvas = document.getElementById('world-canvas');
-  const uiLayer = document.getElementById('ui-layer');
-
   worldCanvas.width = window.innerWidth;
   worldCanvas.height = window.innerHeight;
 
+  scene3d = new BioEchoScene();
+  const landing = document.getElementById('landing');
+  const seedCanvas = document.getElementById('seed-canvas');
+  const uiLayer = document.getElementById('ui-layer');
+
   const seq = new LandingSequence(seedCanvas, worldCanvas);
 
-landing.addEventListener('click', async () => {
+  landing.addEventListener('click', async () => {
     try {
       landing.style.pointerEvents = 'none';
 
@@ -34,29 +30,27 @@ landing.addEventListener('click', async () => {
       await sound.resume();
       sound.playPulse();
 
-      world.initialize();
-
       seq.start(() => {
         landing.classList.add('hidden');
         experienceReady = true;
         uiLayer.style.display = 'block';
 
-        tree.initialize();
+        scene3d.init(worldCanvas);
+        scene3d.setTimeOfDay(LDL.currentTime || 'noon');
         sound.playGrowth();
         requestAnimationFrame(renderLoop);
 
-      setTimeout(() => {
-        tree._revealFeatures();
-        enableTreeInteraction();
-        startAmbient();
-        showMovementHint();
-      }, 2000);
-    });
-  } catch (e) {
-    console.error('Click handler error:', e);
-    landing.style.pointerEvents = 'auto';
-  }
-}, { once: true });
+        setTimeout(() => {
+          enableTreeInteraction();
+          startAmbient();
+          showMovementHint();
+        }, 2000);
+      });
+    } catch (e) {
+      console.error('Click handler error:', e);
+      landing.style.pointerEvents = 'auto';
+    }
+  }, { once: true });
 
   const seedCtx = seedCanvas.getContext('2d');
   const sw = seedCanvas.width, sh = seedCanvas.height;
@@ -71,7 +65,6 @@ landing.addEventListener('click', async () => {
     const p = Math.sin(pt * 1.5) * 0.15 + 1;
     const b = Math.sin(pt * 0.8) * 0.08 + 1;
 
-    // Strong outer glow — very visible
     const g = seedCtx.createRadialGradient(cx, cy, 0, cx, cy, 100 * s * b);
     g.addColorStop(0, 'rgba(245,240,232,0.25)');
     g.addColorStop(0.4, 'rgba(111,163,111,0.15)');
@@ -79,15 +72,12 @@ landing.addEventListener('click', async () => {
     seedCtx.fillStyle = g;
     seedCtx.beginPath(); seedCtx.arc(cx, cy, 100 * s * b, 0, 6.28); seedCtx.fill();
 
-    // Bright seed body — cream color, large
     seedCtx.fillStyle = '#F5F0E8';
     seedCtx.beginPath(); seedCtx.ellipse(cx, cy, 28 * s * p, 42 * s * p, 0, 0, 6.28); seedCtx.fill();
 
-    // Inner highlight
     seedCtx.fillStyle = 'rgba(255,255,255,0.4)';
     seedCtx.beginPath(); seedCtx.ellipse(cx - 4 * s, cy - 6 * s, 10 * s * p, 16 * s * p, -0.2, 0, 6.28); seedCtx.fill();
 
-    // Prominent sprout
     seedCtx.strokeStyle = '#6FA36F';
     seedCtx.lineWidth = 3 * s;
     seedCtx.beginPath();
@@ -95,7 +85,6 @@ landing.addEventListener('click', async () => {
     seedCtx.quadraticCurveTo(cx + 6 * s, cy - 60 * s * p, cx, cy - 80 * s * p);
     seedCtx.stroke();
 
-    // Clear leaf
     seedCtx.fillStyle = 'rgba(111,163,111,0.6)';
     seedCtx.beginPath(); seedCtx.ellipse(cx + 6 * s, cy - 70 * s * p, 8 * s * p, 4 * s * p, 0.3, 0, 6.28); seedCtx.fill();
 
@@ -131,22 +120,23 @@ function showMovementHint() {
 }
 
 function enableTreeInteraction() {
-  const worldCanvas = document.getElementById('world-canvas');
+  const canvas = document.getElementById('world-canvas');
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
 
-  worldCanvas.addEventListener('click', (e) => {
-    if (!experienceReady) return;
-    const idx = tree.hitTest(e.clientX, e.clientY);
-    if (idx >= 0) {
-      sound.playWaterDrop();
-      openFeature(idx, e.clientX, e.clientY);
+  canvas.addEventListener('click', (e) => {
+    if (!experienceReady || !scene3d?.orbs) return;
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, scene3d.camera);
+    const hits = raycaster.intersectObjects(scene3d.orbs);
+    if (hits.length > 0) {
+      const idx = scene3d.orbs.indexOf(hits[0].object);
+      if (idx >= 0) {
+        sound.playWaterDrop();
+        openFeature(idx, e.clientX, e.clientY);
+      }
     }
-  });
-
-  worldCanvas.addEventListener('mousemove', (e) => {
-    if (!experienceReady) return;
-    const idx = tree.hitTest(e.clientX, e.clientY);
-    tree.setHover(idx);
-    worldCanvas.style.cursor = idx >= 0 ? 'pointer' : 'default';
   });
 }
 
@@ -243,28 +233,17 @@ function renderLoop(timestamp) {
     const dt = Math.min((timestamp - lastFrame) / 1000, 0.05);
     lastFrame = timestamp;
 
-    camera.update(dt);
-
-    world._generateChunks(
-      Math.floor(camera.x / world.sectorSize),
-      Math.floor(camera.z / world.sectorSize)
-    );
-
     LDL.currentHour = new Date().getHours() + new Date().getMinutes() / 60;
     LDL.currentTime = LDL.getTimeOfDay(LDL.currentHour);
 
-    world.update(dt, LDL.currentTime);
-    world.render(LDL.currentTime, LDL.currentSeason || 'spring', camera);
+    scene3d.update(dt);
+    scene3d.render();
 
-    const ctx = document.getElementById('world-canvas').getContext('2d');
-    tree.update(dt);
-    tree.render(ctx, LDL.currentTime, camera);
-
-    if (world.wind.gust > 0.6 && timestamp - lastGustSound > 4000) {
+    if (scene3d.wind.strength > 0.6 && timestamp - lastGustSound > 4000) {
       sound.playWindGust();
       lastGustSound = timestamp;
     }
-    if (camera.isMoving && timestamp - lastFootstep > 350) {
+    if (scene3d.isMoving && timestamp - lastFootstep > 350) {
       sound.playFootstep();
       lastFootstep = timestamp;
     }
