@@ -1,18 +1,10 @@
-const APP = {
-    currentSection: 'arrival',
-    sections: ['arrival', 'seed', 'forest', 'lens', 'animals', 'earth', 'lab', 'legacy'],
-    isTransitioning: false,
-};
+const NAV_SECTIONS = ['hero', 'mission', 'forest', 'lens', 'companions', 'earth', 'lab', 'legacy'];
 
 function initApp() {
-    createArrivalParticles();
-    setupNavigation();
+    buildFloatNav();
+    createHeroParticles();
+    setupRevealObserver();
     setupScrollSpy();
-    updateBodyTheme();
-
-    setTimeout(() => {
-        document.getElementById('arrivalEnter')?.classList.add('visible');
-    }, 1000);
 
     initForest();
     initLens();
@@ -22,80 +14,50 @@ function initApp() {
     initLegacy();
 }
 
-function createArrivalParticles() {
-    const container = document.querySelector('.section-arrival');
-    if (!container) return;
-    for (let i = 0; i < 40; i++) {
-        const p = document.createElement('div');
-        p.className = 'arrival-particle';
-        p.style.left = `${Math.random() * 100}%`;
-        p.style.animationDuration = `${8 + Math.random() * 12}s`;
-        p.style.animationDelay = `${Math.random() * 10}s`;
-        p.style.width = `${2 + Math.random() * 3}px`;
-        p.style.height = p.style.width;
-        p.style.background = [ 'var(--fern)', 'var(--river)', 'var(--sunset)', 'var(--cream)' ][Math.floor(Math.random() * 4)];
-        container.appendChild(p);
-    }
-}
+function buildFloatNav() {
+    const nav = document.getElementById('floatNav');
+    if (!nav) return;
+    const labels = { hero: '00', mission: '01', forest: '02', lens: '03', companions: '04', earth: '05', lab: '06', legacy: '07' };
+    nav.innerHTML = NAV_SECTIONS.map(id =>
+        `<a href="#${id}" data-nav="${id}" class="${id === 'hero' ? 'active' : ''}"><span class="label">${labels[id] || id}</span></a>`
+    ).join('');
 
-function setupNavigation() {
-    document.querySelectorAll('[data-nav]').forEach(el => {
-        el.addEventListener('click', (e) => {
-            e.preventDefault();
-            const target = el.dataset.nav;
-            navigateTo(target);
-        });
-    });
-
-    document.addEventListener('click', (e) => {
-        const link = e.target.closest('a[href^="#"]');
+    nav.addEventListener('click', (e) => {
+        const link = e.target.closest('a[data-nav]');
         if (link) {
             e.preventDefault();
-            const target = link.getAttribute('href').slice(1);
-            if (target && document.getElementById(target)) {
-                navigateTo(target);
-            }
+            const id = link.dataset.nav;
+            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
         }
     });
 }
 
-function navigateTo(sectionId) {
-    if (APP.isTransitioning || APP.currentSection === sectionId) return;
-    APP.isTransitioning = true;
-
-    const target = document.getElementById(sectionId);
-    if (!target) { APP.isTransitioning = false; return; }
-
-    APP.currentSection = sectionId;
-    updateActiveNav(sectionId);
-    updateBodyTheme();
-
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    setTimeout(() => {
-        APP.isTransitioning = false;
-    }, 800);
+function createHeroParticles() {
+    const container = document.getElementById('heroBg');
+    if (!container) return;
+    for (let i = 0; i < 50; i++) {
+        const p = document.createElement('div');
+        p.className = 'hero-particle';
+        p.style.left = `${Math.random() * 100}%`;
+        p.style.animationDuration = `${10 + Math.random() * 15}s`;
+        p.style.animationDelay = `${Math.random() * 12}s`;
+        p.style.width = `${1.5 + Math.random() * 2.5}px`;
+        p.style.height = p.style.width;
+        p.style.opacity = `${0.2 + Math.random() * 0.3}`;
+        container.appendChild(p);
+    }
 }
 
-function updateActiveNav(sectionId) {
-    document.querySelectorAll('[data-nav]').forEach(el => {
-        el.classList.toggle('active', el.dataset.nav === sectionId);
-    });
-}
+function setupRevealObserver() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-function updateBodyTheme() {
-    const themes = {
-        arrival: 'dark',
-        seed: 'forest-dark',
-        forest: 'forest',
-        lens: 'dark',
-        animals: 'moss',
-        earth: 'forest-dark',
-        lab: 'dark-light',
-        legacy: 'bark',
-    };
-    const theme = themes[APP.currentSection] || 'dark';
-    document.body.dataset.theme = theme;
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 }
 
 function setupScrollSpy() {
@@ -103,14 +65,14 @@ function setupScrollSpy() {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const id = entry.target.id;
-                APP.currentSection = id;
-                updateActiveNav(id);
-                updateBodyTheme();
+                document.querySelectorAll('[data-nav]').forEach(a => {
+                    a.classList.toggle('active', a.dataset.nav === id);
+                });
             }
         });
     }, { threshold: 0.3 });
 
-    APP.sections.forEach(id => {
+    NAV_SECTIONS.forEach(id => {
         const el = document.getElementById(id);
         if (el) observer.observe(el);
     });

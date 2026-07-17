@@ -1,546 +1,168 @@
-/* ============================================
-   BioEcho Component System
-   Buttons · Cards · Inputs · Nav · Charts
-   ============================================ */
-
 /* ---------- BUTTONS ---------- */
-.bio-btn {
+.btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.75rem;
+    gap: 0.6rem;
+    padding: 0.75rem 1.5rem;
     border: none;
     border-radius: var(--radius-full);
-    font-family: var(--font-body);
-    font-weight: 500;
-    font-size: 0.9rem;
+    font-family: var(--font);
+    font-weight: 400;
+    font-size: 0.85rem;
     cursor: pointer;
-    transition: var(--transition-base);
+    transition: all var(--duration-fast) var(--ease-out);
     position: relative;
-    overflow: hidden;
-}
-
-.bio-btn:focus-visible { outline: 2px solid var(--fern); outline-offset: 2px; }
-
-.bio-btn-seed {
-    background: var(--forest);
-    color: var(--cream);
-    box-shadow: 0 2px 10px rgba(15,61,46,0.3);
-}
-
-.bio-btn-seed:hover {
-    background: var(--forest-light);
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 6px 20px rgba(15,61,46,0.4);
-}
-
-.bio-btn-seed::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.15), transparent 60%);
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.bio-btn-seed:hover::after { opacity: 1; }
-
-.bio-btn-leaf {
     background: transparent;
-    color: var(--fern);
-    border: 1px solid var(--fern);
+    color: var(--text);
 }
 
-.bio-btn-leaf:hover {
-    background: rgba(111, 163, 111, 0.1);
-    border-color: var(--fern-light);
-    color: var(--fern-light);
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.btn-primary {
+    background: var(--text);
+    color: var(--bg);
+}
+
+.btn-primary:hover {
+    background: var(--accent);
+    color: var(--bg);
     transform: translateY(-1px);
 }
 
-.bio-btn-stone {
-    background: var(--bark);
-    color: var(--cream);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 4px 0 var(--forest-dark);
+.btn-ghost {
+    background: var(--frost);
+    border: 1px solid var(--frost-border);
+    color: var(--text);
+}
+
+.btn-ghost:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--border-light);
+}
+
+.btn-outline {
+    border: 1px solid var(--border-light);
+    color: var(--text);
+}
+
+.btn-outline:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(111,163,111,0.06);
+}
+
+.btn-ice {
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    color: var(--text);
+}
+
+.btn-ice:hover {
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+    border-color: var(--accent);
     transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
 }
 
-.bio-btn-stone:hover {
-    transform: translateY(0);
-    box-shadow: 0 1px 0 var(--forest-dark);
-}
-
-.bio-btn-stone:active {
-    transform: translateY(0);
-    box-shadow: none;
-}
-
-.bio-btn-water {
-    background: linear-gradient(135deg, var(--river), var(--river-dark));
-    color: #fff;
-    border-radius: var(--radius-md);
-    box-shadow: 0 4px 15px rgba(95, 168, 211, 0.3);
-}
-
-.bio-btn-water:hover {
-    box-shadow: 0 6px 25px rgba(95, 168, 211, 0.5);
-    transform: translateY(-2px);
-}
-
-.bio-btn-water:active {
-    transform: scale(0.97);
-}
-
-.bio-btn-glow {
-    background: var(--fern);
-    color: var(--dark);
-    box-shadow: 0 0 20px rgba(111, 163, 111, 0.3), 0 4px 15px rgba(111, 163, 111, 0.2);
-    animation: glow 2s ease-in-out infinite;
-}
-
-.bio-btn-glow:hover {
-    box-shadow: 0 0 30px rgba(111, 163, 111, 0.5), 0 6px 20px rgba(111, 163, 111, 0.3);
-    transform: translateY(-2px);
-}
-
-.bio-btn-sm { padding: 0.5rem 1.25rem; font-size: 0.8rem; }
-.bio-btn-lg { padding: 1rem 2.5rem; font-size: 1.05rem; }
-.bio-btn-icon { width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 50%; }
+.btn-sm { padding: 0.5rem 1rem; font-size: 0.75rem; }
+.btn-lg { padding: 1rem 2rem; font-size: 0.95rem; }
+.btn-icon { width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%; }
 
 /* ---------- CARDS ---------- */
-.bio-card {
+.card {
     padding: 1.5rem;
     border-radius: var(--radius-lg);
-    transition: var(--transition-base);
+    background: var(--frost);
+    border: 1px solid var(--frost-border);
+    transition: all var(--duration-base) var(--ease-out);
     position: relative;
     overflow: hidden;
 }
 
-.bio-card:hover { transform: translateY(-4px); }
-
-.bio-card-bark {
-    background: linear-gradient(135deg, var(--bark), var(--soil));
-    border: 1px solid rgba(110, 88, 67, 0.3);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-}
-
-.bio-card-bark::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px);
-    pointer-events: none;
-}
-
-.bio-card-dew {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(1.2);
-    -webkit-backdrop-filter: blur(20px) saturate(1.2);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-}
-
-.bio-card-dew::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.05), transparent 50%);
-    pointer-events: none;
-}
-
-.bio-card-leaf {
-    background: linear-gradient(135deg, var(--forest), var(--moss));
-    border: 1px solid rgba(62, 107, 72, 0.3);
-    box-shadow: 0 4px 20px rgba(15,61,46,0.3);
-}
-
-.bio-card-leaf:hover {
-    box-shadow: 0 8px 30px rgba(15,61,46,0.4);
-}
-
-.bio-card-river {
-    background: linear-gradient(135deg, var(--river-dark), var(--river));
-    border: 1px solid rgba(95, 168, 211, 0.3);
-    box-shadow: 0 4px 20px rgba(58, 136, 179, 0.3);
-}
-
-.bio-card-river::before {
+.card::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-out);
 }
 
-.bio-card-light {
-    background: var(--cream);
-    color: var(--dark);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
+.card:hover { transform: translateY(-4px); border-color: var(--border-light); }
+.card:hover::before { opacity: 1; }
 
-.bio-card-dark {
-    background: rgba(26, 26, 46, 0.8);
+.card-glass {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(20px);
     border: 1px solid rgba(255,255,255,0.06);
 }
 
-/* ---------- INPUTS ---------- */
-.bio-input-group { margin-bottom: 1.25rem; }
-.bio-input-group label {
-    display: block;
-    font-family: var(--font-mono);
+.card-solid {
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.card-accent {
+    border-color: rgba(111,163,111,0.2);
+    background: linear-gradient(135deg, rgba(111,163,111,0.06), transparent);
+}
+
+.card-accent:hover { border-color: rgba(111,163,111,0.3); }
+
+/* ---------- STAT BLOCK ---------- */
+.stat {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 200;
+    font-family: var(--mono);
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
     font-size: 0.7rem;
+    color: var(--text-tertiary);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(245,240,232,0.5);
-    margin-bottom: 0.5rem;
+    letter-spacing: 0.08em;
+    font-family: var(--mono);
 }
 
-.bio-slider-root {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 6px;
-    background: linear-gradient(90deg, var(--forest), var(--fern));
-    border-radius: 3px;
-    outline: none;
-    cursor: pointer;
-}
-
-.bio-slider-root::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--cream);
-    border: 2px solid var(--fern);
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    transition: var(--transition-fast);
-}
-
-.bio-slider-root::-webkit-slider-thumb:hover {
-    transform: scale(1.15);
-    box-shadow: 0 2px 12px rgba(111, 163, 111, 0.4);
-}
-
-.bio-slider-root::-moz-range-thumb {
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    background: var(--cream);
-    border: 2px solid var(--fern);
-    cursor: pointer;
-}
-
-.bio-toggle-pollen {
-    position: relative;
-    display: inline-block;
-    width: 48px;
-    height: 26px;
-    cursor: pointer;
-}
-
-.bio-toggle-pollen input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.bio-toggle-pollen .track {
-    position: absolute;
-    inset: 0;
-    background: rgba(255,255,255,0.1);
-    border-radius: 13px;
-    transition: var(--transition-base);
-}
-
-.bio-toggle-pollen .dot {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 20px;
-    height: 20px;
-    background: var(--cream);
-    border-radius: 50%;
-    transition: var(--transition-spring);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.bio-toggle-pollen input:checked + .track { background: var(--fern); }
-.bio-toggle-pollen input:checked ~ .dot {
-    transform: translateX(22px);
-    background: var(--sunset);
-}
-
-.bio-progress-vine {
-    height: 8px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
-}
-
-.bio-progress-vine .fill {
-    height: 100%;
-    border-radius: 4px;
-    background: linear-gradient(90deg, var(--forest), var(--fern), var(--fern-light));
-    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-}
-
-.bio-progress-vine .fill::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 8px; height: 8px;
-    background: var(--fern-light);
-    border-radius: 50%;
-    box-shadow: 0 0 10px var(--fern);
-}
-
-.bio-checkbox-bloom {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-.bio-checkbox-bloom input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.bio-checkbox-bloom .box {
-    width: 22px;
-    height: 22px;
-    border: 2px solid rgba(245,240,232,0.3);
-    border-radius: var(--radius-sm);
-    transition: var(--transition-base);
+.stat-row {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.bio-checkbox-bloom .box::after {
-    content: '✦';
-    font-size: 0.7rem;
-    color: var(--cream);
-    opacity: 0;
-    transform: scale(0);
-    transition: var(--transition-spring);
-}
-
-.bio-checkbox-bloom input:checked + .box {
-    background: var(--fern);
-    border-color: var(--fern);
-    box-shadow: 0 0 15px rgba(111, 163, 111, 0.3);
-}
-
-.bio-checkbox-bloom input:checked + .box::after {
-    opacity: 1;
-    transform: scale(1) rotate(180deg);
-}
-
-/* ---------- NAVIGATION ---------- */
-.bio-nav-branch {
-    display: flex;
-    gap: 0.25rem;
+    gap: 2rem;
     flex-wrap: wrap;
 }
 
-.bio-nav-branch a {
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-full);
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: rgba(245,240,232,0.5);
-    transition: var(--transition-base);
-    position: relative;
-}
-
-.bio-nav-branch a:hover,
-.bio-nav-branch a.active {
-    color: var(--fern);
-    background: rgba(111, 163, 111, 0.1);
-}
-
-.bio-nav-branch a.active::after {
-    content: '';
-    position: absolute;
-    bottom: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
-    background: var(--fern);
-    border-radius: 50%;
-}
-
-.bio-nav-compass {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.bio-nav-compass .center {
-    width: 12px;
-    height: 12px;
-    background: var(--fern);
-    border-radius: 50%;
-    box-shadow: 0 0 15px rgba(111,163,111,0.5);
-}
-
-.bio-nav-compass a {
-    position: absolute;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    color: rgba(245,240,232,0.5);
-    transition: var(--transition-base);
-}
-
-.bio-nav-compass a:hover {
-    background: var(--fern);
-    color: var(--dark);
-    border-color: var(--fern);
-    transform: scale(1.15);
-}
-
-/* ---------- CHARTS ---------- */
-.bio-chart {
-    width: 100%;
-    position: relative;
-}
-
-.bio-chart-river {
-    height: 120px;
-    position: relative;
-    overflow: hidden;
-}
-
-.bio-chart-river svg { width: 100%; height: 100%; }
-
-.bio-chart-river .river-fill {
-    fill: none;
-    stroke: var(--river);
-    stroke-width: 2;
-    filter: drop-shadow(0 0 6px rgba(95, 168, 211, 0.4));
-}
-
-.bio-chart-river .river-glow {
-    fill: none;
-    stroke: var(--river-light);
-    stroke-width: 4;
-    opacity: 0.2;
-}
-
-.bio-chart-rings {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.bio-chart-rings .ring {
-    border-radius: 50%;
-    border: 1px solid var(--fern);
-    position: absolute;
-    opacity: 0.3;
-    transition: var(--transition-slow);
-}
-
-.bio-chart-rings .ring:nth-child(1) { width: 80px; height: 80px; }
-.bio-chart-rings .ring:nth-child(2) { width: 120px; height: 120px; }
-.bio-chart-rings .ring:nth-child(3) { width: 160px; height: 160px; }
-.bio-chart-rings .ring:nth-child(4) { width: 200px; height: 200px; }
-
-.bio-chart-rings .ring.active {
-    opacity: 0.8;
-    border-color: var(--fern-light);
-    box-shadow: 0 0 15px rgba(111,163,111,0.2);
-}
-
-.bio-chart-leaf {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
-    gap: 4px;
-}
-
-.bio-chart-leaf .bar {
-    height: 100px;
-    border-radius: 20px 20px 4px 4px;
-    background: var(--moss);
-    align-self: end;
-    transition: var(--transition-base);
-    position: relative;
-    min-width: 8px;
-}
-
-.bio-chart-leaf .bar:hover {
-    background: var(--fern);
-    transform: scaleY(1.05);
-}
-
-.bio-chart-pulse {
-    height: 80px;
-    position: relative;
-    overflow: hidden;
-}
-
-.bio-chart-pulse .pulse-line {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+/* ---------- PROGRESS ---------- */
+.progress {
     height: 2px;
-    background: var(--fern);
+    background: rgba(255,255,255,0.06);
+    border-radius: 1px;
+    overflow: hidden;
+    position: relative;
 }
 
-.bio-chart-pulse .pulse-dot {
-    position: absolute;
-    bottom: -3px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--fern);
-    box-shadow: 0 0 10px var(--fern);
-    animation: pulse-move 3s ease-in-out infinite;
-}
-
-@keyframes pulse-move {
-    0% { left: -10px; opacity: 0; }
-    20% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { left: 100%; opacity: 0; }
+.progress-fill {
+    height: 100%;
+    border-radius: 1px;
+    background: var(--accent);
+    transition: width 1s var(--ease-out);
+    position: relative;
 }
 
 /* ---------- GRID ---------- */
-.bio-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
-.bio-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
-.bio-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
-.bio-grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
 
 @media (max-width: 768px) {
-    .bio-grid-2, .bio-grid-3, .bio-grid-4 { grid-template-columns: 1fr; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .stat-row { gap: 1.5rem; }
 }
