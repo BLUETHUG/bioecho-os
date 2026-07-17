@@ -4,8 +4,6 @@
     <meta charset="utf-8" />
     <title>BioEcho</title>
     <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no, minimal-ui, viewport-fit=cover" name="viewport" />
-    <meta content="bioecho, living ecosystem, virtual companions, nature intelligence" name="keywords" />
-    <meta content="A living digital ecosystem. Virtual companions with purpose. A forest that remembers you." name="description" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🌿</text></svg>">
     <link href="css/base.css" rel="stylesheet" />
 </head>
@@ -13,155 +11,17 @@
 
 <div id="loader">
     <div class="loader-ascii"></div>
-    <div class="loader-status">initializing</div>
 </div>
 
 <div id="app">
-    <div class="ui-corner ui-corner-tl">
-        <div class="ui-label">BioEcho</div>
-    </div>
-    <div class="ui-corner ui-corner-tr">
-        <div class="ui-label" id="sceneLabel">00 &mdash; Arrival</div>
-    </div>
-    <div class="ui-corner ui-corner-bl">
-        <div class="ui-label" id="statusLabel">forest breathing</div>
-    </div>
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
 
     <nav class="ui-nav" id="uiNav"></nav>
 
-    <!-- Scene 0: Arrival -->
-    <div class="scene active" data-scene="0">
-        <div class="scene-inner">
-            <div class="scene-number">BioEcho OS</div>
-            <h1 class="scene-title">
-                Where <span style="color:var(--accent)">Nature</span><br>
-                Meets Intelligence
-            </h1>
-            <p class="scene-sub">A living digital ecosystem. Virtual companions with purpose. A forest that remembers you.</p>
-            <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
-                <button class="btn btn-primary btn-lg" onclick="navigateScene(2)">Explore Forest</button>
-                <button class="btn btn-outline btn-lg" onclick="navigateScene(4)">Meet Companions</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scene 1: Mission -->
-    <div class="scene" data-scene="1">
-        <div class="scene-inner" style="max-width:600px">
-            <div class="scene-label">01 &mdash; Mission</div>
-            <h2 class="scene-title" style="font-weight:300">
-                We believe the digital world<br>
-                should <span style="color:var(--accent)">breathe</span>.
-            </h2>
-            <p class="scene-sub" style="margin-top:1.5rem">
-                BioEcho is an experiment in living interfaces. Ecosystems that grow. Companions that bond. A forest that changes because you were there.
-            </p>
-            <p style="font-size:0.75rem;color:var(--text-tertiary);margin-top:2rem">Not a dashboard. A world.</p>
-        </div>
-    </div>
-
-    <!-- Scene 2: Forest -->
-    <div class="scene" data-scene="2">
-        <div class="scene-inner" style="max-width:600px">
-            <div class="scene-label">02 &mdash; Forest</div>
-            <h2 class="scene-title">The Living Forest</h2>
-            <p class="scene-sub">Five pillars. Breathing in real time.</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;text-align:left">
-                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
-                    <div style="font-size:1.4rem;font-weight:var(--font-weight-light);font-family:var(--font);color:var(--accent)" id="fCanopy">78%</div>
-                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Canopy</div>
-                </div>
-                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
-                    <div style="font-size:1.4rem;font-weight:var(--font-weight-light);font-family:var(--font);color:var(--accent)" id="fBiodiversity">64%</div>
-                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Biodiversity</div>
-                </div>
-                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
-                    <div style="font-size:1.4rem;font-weight:var(--font-weight-light);font-family:var(--font);color:var(--accent)" id="fWater">82%</div>
-                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Water</div>
-                </div>
-                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
-                    <div style="font-size:1.4rem;font-weight:var(--font-weight-light);font-family:var(--font);color:var(--accent)" id="fSoil">71%</div>
-                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Soil</div>
-                </div>
-                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
-                    <div style="font-size:1.4rem;font-weight:var(--font-weight-light);font-family:var(--font);color:var(--accent)" id="fPollinators">59%</div>
-                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Pollinators</div>
-                </div>
-                <div style="padding:0.75rem;background:var(--surface);border-radius:var(--radius-md);border:1px solid var(--border)">
-                    <div style="font-size:0.75rem;font-weight:var(--font-weight-regular)" id="fSeason">summer</div>
-                    <div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.15rem">Season</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scene 3: Lens -->
-    <div class="scene" data-scene="3">
-        <div class="scene-inner" style="max-width:600px">
-            <div class="scene-label">03 &mdash; Lens</div>
-            <h2 class="scene-title">BioEcho Lens</h2>
-            <p class="scene-sub">Every organism has a story.</p>
-            <div id="lensGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem"></div>
-        </div>
-    </div>
-
-    <!-- Scene 4: Companions -->
-    <div class="scene" data-scene="4">
-        <div class="scene-inner" style="max-width:680px">
-            <div class="scene-label">04 &mdash; Companions</div>
-            <h2 class="scene-title">Animal Companions</h2>
-            <p class="scene-sub">Bonds that grow. Stories that unfold.</p>
-            <div style="margin-bottom:1.5rem">
-                <button class="btn btn-primary btn-sm" onclick="addCompanion()">+ New Companion</button>
-            </div>
-            <div id="companionGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;text-align:left"></div>
-        </div>
-    </div>
-
-    <!-- Scene 5: Earth -->
-    <div class="scene" data-scene="5">
-        <div class="scene-inner" style="max-width:600px">
-            <div class="scene-label">05 &mdash; Earth</div>
-            <h2 class="scene-title">Living Earth</h2>
-            <p class="scene-sub">One planet. Connected. Responding.</p>
-            <div style="display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem">
-                <div><div style="font-size:1.3rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="eTrees">1,247</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Trees</div></div>
-                <div><div style="font-size:1.3rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="eMissions">89</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Missions</div></div>
-                <div><div style="font-size:1.3rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="eCitizens">342</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Citizens</div></div>
-                <div><div style="font-size:1.3rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="eCarbon">45.6</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Carbon (t)</div></div>
-            </div>
-            <div id="missionGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;text-align:left"></div>
-        </div>
-    </div>
-
-    <!-- Scene 6: Lab -->
-    <div class="scene" data-scene="6">
-        <div class="scene-inner" style="max-width:600px">
-            <div class="scene-label">06 &mdash; Lab</div>
-            <h2 class="scene-title">Research Lab</h2>
-            <p class="scene-sub">Science. Data. Transparency.</p>
-            <div style="height:80px;border-radius:var(--radius-md);background:rgba(0,0,0,0.05);border:1px solid var(--border);overflow:hidden;margin-bottom:1rem">
-                <canvas id="sigCanvas"></canvas>
-            </div>
-            <div id="experimentGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;text-align:left"></div>
-        </div>
-    </div>
-
-    <!-- Scene 7: Legacy -->
-    <div class="scene" data-scene="7">
-        <div class="scene-inner" style="max-width:560px">
-            <div class="scene-label">07 &mdash; Legacy</div>
-            <h2 class="scene-title">Our Story</h2>
-            <p class="scene-sub">Still being written.</p>
-            <div id="legacyList" style="text-align:left"></div>
-            <div style="display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-top:2rem">
-                <div><div style="font-size:1.1rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="lUsers">2,847</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Users</div></div>
-                <div><div style="font-size:1.1rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="lCompanions">4,521</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Companions</div></div>
-                <div><div style="font-size:1.1rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="lTrees">1,247</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Trees</div></div>
-                <div><div style="font-size:1.1rem;font-family:var(--font);font-weight:var(--font-weight-light)" id="lMemories">18,932</div><div style="font-size:0.55rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">Memories</div></div>
-            </div>
-        </div>
-    </div>
+    <canvas id="mainCanvas"></canvas>
 </div>
 
 <script src="js/app.js"></script>
