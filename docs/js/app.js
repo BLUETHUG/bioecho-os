@@ -38,6 +38,10 @@ function initLanding() {
         scene3d.init(worldCanvas);
         scene3d.setTimeOfDay(LDL.currentTime || 'noon');
         sound.playGrowth();
+
+        const loading = document.getElementById('loading-screen');
+        if (loading) loading.classList.add('hidden');
+
         requestAnimationFrame(renderLoop);
 
         setTimeout(() => {

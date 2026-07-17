@@ -28,6 +28,50 @@ html, body {
   cursor: default;
 }
 
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0A1A12;
+  transition: opacity 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+#loading-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.loading-ring {
+  width: 48px;
+  height: 48px;
+  border: 2px solid rgba(111,163,111,0.15);
+  border-top-color: rgba(111,163,111,0.6);
+  border-radius: 50%;
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 11px;
+  font-weight: 300;
+  color: rgba(245,240,232,0.35);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
 #world-canvas {
   position: fixed;
   inset: 0;
