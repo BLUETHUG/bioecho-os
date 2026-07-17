@@ -153,6 +153,8 @@ class Camera {
 
       this.headBobPhase += dt * 8;
       this.headBob = Math.sin(this.headBobPhase) * 0.03;
+    } else {
+      this.headBob *= 0.9;
     }
 
     this.velocity.x *= this.friction;
@@ -165,7 +167,7 @@ class Camera {
     this.pitch += (this.targetPitch - this.pitch) * this.smoothing;
 
     this.offsetX = Math.sin(this.yaw) * 100;
-    this.offsetY = this.pitch * 50;
+    this.offsetY = this.pitch * 50 + this.headBob;
   }
 
   getParallax(depth) {
