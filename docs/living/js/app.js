@@ -170,7 +170,8 @@ for (let i = 0; i < 100; i++) SYS.particles.push(new Particle(Math.random() * W,
 
 // Init verlet nodes (chain of 8)
 for (let i = 0; i < 8; i++) {
-  SYS.nodes.push({ x: 0, y: 0, px: 0, py: 0, pinned: i === 0 });
+  const x = (i - 3.5) * 70;
+  SYS.nodes.push({ x, y: 0, px: x, py: 0, pinned: i === 0, vx: 0, vy: 0 });
 }
 
 // Init reaction-diffusion
@@ -245,7 +246,7 @@ function updateWorld(dt) {
   W$.energy = 0.3 + (W$.temp * W$.light) * 0.5 + Math.sin(W$.time * 0.1) * 0.05;
   W$.entropy = 0.2 + (1 - W$.humidity) * 0.3 + Math.abs(n(W$.time * 0.02, 0)) * 0.2;
   W$.growth = W$.energy * (1 - W$.entropy * 0.3);
-  W$.accentPulse = Math.max(0, Math.sin(W$.pulse * Math.PI) * (0.05 + W$.energy * 0.12));
+  W$.accentPulse = Math.max(0, Math.sin(W$.pulse * Math.PI) * (0.12 + W$.energy * 0.2));
 
   // Color dynamics: HSL drift
   const moodH = { calm: 44, alert: 10, learning: 200, exploring: 120, sleeping: 260, synchronizing: 300 }[W$.mood] || 44;
@@ -638,8 +639,14 @@ function renderPulseShape(ctx, alpha) {
     const py = cy + Math.sin(a) * wobble;
     i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
   }
-  ctx.strokeStyle = `rgba(45,107,79,${0.15 + W$.accentPulse * 0.35})`;
-  ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.strokeStyle = `rgba(45,107,79,${0.2 + W$.accentPulse * 0.5})`;
+  ctx.lineWidth = 1.5 + W$.accentPulse * 1.5; ctx.stroke();
+
+  // Center dot
+  const dotR = 2 + W$.accentPulse * 3;
+  ctx.beginPath(); ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(45,107,79,${0.2 + W$.accentPulse * 0.4})`;
+  ctx.fill();
 
   ctx.restore();
 }
@@ -666,8 +673,8 @@ function renderWaves(ctx, alpha) {
         n(x * 0.01, l * 0.5 + W$.time * 0.02) * 7;
       x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = `rgba(26,26,26,${0.02 + l * 0.008 + W$.accentPulse * 0.02})`;
-    ctx.lineWidth = 1; ctx.stroke();
+    ctx.strokeStyle = `rgba(26,26,26,${0.03 + l * 0.012 + W$.accentPulse * 0.04})`;
+    ctx.lineWidth = 0.8 + W$.accentPulse * 0.5; ctx.stroke();
   }
   ctx.restore();
 }
@@ -708,13 +715,13 @@ function renderBars(ctx, alpha) {
       if (d < 300) sway += (1 - d / 300) * Math.sign(dx) * 8 * cursor.influence;
     }
 
-    ctx.fillStyle = `rgba(26,26,26,${0.04 + v * 0.08 + W$.accentPulse * 0.03})`;
+    ctx.fillStyle = `rgba(26,26,26,${0.06 + v * 0.12 + W$.accentPulse * 0.06})`;
     ctx.beginPath();
     ctx.roundRect(x + sway, y, b.w, bh, 2);
     ctx.fill();
 
-    if (v > 0.4) {
-      ctx.fillStyle = `rgba(45,107,79,${0.1 + v * 0.15 + W$.accentPulse * 0.1})`;
+    if (v > 0.3) {
+      ctx.fillStyle = `rgba(45,107,79,${0.15 + v * 0.2 + W$.accentPulse * 0.2})`;
       ctx.beginPath();
       ctx.roundRect(x + sway, baseY - bh * 0.25, b.w, bh * 0.25, 2);
       ctx.fill();
@@ -774,12 +781,12 @@ function renderGrid(ctx, alpha) {
         if (d < 200) { const f = (1 - d / 200) * cursor.influence; distortX += dx * f * 0.05; distortY += dy * f * 0.05; }
       }
 
-      ctx.fillStyle = `rgba(26,26,26,${0.03 + pVal * 0.05})`;
+      ctx.fillStyle = `rgba(26,26,26,${0.04 + pVal * 0.08})`;
       ctx.beginPath(); ctx.roundRect(x + distortX, y + distortY, cw, ch, 3); ctx.fill();
-      ctx.strokeStyle = `rgba(26,26,26,${0.04 + pVal * 0.06 + W$.accentPulse * 0.02})`;
-      ctx.lineWidth = 0.5; ctx.stroke();
-      if (pVal > 0.4) {
-        ctx.fillStyle = `rgba(45,107,79,${pVal * 0.1})`;
+      ctx.strokeStyle = `rgba(26,26,26,${0.05 + pVal * 0.08 + W$.accentPulse * 0.04})`;
+      ctx.lineWidth = 0.5 + W$.accentPulse * 0.5; ctx.stroke();
+      if (pVal > 0.35) {
+        ctx.fillStyle = `rgba(45,107,79,${pVal * 0.15})`;
         ctx.beginPath(); ctx.roundRect(x + 3 + distortX, y + 3 + distortY, cw - 6, ch - 6, 2); ctx.fill();
       }
     }
@@ -796,15 +803,15 @@ function renderRD(ctx, alpha) {
   const cellW = W / rd.cols, cellH = H / rd.rows;
 
   ctx.save();
-  ctx.globalAlpha = alpha * 0.6;
+  ctx.globalAlpha = alpha * 0.8;
 
   for (let y = 0; y < rd.rows; y++) {
     for (let x = 0; x < rd.cols; x++) {
       const v = rd.grid[y * rd.cols + x].v;
       if (v < 0.05) continue;
-      ctx.fillStyle = `rgba(45,107,79,${v * 0.25})`;
+      ctx.fillStyle = `rgba(45,107,79,${v * 0.35})`;
       ctx.fillRect(x * cellW, y * cellH, cellW + 1, cellH + 1);
-      ctx.fillStyle = `rgba(26,26,26,${v * 0.06})`;
+      ctx.fillStyle = `rgba(26,26,26,${v * 0.1})`;
       ctx.fillRect(x * cellW, y * cellH, cellW + 1, cellH + 1);
     }
   }
@@ -974,9 +981,9 @@ function renderParticleWeb(ctx, alpha) {
     const dx = a.x - b.x, dy = a.y - b.y;
     const d = dx * dx + dy * dy;
     if (d < 25000 && d > 100) {
-      const alpha2 = (1 - d / 25000) * 0.4;
+      const alpha2 = (1 - d / 25000) * 0.6;
       ctx.strokeStyle = `rgba(45,107,79,${alpha2})`;
-      ctx.lineWidth = 0.3;
+      ctx.lineWidth = 0.5;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
     }
   }
@@ -1080,15 +1087,21 @@ function renderRipples(ctx) {
   for (const r of W$.ripples) {
     ctx.beginPath();
     ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(26,26,26,${r.s * 0.04})`;
-    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = `rgba(26,26,26,${r.s * 0.08})`;
+    ctx.lineWidth = 0.8;
     ctx.stroke();
 
     ctx.beginPath();
     ctx.arc(r.x, r.y, r.r + 1, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(45,107,79,${r.s * 0.06})`;
-    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = `rgba(45,107,79,${r.s * 0.12})`;
+    ctx.lineWidth = 1;
     ctx.stroke();
+
+    // Inner fill
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r * 0.6, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(45,107,79,${r.s * 0.02})`;
+    ctx.fill();
   }
 }
 
@@ -1105,7 +1118,7 @@ function applyVignette(ctx) {
 
 function applyBloom(ctx, intensity) {
   if (intensity < 0.01) return;
-  ctx.fillStyle = `rgba(45,107,79,${intensity * 0.04})`;
+  ctx.fillStyle = `rgba(45,107,79,${intensity * 0.08})`;
   ctx.fillRect(0, 0, W, H);
 }
 
