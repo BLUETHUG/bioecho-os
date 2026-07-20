@@ -34,6 +34,8 @@ function noise3D(x, y, z) {
          lerp(dot3(_grad[perm[AB + 1] % 12], x, y, z - 1), dot3(_grad[perm[BB + 1] % 12], x - 1, y - 1, z - 1), u), v), w);
 }
 function n(x, y) { return noise3D(x, y, 0); }
+function smoothstep(t) { return t * t * (3 - 2 * t); }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function fbm(x, y, octaves) {
   let v = 0, a = 1, m = 0;
   for (let i = 0; i < (octaves || 3); i++) { v += a * n(x, y); m += a; a *= 0.5; x *= 2; y *= 2; }
@@ -73,7 +75,7 @@ const W$ = {
 
   camera: { x: 0, y: 0, z: 1, tx: 0, ty: 0, tz: 1, vx: 0, vy: 0, vz: 0 },
 
-  cursor: { x: -999, y: -999, active: 0, influence: 0, dt: Infinity },
+  cursor: { x: -999, y: -999, active: 0, influence: 0 },
   cursorTrail: [], cursorMemory: 0,
   idleTimer: 0, autoPilot: false, autoSceneTimer: 0,
 
@@ -161,7 +163,7 @@ const SYS = {
   envNoise: Array.from({ length: 30 }, () => ({ x: Math.random(), y: Math.random(), vx: (Math.random() - 0.5) * 0.001, vy: (Math.random() - 0.5) * 0.001 })),
 
   // Reaction-diffusion
-  rd: { grid: [], next: [], cols: 30, rows: 20, feed: 0.037, kill: 0.06, diffU: 0.16, diffV: 0.08 },
+  rd: { grid: [], next: [], cols: 40, rows: 25, feed: 0.035, kill: 0.059, diffU: 0.14, diffV: 0.06 },
   flow: [],
 };
 
@@ -201,14 +203,13 @@ function onPointer(x, y) {
   W$.cursor.active = 1;
   W$.cursor.influence = Math.min(1, W$.cursor.influence + 0.05);
   W$.cursorMemory = 1;
-  W$.cursor.dt = 0;
   W$.idleTimer = 0;
   W$.autoPilot = false;
   W$.cursorTrail.push({ x, y, t: W$.time });
   if (W$.cursorTrail.length > 80) W$.cursorTrail.shift();
 }
 function emitRipple(x, y) {
-  W$.ripples.push({ x, y, r: 0, maxR: Math.max(W, H) * 0.6, s: 1, age: 0, speed: 120 + Math.random() * 60 });
+  W$.ripples.push({ x, y, r: 0, maxR: Math.max(W, H) * 0.7, s: 1, age: 0, speed: 80 + Math.random() * 40 });
   if (W$.ripples.length > 10) W$.ripples.shift();
 }
 
@@ -266,7 +267,6 @@ function updateWorld(dt) {
   if (W$.cursor.active < 0.5) {
     W$.cursor.influence *= 0.995;
     W$.cursorMemory *= 0.998;
-    W$.cursor.dt += dt;
   }
 
   // Auto-pilot
@@ -278,7 +278,9 @@ function updateWorld(dt) {
   if (W$.autoPilot) {
     W$.autoSceneTimer += dt;
     if (W$.autoSceneTimer > 8 + n(W$.time * 0.05, 50) * 3) {
-      navigateScene(Math.floor(Math.random() * 8));
+      let next;
+      do { next = Math.floor(Math.random() * 8); } while (next === W$.sceneTarget);
+      navigateScene(next);
       W$.autoSceneTimer = 0;
       emitRipple(Math.random() * W, Math.random() * H);
     }
@@ -297,16 +299,16 @@ function updateWorld(dt) {
     W$.camera.ty = lerp(W$.camera.ty, pullY, 0.05);
     W$.camera.tz = lerp(W$.camera.tz, 1, 0.02);
   }
-  W$.camera.vx += (W$.camera.tx - W$.camera.x) * 0.06;
-  W$.camera.vy += (W$.camera.ty - W$.camera.y) * 0.06;
-  W$.camera.vz += (W$.camera.tz - W$.camera.z) * 0.04;
-  W$.camera.vx *= 0.85; W$.camera.vy *= 0.85; W$.camera.vz *= 0.85;
+  W$.camera.vx += (W$.camera.tx - W$.camera.x) * 0.04;
+  W$.camera.vy += (W$.camera.ty - W$.camera.y) * 0.04;
+  W$.camera.vz += (W$.camera.tz - W$.camera.z) * 0.03;
+  W$.camera.vx *= 0.88; W$.camera.vy *= 0.88; W$.camera.vz *= 0.88;
   W$.camera.x += W$.camera.vx; W$.camera.y += W$.camera.vy; W$.camera.z += W$.camera.vz;
 
-  // Scene transition
+  // Scene transition (eased)
   if (W$.scene !== W$.sceneTarget) {
-    W$.sceneTransition -= dt * 0.4;
-    if (W$.sceneTransition <= 0) { W$.scene = W$.sceneTarget; W$.sceneTransition = 1; }
+    W$.sceneTransition = Math.min(1, W$.sceneTransition + dt * 0.6);
+    if (W$.sceneTransition >= 1) { W$.scene = W$.sceneTarget; W$.sceneTransition = 1; }
   }
 
   // Ripples
@@ -324,7 +326,6 @@ function updateWorld(dt) {
 // ============================================================
 function updateFlow(dt) {
   const t = W$.time;
-  const scale = 0.004;
   const flow = SYS.flow;
   for (let i = 0; i < flow.length; i++) {
     const x = (i % 8) / 8, y = Math.floor(i / 8) / 5;
@@ -415,16 +416,16 @@ function updateChain(dt) {
 
   for (let i = 1; i < nodes.length; i++) {
     const a = nodes[i - 1], b = nodes[i];
-    const gravity = 9.8;
-    const windF = W$.windX * 4 + n(i * 2, W$.time * 0.1) * 3;
-    b.vy = (b.vy || 0) + gravity * dt * 0.3 + windF * dt;
+    const gravity = 6;
+    const windF = W$.windX * 3 + n(i * 2, W$.time * 0.1) * 2;
+    b.vy = (b.vy || 0) + gravity * dt + windF * dt;
     b.vx = (b.vx || 0);
 
     // Verlet
     const dx = b.x - (b.px || b.x), dy = b.y - (b.py || b.y);
     b.px = b.x; b.py = b.y;
     b.x += dx + (b.vx || 0) * dt; b.y += dy + (b.vy || 0) * dt;
-    b.vx *= 0.96; b.vy *= 0.96;
+    b.vx *= 0.94; b.vy *= 0.94;
 
     // Stick constraint to previous node
     const sx = b.x - a.x, sy = b.y - a.y;
@@ -435,8 +436,17 @@ function updateChain(dt) {
       b.x -= sx * diff * 0.5; b.y -= sy * diff * 0.5;
     }
 
+    // Angular damping (pairwise velocity cancel)
+    if (i > 1) {
+      const c = nodes[i - 2];
+      const midx = (a.x + b.x) / 2, midy = (a.y + b.y) / 2;
+      const dxc = c.x - midx, dyc = c.y - midy, dc = Math.sqrt(dxc * dxc + dyc * dyc) || 1;
+      b.vx -= (b.vx || 0) * 0.02;
+      b.vy -= (b.vy || 0) * 0.02;
+    }
+
     // Floor
-    if (b.y > H - 40) { b.y = H - 40; b.vy *= -0.3; }
+    if (b.y > H - 40) { b.y = H - 40; b.vy = -Math.abs(b.vy || 0) * 0.2; }
   }
 
   // Bar values track chain node Y position
@@ -467,8 +477,8 @@ function updateRD() {
       const laplacianU = lu - 4 * u;
       const laplacianV = lv - 4 * v;
       const uvv = u * v * v;
-      next[i].u = u + (diffU * laplacianU - uvv + feed * (1 - u)) * 0.5;
-      next[i].v = v + (diffV * laplacianV + uvv - (kill + feed) * v) * 0.5;
+      next[i].u = u + (diffU * laplacianU - uvv + feed * (1 - u)) * 0.8;
+      next[i].v = v + (diffV * laplacianV + uvv - (kill + feed) * v) * 0.8;
       next[i].u = Math.max(0, Math.min(1, next[i].u));
       next[i].v = Math.max(0, Math.min(1, next[i].v));
     }
@@ -551,7 +561,8 @@ function render() {
   const s = W$.scene;
   const trans = W$.sceneTransition;
   const inTrans = s !== W$.sceneTarget;
-  const ta = inTrans ? 1 - trans : 1;
+  const ease = smoothstep(trans);
+  const ta = inTrans ? 1 - ease : 1;
 
   // Camera transform
   ctx.save();
@@ -579,8 +590,9 @@ function render() {
   applyVignette(ctx);
   applyBloom(ctx, W$.accentPulse * 0.3);
 
+  // Transition overlay (fade via eased white wash)
   if (inTrans) {
-    ctx.fillStyle = `rgba(160,165,177,${(1 - trans) * 0.4})`;
+    ctx.fillStyle = `rgba(160,165,177,${ease * 0.35})`;
     ctx.fillRect(0, 0, W, H);
   }
 }
@@ -835,15 +847,15 @@ function renderCards(ctx, alpha) {
     const y = startY + Math.floor(i / cols) * (ch + gap);
     const pulse = Math.sin(W$.pulse * Math.PI + c.phase) * 0.5 + 0.5;
 
-    ctx.fillStyle = `rgba(255,255,255,${op * 0.08})`;
+    ctx.fillStyle = `rgba(255,255,255,${op * 0.1})`;
     ctx.beginPath(); ctx.roundRect(x, y, cw, ch, 5); ctx.fill();
-    ctx.strokeStyle = `rgba(26,26,26,${op * 0.05 + pulse * 0.03})`;
+    ctx.strokeStyle = `rgba(26,26,26,${op * 0.06 + pulse * 0.04})`;
     ctx.lineWidth = 0.5; ctx.stroke();
 
     const cxc = x + cw / 2, cyc = y + 35;
-    const cr = 10 + pulse * 3 + W$.accentPulse * 4;
+    const cr = 10 + pulse * 3 + W$.accentPulse * 5;
     ctx.beginPath(); ctx.arc(cxc, cyc, cr, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(45,107,79,${op * (0.06 + pulse * 0.08)})`;
+    ctx.fillStyle = `rgba(45,107,79,${op * (0.08 + pulse * 0.1)})`;
     ctx.fill();
   }
   ctx.restore();
@@ -950,13 +962,13 @@ function renderTimeline(ctx, alpha) {
     const dotY = cy + bendY;
     const vh = 10 + pVal * 25;
 
-    ctx.fillStyle = `rgba(26,26,26,${0.015 + pVal * 0.025})`;
+    ctx.fillStyle = `rgba(26,26,26,${0.02 + pVal * 0.035})`;
     ctx.fillRect(x - 0.5, dotY - vh, 1, vh * 2);
 
     ctx.beginPath(); ctx.arc(x, dotY, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(26,26,26,${0.03 + pVal * 0.05})`; ctx.fill();
+    ctx.fillStyle = `rgba(26,26,26,${0.04 + pVal * 0.07})`; ctx.fill();
     ctx.beginPath(); ctx.arc(x, dotY, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(45,107,79,${0.06 + pVal * 0.1 + W$.accentPulse * 0.06})`; ctx.fill();
+    ctx.fillStyle = `rgba(45,107,79,${0.08 + pVal * 0.12 + W$.accentPulse * 0.08})`; ctx.fill();
   }
 
   ctx.restore();
@@ -970,7 +982,7 @@ function renderParticleWeb(ctx, alpha) {
   if (particles.length < 5) return;
 
   ctx.save();
-  ctx.globalAlpha = alpha * 0.3;
+  ctx.globalAlpha = alpha * 0.5;
 
   // Sample 30 random pairs for connections
   const count = Math.min(30, particles.length);
@@ -1068,7 +1080,7 @@ function renderCursorTrail(ctx) {
   ctx.save();
   for (let i = 1; i < trail.length; i++) {
     const age = W$.time - trail[i].t;
-    const alpha = Math.max(0, (1 - age * 0.1)) * W$.cursorMemory * 0.08;
+    const alpha = Math.max(0, (1 - age * 0.08)) * W$.cursorMemory * 0.12;
     if (alpha < 0.001) continue;
     ctx.beginPath();
     ctx.moveTo(trail[i - 1].x, trail[i - 1].y);
